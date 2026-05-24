@@ -37,6 +37,14 @@
       "types": "./dist/products/product.schema.d.ts",
       "default": "./dist/products/product.schema.js"
     },
+    "./expenses/expense.types": {
+      "types": "./dist/expenses/expense.types.d.ts",
+      "default": "./dist/expenses/expense.types.js"
+    },
+    "./expenses/expense.schema": {
+      "types": "./dist/expenses/expense.schema.d.ts",
+      "default": "./dist/expenses/expense.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

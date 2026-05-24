@@ -43,6 +43,13 @@
       "when": 1779646282701,
       "tag": "0005_aromatic_grey_gargoyle",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1779648360071,
+      "tag": "0006_wide_hercules",
+      "breakpoints": true
     }
   ]
 }

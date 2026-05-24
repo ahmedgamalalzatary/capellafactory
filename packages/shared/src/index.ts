@@ -6,3 +6,5 @@ export * from "./ingredients/ingredient.types.js";
 export * from "./ingredients/ingredient.schema.js";
 export * from "./products/product.types.js";
 export * from "./products/product.schema.js";
+export * from "./expenses/expense.types.js";
+export * from "./expenses/expense.schema.js";
