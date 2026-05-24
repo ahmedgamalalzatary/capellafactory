@@ -63,5 +63,5 @@ test("deleteBuyerHandler rejects non-integer ids", async () => {
   await deleteBuyerHandler(request as Request, result.response);
 
   assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.jsonBody, { message: "Invalid id" });
+  assert.deepEqual(result.jsonBody, { message: "Invalid buyer id" });
 });

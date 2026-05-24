@@ -76,7 +76,7 @@ export async function deleteBuyerHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid id" });
+    response.status(400).json({ message: "Invalid buyer id" });
     return;
   }
 

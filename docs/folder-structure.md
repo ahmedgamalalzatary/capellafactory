@@ -63,13 +63,13 @@ capella/
 │  │  │  │     ├─ buyers.ts
 │  │  │  │     └─ index.ts
 │  │  │  ├─ modules/
-│  │  │  │  └─ suppliers/
-│  │  │  │     ├─ suppliers.routes.ts
-│  │  │  │     ├─ suppliers.controller.ts
-│  │  │  │     ├─ suppliers.service.ts
-│  │  │  │     ├─ suppliers.repository.ts
-│  │  │  │     ├─ suppliers.validation.ts
-│  │  │  │     └─ suppliers.types.ts
+│  │  │  │  ├─ suppliers/
+│  │  │  │  │  ├─ suppliers.routes.ts
+│  │  │  │  │  ├─ suppliers.controller.ts
+│  │  │  │  │  ├─ suppliers.service.ts
+│  │  │  │  │  ├─ suppliers.repository.ts
+│  │  │  │  │  ├─ suppliers.validation.ts
+│  │  │  │  │  └─ suppliers.types.ts
 │  │  │  │  └─ buyers/
 │  │  │  │     ├─ buyers.routes.ts
 │  │  │  │     ├─ buyers.controller.ts
