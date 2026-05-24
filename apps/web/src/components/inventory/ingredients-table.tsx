@@ -130,7 +130,12 @@ function RowActions({ ingredient }: { ingredient: Ingredient }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="خيارات الخام">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="خيارات الخام"
+            disabled={isSubmitting}
+          >
             <span className="text-base">⋯</span>
           </Button>
         </DropdownMenuTrigger>

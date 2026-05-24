@@ -94,7 +94,12 @@ function RowActions({ product }: { product: Product }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="خيارات المنتج">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="خيارات المنتج"
+            disabled={isSubmitting}
+          >
             <span className="text-base">⋯</span>
           </Button>
         </DropdownMenuTrigger>
