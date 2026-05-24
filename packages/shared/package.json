@@ -21,6 +21,22 @@
       "types": "./dist/suppliers/supplier.schema.d.ts",
       "default": "./dist/suppliers/supplier.schema.js"
     },
+    "./ingredients/ingredient.types": {
+      "types": "./dist/ingredients/ingredient.types.d.ts",
+      "default": "./dist/ingredients/ingredient.types.js"
+    },
+    "./ingredients/ingredient.schema": {
+      "types": "./dist/ingredients/ingredient.schema.d.ts",
+      "default": "./dist/ingredients/ingredient.schema.js"
+    },
+    "./products/product.types": {
+      "types": "./dist/products/product.types.d.ts",
+      "default": "./dist/products/product.types.js"
+    },
+    "./products/product.schema": {
+      "types": "./dist/products/product.schema.d.ts",
+      "default": "./dist/products/product.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

@@ -29,6 +29,20 @@
       "when": 1779633678079,
       "tag": "0003_low_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1779644991261,
+      "tag": "0004_great_manta",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1779646282701,
+      "tag": "0005_aromatic_grey_gargoyle",
+      "breakpoints": true
     }
   ]
 }

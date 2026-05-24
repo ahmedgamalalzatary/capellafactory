@@ -20,6 +20,18 @@ capella/
 │  │  │  │  │  ├─ page.tsx
 │  │  │  │  │  ├─ loading.tsx
 │  │  │  │  │  └─ error.tsx
+│  │  │  │  ├─ inventory/
+│  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ loading.tsx
+│  │  │  │  │  └─ error.tsx
+│  │  │  │  ├─ purchases/
+│  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ loading.tsx
+│  │  │  │  │  └─ error.tsx
+│  │  │  │  ├─ sales/
+│  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ loading.tsx
+│  │  │  │  │  └─ error.tsx
 │  │  │  ├─ components/
 │  │  │  │  ├─ suppliers/
 │  │  │  │  │  ├─ suppliers-table.tsx
@@ -31,6 +43,32 @@ capella/
 │  │  │  │  │  ├─ buyer-form.tsx
 │  │  │  │  │  ├─ buyer-dialog.tsx
 │  │  │  │  │  └─ delete-buyer-dialog.tsx
+│  │  │  │  ├─ inventory/
+│  │  │  │  │  ├─ ingredients-table.tsx
+│  │  │  │  │  ├─ ingredient-form.tsx
+│  │  │  │  │  ├─ ingredient-dialog.tsx
+│  │  │  │  │  ├─ products-table.tsx
+│  │  │  │  │  ├─ product-form.tsx
+│  │  │  │  │  ├─ product-dialog.tsx
+│  │  │  │  │  └─ stock-movements-table.tsx
+│  │  │  │  ├─ purchases/
+│  │  │  │  │  ├─ expenses-table.tsx
+│  │  │  │  │  ├─ expense-form.tsx
+│  │  │  │  │  ├─ expense-dialog.tsx
+│  │  │  │  │  ├─ ingredient-purchases-table.tsx
+│  │  │  │  │  ├─ ingredient-purchase-form.tsx
+│  │  │  │  │  ├─ ingredient-purchase-dialog.tsx
+│  │  │  │  │  ├─ ingredient-adjustments-table.tsx
+│  │  │  │  │  ├─ ingredient-adjustment-form.tsx
+│  │  │  │  │  └─ ingredient-adjustment-dialog.tsx
+│  │  │  │  ├─ sales/
+│  │  │  │  │  ├─ sales-invoices-table.tsx
+│  │  │  │  │  ├─ sales-invoice-form.tsx
+│  │  │  │  │  └─ sales-invoice-dialog.tsx
+│  │  │  │  ├─ production/
+│  │  │  │  │  ├─ production-batches-table.tsx
+│  │  │  │  │  ├─ production-batch-form.tsx
+│  │  │  │  │  └─ production-batch-dialog.tsx
 │  │  │  │  └─ ui/
 │  │  │  │     ├─ button.tsx
 │  │  │  │     ├─ card.tsx
@@ -42,9 +80,19 @@ capella/
 │  │  │  │     └─ textarea.tsx
 │  │  │  ├─ lib/
 │  │  │  │  ├─ api.ts
+│  │  │  │  ├─ stock/
+│  │  │  │  │  ├─ units.ts
+│  │  │  │  │  └─ formatting.ts
 │  │  │  │  └─ api/
 │  │  │  │     ├─ suppliers.ts
-│  │  │  │     └─ buyers.ts
+│  │  │  │     ├─ buyers.ts
+│  │  │  │     ├─ ingredients.ts
+│  │  │  │     ├─ products.ts
+│  │  │  │     ├─ expenses.ts
+│  │  │  │     ├─ ingredient-purchases.ts
+│  │  │  │     ├─ production-batches.ts
+│  │  │  │     ├─ sales-invoices.ts
+│  │  │  │     └─ ingredient-adjustments.ts
 │  │  ├─ package.json
 │  │  ├─ tsconfig.json
 │  │  ├─ next.config.ts
@@ -61,6 +109,13 @@ capella/
 │  │  │  │  └─ schema/
 │  │  │  │     ├─ suppliers.ts
 │  │  │  │     ├─ buyers.ts
+│  │  │  │     ├─ ingredients.ts
+│  │  │  │     ├─ products.ts
+│  │  │  │     ├─ expenses.ts
+│  │  │  │     ├─ ingredient-purchases.ts
+│  │  │  │     ├─ production-batches.ts
+│  │  │  │     ├─ sales-invoices.ts
+│  │  │  │     ├─ ingredient-adjustments.ts
 │  │  │  │     └─ index.ts
 │  │  │  ├─ modules/
 │  │  │  │  ├─ suppliers/
@@ -70,13 +125,62 @@ capella/
 │  │  │  │  │  ├─ suppliers.repository.ts
 │  │  │  │  │  ├─ suppliers.validation.ts
 │  │  │  │  │  └─ suppliers.types.ts
-│  │  │  │  └─ buyers/
-│  │  │  │     ├─ buyers.routes.ts
-│  │  │  │     ├─ buyers.controller.ts
-│  │  │  │     ├─ buyers.service.ts
-│  │  │  │     ├─ buyers.repository.ts
-│  │  │  │     ├─ buyers.validation.ts
-│  │  │  │     └─ buyers.types.ts
+│  │  │  │  ├─ buyers/
+│  │  │  │  │  ├─ buyers.routes.ts
+│  │  │  │  │  ├─ buyers.controller.ts
+│  │  │  │  │  ├─ buyers.service.ts
+│  │  │  │  │  ├─ buyers.repository.ts
+│  │  │  │  │  ├─ buyers.validation.ts
+│  │  │  │  │  └─ buyers.types.ts
+│  │  │  │  ├─ ingredients/
+│  │  │  │  │  ├─ ingredients.routes.ts
+│  │  │  │  │  ├─ ingredients.controller.ts
+│  │  │  │  │  ├─ ingredients.service.ts
+│  │  │  │  │  ├─ ingredients.repository.ts
+│  │  │  │  │  ├─ ingredients.validation.ts
+│  │  │  │  │  └─ ingredients.types.ts
+│  │  │  │  ├─ products/
+│  │  │  │  │  ├─ products.routes.ts
+│  │  │  │  │  ├─ products.controller.ts
+│  │  │  │  │  ├─ products.service.ts
+│  │  │  │  │  ├─ products.repository.ts
+│  │  │  │  │  ├─ products.validation.ts
+│  │  │  │  │  └─ products.types.ts
+│  │  │  │  ├─ expenses/
+│  │  │  │  │  ├─ expenses.routes.ts
+│  │  │  │  │  ├─ expenses.controller.ts
+│  │  │  │  │  ├─ expenses.service.ts
+│  │  │  │  │  ├─ expenses.repository.ts
+│  │  │  │  │  ├─ expenses.validation.ts
+│  │  │  │  │  └─ expenses.types.ts
+│  │  │  │  ├─ ingredient-purchases/
+│  │  │  │  │  ├─ ingredient-purchases.routes.ts
+│  │  │  │  │  ├─ ingredient-purchases.controller.ts
+│  │  │  │  │  ├─ ingredient-purchases.service.ts
+│  │  │  │  │  ├─ ingredient-purchases.repository.ts
+│  │  │  │  │  ├─ ingredient-purchases.validation.ts
+│  │  │  │  │  └─ ingredient-purchases.types.ts
+│  │  │  │  ├─ production-batches/
+│  │  │  │  │  ├─ production-batches.routes.ts
+│  │  │  │  │  ├─ production-batches.controller.ts
+│  │  │  │  │  ├─ production-batches.service.ts
+│  │  │  │  │  ├─ production-batches.repository.ts
+│  │  │  │  │  ├─ production-batches.validation.ts
+│  │  │  │  │  └─ production-batches.types.ts
+│  │  │  │  ├─ sales-invoices/
+│  │  │  │  │  ├─ sales-invoices.routes.ts
+│  │  │  │  │  ├─ sales-invoices.controller.ts
+│  │  │  │  │  ├─ sales-invoices.service.ts
+│  │  │  │  │  ├─ sales-invoices.repository.ts
+│  │  │  │  │  ├─ sales-invoices.validation.ts
+│  │  │  │  │  └─ sales-invoices.types.ts
+│  │  │  │  └─ ingredient-adjustments/
+│  │  │  │     ├─ ingredient-adjustments.routes.ts
+│  │  │  │     ├─ ingredient-adjustments.controller.ts
+│  │  │  │     ├─ ingredient-adjustments.service.ts
+│  │  │  │     ├─ ingredient-adjustments.repository.ts
+│  │  │  │     ├─ ingredient-adjustments.validation.ts
+│  │  │  │     └─ ingredient-adjustments.types.ts
 │  │  │  ├─ middlewares/
 │  │  │  │  ├─ error.middleware.ts
 │  │  │  │  ├─ not-found.middleware.ts
@@ -84,7 +188,9 @@ capella/
 │  │  │  ├─ routes/
 │  │  │  │  └─ index.ts
 │  │  │  ├─ services/
-│  │  │  │  └─ logger.service.ts
+│  │  │  │  ├─ logger.service.ts
+│  │  │  │  ├─ invoice-code.service.ts
+│  │  │  │  └─ stock-costing.service.ts
 │  │  │  ├─ repositories/
 │  │  │  │  └─ base.repository.ts
 │  │  │  ├─ types/
@@ -93,7 +199,9 @@ capella/
 │  │  │  └─ utils/
 │  │  │     ├─ async-handler.ts
 │  │  │     ├─ http-error.ts
-│  │  │     └─ pagination.ts
+│  │  │     ├─ pagination.ts
+│  │  │     ├─ quantity-normalization.ts
+│  │  │     └─ stock-ledger.ts
 │  │  ├─ drizzle/
 │  │  │  └─ migrations/
 │  │  ├─ drizzle.config.ts
@@ -108,10 +216,32 @@ capella/
 │  │  │  ├─ buyers/
 │  │  │  │  ├─ buyer.types.ts
 │  │  │  │  └─ buyer.schema.ts
+│  │  │  ├─ ingredients/
+│  │  │  │  ├─ ingredient.types.ts
+│  │  │  │  └─ ingredient.schema.ts
+│  │  │  ├─ products/
+│  │  │  │  ├─ product.types.ts
+│  │  │  │  └─ product.schema.ts
+│  │  │  ├─ expenses/
+│  │  │  │  ├─ expense.types.ts
+│  │  │  │  └─ expense.schema.ts
+│  │  │  ├─ ingredient-purchases/
+│  │  │  │  ├─ ingredient-purchase.types.ts
+│  │  │  │  └─ ingredient-purchase.schema.ts
+│  │  │  ├─ production-batches/
+│  │  │  │  ├─ production-batch.types.ts
+│  │  │  │  └─ production-batch.schema.ts
+│  │  │  ├─ sales-invoices/
+│  │  │  │  ├─ sales-invoice.types.ts
+│  │  │  │  └─ sales-invoice.schema.ts
+│  │  │  ├─ ingredient-adjustments/
+│  │  │  │  ├─ ingredient-adjustment.types.ts
+│  │  │  │  └─ ingredient-adjustment.schema.ts
 │  │  │  └─ index.ts
 │  │  ├─ package.json
 │  │  └─ tsconfig.json
 ├─ docs/
+│  ├─ erp-specs.md
 │  └─ folder-structure.md
 ├─ package.json
 ├─ pnpm-workspace.yaml
@@ -148,7 +278,7 @@ The `apps/web` application should use:
 - Tailwind CSS
 - `shadcn/ui`
 
-`shadcn/ui` components should be the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in the suppliers and buyers features.
+`shadcn/ui` components should be the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in suppliers, buyers, inventory, purchases, production, and sales flows.
 
 ## Backend Organization
 
@@ -156,7 +286,7 @@ Use a module-first backend structure. Feature-specific code should live inside i
 
 - `middlewares/`: Express middleware reused across modules.
 - `routes/`: Global route registration, usually `routes/index.ts`.
-- `services/`: Cross-feature services only, such as logging or external integrations.
+- `services/`: Cross-feature services only, such as logging, invoice-code generation, or costing helpers.
 - `repositories/`: Shared/base repository helpers only.
 - `types/`: Backend-only TypeScript types and Express type extensions.
 - `utils/`: Small reusable backend utilities.
@@ -170,69 +300,55 @@ Use these responsibilities:
 - `drizzle/migrations/`: generated SQL migrations.
 - `src/db/client.ts`: MySQL connection and Drizzle database instance.
 - `src/db/index.ts`: backend database exports.
-- `src/db/schema/suppliers.ts`: suppliers table schema.
-- `src/db/schema/buyers.ts`: buyers table schema.
+- `src/db/schema/*.ts`: backend-owned table schemas for master data, invoices, batches, and adjustments.
 - `src/db/schema/index.ts`: aggregates and re-exports schema files.
 
-## Suppliers And Buyers Feature Scope
+## Feature Scope Summary
 
-The initial suppliers and buyers CRUD features should support this data model:
+This structure supports these documented areas:
 
-```txt
-record
-  id: number
-  name: string
-  phone: string
-  where?: string
-  notes?: string
-  createdAt: Date
-  updatedAt: Date
-```
+- supplier CRUD
+- buyer CRUD
+- ingredient catalog and stock
+- finished-product catalog and stock
+- purchase expenses
+- ingredient purchase invoices
+- production batches
+- sales invoices
+- ingredient adjustments
 
-Required fields:
+Additional v1 behavior expectations tied to this structure:
 
-- `name`
-- `phone`
+- sales invoices allow one line per finished product only
+- production batches allow one line per ingredient only
+- typed buyer and supplier names stay invoice-only
+- no recipe master is part of the current scope yet
+- stock movement history is surfaced from inventory views
+- ingredients and finished products are manually archivable only at zero stock
+- archived inventory items are hidden from all new transaction forms until manually reactivated
+- ingredient and finished-product names stay unique and reserved even after archive
+- buyer and supplier names may repeat, but linked buyer/supplier records become non-editable and non-deletable
 
-Optional fields:
+## Transaction Rules To Preserve In Implementation
 
-- `where`
-- `notes`
-
-Recommended API routes:
-
-```txt
-GET    /suppliers
-GET    /suppliers/:id
-POST   /suppliers
-PATCH  /suppliers/:id
-DELETE /suppliers/:id
-
-GET    /buyers
-GET    /buyers/:id
-POST   /buyers
-PATCH  /buyers/:id
-DELETE /buyers/:id
-```
-
-## Authentication Scope
-
-This phase of the ERP should not include any authentication or authorization in either the frontend or backend.
-
-Do not add:
-
-- login or logout flows
-- JWT or session handling
-- auth middleware
-- protected route wrappers
-- user, role, or permission modules
-
-The frontend should call the suppliers and buyers APIs directly.
-
-The backend should expose suppliers and buyers routes without auth guards for now.
+- sales invoices are create/list/view only
+- expenses are create/list/view only
+- ingredient purchase invoices are create/list/view only
+- production batches are create/list/view only
+- ingredient adjustments are create/list/view only
+- ingredient and finished-product stock must never go negative
+- weighted-average costing is used for ingredients and finished products
+- ingredient quantities are normalized to base units
+- ingredient unit families include weight, volume, and count
+- stock movements should remain traceable through transaction history
+- backdated expenses are allowed
+- backdated sales and ingredient adjustments are not allowed
+- backdated purchases and production are allowed only if recalculation keeps later history valid
+- same-datetime stock records use creation order as the tie-breaker
+- ingredient/product deletion is allowed only when stock is zero and no history exists
 
 ## Shared Package
 
-Put reusable supplier and buyer types and validation schemas in `packages/shared` so both the Next.js frontend and Express backend can use the same contracts.
+Put reusable supplier, buyer, inventory, invoice, batch, and adjustment types and validation schemas in `packages/shared` so both the Next.js frontend and Express backend can use the same contracts.
 
 The backend should still own the Drizzle database schema because database details should not leak into frontend code.

@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { buyersRouter } from "../modules/buyers/buyers.routes.js";
+import { ingredientsRouter } from "../modules/ingredients/ingredients.routes.js";
+import { productsRouter } from "../modules/products/products.routes.js";
 import { suppliersRouter } from "../modules/suppliers/suppliers.routes.js";
 
 export function registerRoutes(app: Express) {
@@ -8,5 +10,7 @@ export function registerRoutes(app: Express) {
   });
 
   app.use("/buyers", buyersRouter);
+  app.use("/ingredients", ingredientsRouter);
+  app.use("/products", productsRouter);
   app.use("/suppliers", suppliersRouter);
 }

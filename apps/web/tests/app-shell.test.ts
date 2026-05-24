@@ -7,10 +7,10 @@ import {
 test("all navigation items are real routes", () => {
   expect(sidebarItems).toEqual([
     { label: "الموردون", href: "/suppliers" },
+    { label: "المشترون", href: "/buyers" },
     { label: "المخزون", href: "/inventory" },
     { label: "المشتريات", href: "/purchases" },
     { label: "المبيعات", href: "/sales" },
-    { label: "المشترون", href: "/buyers" },
     { label: "التقارير", href: "/reports" },
   ]);
 });
@@ -20,7 +20,7 @@ test("marks suppliers navigation item active on its route", () => {
 });
 
 test("marks placeholder route item active on its route", () => {
-  expect(isSidebarItemActive(sidebarItems[4], "/buyers/12")).toBe(true);
+  expect(isSidebarItemActive(sidebarItems[1], "/buyers/12")).toBe(true);
 });
 
 test("does not mark routed item active on a different route", () => {

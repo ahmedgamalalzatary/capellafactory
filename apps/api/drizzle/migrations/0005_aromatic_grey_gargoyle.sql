@@ -1,0 +1,2 @@
+ALTER TABLE `ingredients` MODIFY COLUMN `unit_family` enum('weight','volume','count') NOT NULL;--> statement-breakpoint
+ALTER TABLE `ingredients` MODIFY COLUMN `base_unit` enum('g','ml','piece') NOT NULL;
