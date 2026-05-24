@@ -1,9 +1,18 @@
-import { getSuppliers } from "@/api-client/suppliers";
+import { getSuppliers } from "@/lib/api/suppliers";
+import { SuppliersSearchInput } from "@/components/suppliers/suppliers-search-input";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { SuppliersTable } from "@/components/suppliers/suppliers-table";
 
-export default async function SuppliersPage() {
-  const suppliers = await getSuppliers();
+type SuppliersPageProps = {
+  searchParams?: Promise<{
+    q?: string;
+  }>;
+};
+
+export default async function SuppliersPage({ searchParams }: SuppliersPageProps) {
+  const params = (await searchParams) ?? {};
+  const query = params.q?.trim() || undefined;
+  const suppliers = await getSuppliers(query);
   const total = suppliers.length;
   const withLocation = suppliers.filter((s) => Boolean(s.where)).length;
 
@@ -68,12 +77,7 @@ export default async function SuppliersPage() {
           borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
         }}
       >
-        <input
-          type="search"
-          placeholder="بحث في الموردين…"
-          className="h-8 w-56 border border-border bg-secondary px-3 text-[13px] placeholder:text-muted-foreground outline-none focus:border-foreground transition-colors"
-          style={{ borderRadius: "var(--radius-sm)" }}
-        />
+        <SuppliersSearchInput initialQuery={query} />
       </div>
 
       {/* Table */}

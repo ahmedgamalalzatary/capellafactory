@@ -7,8 +7,8 @@ import {
   updateSupplier,
 } from "./suppliers.repository.js";
 
-export async function getSuppliers() {
-  return listSuppliers();
+export async function getSuppliers(query?: string) {
+  return listSuppliers(query);
 }
 
 export async function getSupplier(id: number) {

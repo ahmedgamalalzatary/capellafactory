@@ -7,8 +7,19 @@ const API_URL = process.env.API_URL ?? "http://localhost:4000";
 const CLIENT_API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
 
-export async function getSuppliers(): Promise<Supplier[]> {
-  const response = await fetch(`${API_URL}/suppliers`, {
+export function buildSuppliersUrl(baseUrl: string, query?: string) {
+  const url = new URL("/suppliers", baseUrl);
+  const normalizedQuery = query?.trim();
+
+  if (normalizedQuery) {
+    url.searchParams.set("q", normalizedQuery);
+  }
+
+  return url.toString();
+}
+
+export async function getSuppliers(query?: string): Promise<Supplier[]> {
+  const response = await fetch(buildSuppliersUrl(API_URL, query), {
     cache: "no-store",
   });
 

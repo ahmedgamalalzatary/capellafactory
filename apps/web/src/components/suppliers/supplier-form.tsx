@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { SupplierInput } from "@capella/shared/suppliers/supplier.types";
-import { createSupplier, updateSupplier } from "@/api-client/suppliers";
+import { createSupplier, updateSupplier } from "@/lib/api/suppliers";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

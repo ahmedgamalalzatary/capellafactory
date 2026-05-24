@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteSupplier } from "@/api-client/suppliers";
+import { deleteSupplier } from "@/lib/api/suppliers";
 import { useToast } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import {

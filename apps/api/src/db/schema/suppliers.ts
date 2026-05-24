@@ -1,4 +1,5 @@
 import {
+  index,
   mysqlTable,
   serial,
   text,
@@ -20,5 +21,6 @@ export const suppliersTable = mysqlTable(
   },
   (table) => ({
     phoneUniqueIndex: uniqueIndex("suppliers_phone_unique").on(table.phone),
+    nameIndex: index("suppliers_name_index").on(table.name),
   }),
 );

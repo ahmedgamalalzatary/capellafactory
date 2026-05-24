@@ -20,6 +20,8 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
     ".next/types/**/*.ts"
   ],
   "exclude": [

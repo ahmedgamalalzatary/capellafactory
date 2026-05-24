@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { asc, eq, like } from "drizzle-orm";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { db } from "../../db/index.js";
 import { suppliersTable } from "../../db/schema/suppliers.js";
@@ -37,8 +37,23 @@ export function toDatabaseError(error: unknown) {
   return error;
 }
 
-export async function listSuppliers() {
-  const suppliers = await db.select().from(suppliersTable).orderBy(suppliersTable.id);
+export function normalizeSupplierSearchQuery(query?: string) {
+  const normalized = query?.trim();
+  return normalized ? normalized : undefined;
+}
+
+export async function listSuppliers(query?: string) {
+  const normalizedQuery = normalizeSupplierSearchQuery(query);
+  const suppliers = await db
+    .select()
+    .from(suppliersTable)
+    .where(
+      normalizedQuery
+        ? like(suppliersTable.name, `%${normalizedQuery}%`)
+        : undefined,
+    )
+    .orderBy(asc(suppliersTable.id));
+
   return suppliers.map(mapSupplierRowToSupplier);
 }
 

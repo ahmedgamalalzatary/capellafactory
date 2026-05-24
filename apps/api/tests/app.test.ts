@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { once } from "node:events";
-import { createApp } from "../app.js";
+import { createApp } from "../src/app.js";
 
 test("responds to supplier CORS preflight requests", async () => {
   process.env.CORS_ORIGIN = "http://localhost:3000";

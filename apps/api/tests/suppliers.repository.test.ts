@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import {
   DuplicateSupplierPhoneError,
   mapSupplierRowToSupplier,
+  normalizeSupplierSearchQuery,
   toDatabaseError,
-} from "../modules/suppliers/suppliers.repository.js";
+} from "../src/modules/suppliers/suppliers.repository.js";
 
 test("maps supplier rows into shared supplier shape", () => {
   const supplier = mapSupplierRowToSupplier({
@@ -71,4 +72,11 @@ test("passes through unknown database errors", () => {
   const error = toDatabaseError(mysqlError);
 
   assert.equal(error, mysqlError);
+});
+
+test("normalizes supplier search query", () => {
+  assert.equal(normalizeSupplierSearchQuery(undefined), undefined);
+  assert.equal(normalizeSupplierSearchQuery(""), undefined);
+  assert.equal(normalizeSupplierSearchQuery("   "), undefined);
+  assert.equal(normalizeSupplierSearchQuery("  Cairo  "), "Cairo");
 });

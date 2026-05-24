@@ -7,7 +7,7 @@
     "db:generate": "dotenv -e ../../.env -- drizzle-kit generate",
     "db:migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
     "lint": "dotenv -e ../../.env -- echo \"No lint for api yet\"",
-    "test": "dotenv -e ../../.env -- tsx --test src/**/*.test.ts",
+    "test": "dotenv -e ../../.env -- tsx --test tests/**/*.test.ts",
     "typecheck": "dotenv -e ../../.env -- tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

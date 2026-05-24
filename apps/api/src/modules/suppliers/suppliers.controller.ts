@@ -8,8 +8,11 @@ import {
 } from "./suppliers.service.js";
 import { DuplicateSupplierPhoneError } from "./suppliers.repository.js";
 
-export async function listSuppliersHandler(_request: Request, response: Response) {
-  response.json(await getSuppliers());
+export async function listSuppliersHandler(request: Request, response: Response) {
+  const query =
+    typeof request.query.q === "string" ? request.query.q : undefined;
+
+  response.json(await getSuppliers(query));
 }
 
 export async function getSupplierHandler(request: Request, response: Response) {

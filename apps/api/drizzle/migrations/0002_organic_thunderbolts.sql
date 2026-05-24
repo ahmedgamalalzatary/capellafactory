@@ -1,0 +1,1 @@
+CREATE INDEX `suppliers_name_index` ON `suppliers` (`name`);

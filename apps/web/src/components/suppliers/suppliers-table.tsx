@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SupplierForm } from "./supplier-form";
-import { deleteSupplier } from "@/api-client/suppliers";
+import { deleteSupplier } from "@/lib/api/suppliers";
 import { toast } from "sonner";
 
 type SuppliersTableProps = {
