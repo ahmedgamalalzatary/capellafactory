@@ -125,52 +125,103 @@ function RowActions({ buyer }: { buyer: Buyer }) {
   );
 }
 
+function BuyerCard({ buyer, idx }: { buyer: Buyer; idx: number }) {
+  return (
+    <div className="flex flex-col gap-3 bg-card px-4 py-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-medium text-muted-foreground">
+              #{idx + 1}
+            </span>
+            <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">
+              {buyer.name}
+            </h3>
+          </div>
+          <p dir="ltr" className="text-start text-[13px] text-muted-foreground">
+            {buyer.phone}
+          </p>
+        </div>
+        <div className="flex-shrink-0">
+          <RowActions buyer={buyer} />
+        </div>
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
+        <dt className="text-muted-foreground">الموقع</dt>
+        <dd className="text-foreground">{buyer.where ?? "—"}</dd>
+        <dt className="text-muted-foreground">الملاحظات</dt>
+        <dd className="text-foreground">
+          <span className="line-clamp-2">{buyer.notes ?? "—"}</span>
+        </dd>
+      </dl>
+    </div>
+  );
+}
+
 export function BuyersTable({ buyers }: BuyersTableProps) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="w-10 text-center">#</TableHead>
-          <TableHead className="text-center">الاسم</TableHead>
-          <TableHead className="text-center">الهاتف</TableHead>
-          <TableHead className="text-center">الموقع</TableHead>
-          <TableHead className="text-center">الملاحظات</TableHead>
-          <TableHead className="w-12" />
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {buyers.map((buyer, idx) => (
-          <TableRow key={buyer.id} className={idx % 2 === 1 ? "bg-muted/40" : ""}>
-            <TableCell className="text-xs text-muted-foreground text-center">
-              {idx + 1}
-            </TableCell>
-            <TableCell className="font-medium text-center">{buyer.name}</TableCell>
-            <TableCell dir="ltr" className="text-center text-muted-foreground">
-              {buyer.phone}
-            </TableCell>
-            <TableCell className="text-muted-foreground text-center">
-              {buyer.where ?? "—"}
-            </TableCell>
-            <TableCell className="text-muted-foreground max-w-[28ch] text-center">
-              <span className="line-clamp-2">{buyer.notes ?? "—"}</span>
-            </TableCell>
-            <TableCell>
-              <RowActions buyer={buyer} />
-            </TableCell>
-          </TableRow>
-        ))}
+    <>
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10 text-center">#</TableHead>
+              <TableHead className="text-center">الاسم</TableHead>
+              <TableHead className="text-center">الهاتف</TableHead>
+              <TableHead className="text-center">الموقع</TableHead>
+              <TableHead className="text-center">الملاحظات</TableHead>
+              <TableHead className="w-12" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {buyers.map((buyer, idx) => (
+              <TableRow key={buyer.id} className={idx % 2 === 1 ? "bg-muted/40" : ""}>
+                <TableCell className="text-xs text-muted-foreground text-center">
+                  {idx + 1}
+                </TableCell>
+                <TableCell className="font-medium text-center">{buyer.name}</TableCell>
+                <TableCell dir="ltr" className="text-center text-muted-foreground">
+                  {buyer.phone}
+                </TableCell>
+                <TableCell className="text-muted-foreground text-center">
+                  {buyer.where ?? "—"}
+                </TableCell>
+                <TableCell className="text-muted-foreground max-w-[28ch] text-center">
+                  <span className="line-clamp-2">{buyer.notes ?? "—"}</span>
+                </TableCell>
+                <TableCell>
+                  <RowActions buyer={buyer} />
+                </TableCell>
+              </TableRow>
+            ))}
 
+            {buyers.length === 0 && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={6} className="py-20 text-center">
+                  <p className="text-sm font-medium">لا يوجد مشترون بعد</p>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    ابدأ بإضافة أول مشتري إلى السجل.
+                  </p>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y sm:hidden" style={{ background: "var(--card)" }}>
+        {buyers.map((buyer, idx) => (
+          <BuyerCard key={buyer.id} buyer={buyer} idx={idx} />
+        ))}
         {buyers.length === 0 && (
-          <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={6} className="py-20 text-center">
-              <p className="text-sm font-medium">لا يوجد مشترون بعد</p>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                ابدأ بإضافة أول مشتري إلى السجل.
-              </p>
-            </TableCell>
-          </TableRow>
+          <div className="py-16 text-center">
+            <p className="text-sm font-medium">لا يوجد مشترون بعد</p>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              ابدأ بإضافة أول مشتري إلى السجل.
+            </p>
+          </div>
         )}
-      </TableBody>
-    </Table>
+      </div>
+    </>
   );
 }

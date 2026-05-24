@@ -17,9 +17,9 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
   const withLocation = suppliers.filter((s) => Boolean(s.where)).length;
 
   return (
-    <div className="px-8 py-8 max-w-6xl mx-auto">
+    <div className="px-4 py-6 sm:px-8 sm:py-8 mx-auto">
       {/* Page header */}
-      <div className="flex items-start justify-between gap-6 mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 mb-6 sm:mb-8">
         <div>
           <h1 className="text-[26px] font-bold leading-tight tracking-tight text-foreground">
             الموردون
@@ -31,40 +31,6 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
         <div className="flex-shrink-0 pt-1">
           <SupplierDialog />
         </div>
-      </div>
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        {[
-          {
-            label: "إجمالي الموردين",
-            value: String(total),
-            sub: "موردون مسجّلون",
-          },
-          {
-            label: "لديهم موقع",
-            value: String(withLocation),
-            sub: `من أصل ${total}`,
-          },
-        ].map((kpi, i) => (
-          <div
-            key={i}
-            className="bg-card px-5 py-4"
-            style={{
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-lg)",
-              boxShadow: "var(--shadow-sm)",
-            }}
-          >
-            <p className="text-[11px] text-muted-foreground font-medium mb-3 tracking-wide">
-              {kpi.label}
-            </p>
-            <p className="text-[28px] font-bold text-foreground leading-none mb-1">
-              {kpi.value}
-            </p>
-            <p className="text-[11px] text-muted-foreground">{kpi.sub}</p>
-          </div>
-        ))}
       </div>
 
       {/* Toolbar */}

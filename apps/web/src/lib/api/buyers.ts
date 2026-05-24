@@ -55,11 +55,19 @@ export async function deleteBuyer(id: number) {
   }
 }
 
+export function mergeJsonHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders);
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return headers;
+}
+
 async function mutateBuyer(url: string, init: RequestInit) {
   const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: mergeJsonHeaders(init.headers),
     ...init,
   });
 

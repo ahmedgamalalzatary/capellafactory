@@ -2,44 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isSidebarItemActive, sidebarItems } from "./sidebar-nav";
 
-export type SidebarItem = {
-  label: string;
-  href: string;
+type SidebarViewProps = {
+  variant?: "desktop" | "drawer";
+  onNavigate?: () => void;
 };
 
-export const sidebarItems: readonly SidebarItem[] = [
-  { label: "الموردون", href: "/suppliers" },
-  { label: "المخزون", href: "/inventory" },
-  { label: "المشتريات", href: "/purchases" },
-  { label: "المبيعات", href: "/sales" },
-  { label: "المشترون", href: "/buyers" },
-  { label: "التقارير", href: "/reports" },
-] as const;
-
-export function isSidebarItemActive(item: SidebarItem, pathname: string): boolean {
-  return pathname === item.href || pathname.startsWith(`${item.href}/`);
-}
-
-export function SidebarView() {
+export function SidebarView({ variant = "desktop", onNavigate }: SidebarViewProps) {
   const pathname = usePathname();
+  const isDrawer = variant === "drawer";
 
-  return (
-    <aside
-      className="fixed inset-y-0 z-50 flex flex-col"
-      style={{
+  const asideClass = isDrawer
+    ? "flex h-full w-full flex-col"
+    : "fixed inset-y-0 z-40 hidden flex-col md:flex";
+
+  const asideStyle = isDrawer
+    ? {
+        background: "var(--sidebar)",
+      }
+    : {
         insetInlineStart: 0,
         width: "var(--sidebar-w)",
         background: "var(--sidebar)",
         borderInlineEnd: "1px solid var(--sidebar-border)",
-      }}
-    >
+      };
+
+  return (
+    <aside className={asideClass} style={asideStyle}>
       <div
         className="flex-shrink-0 px-6 py-6"
         style={{ borderBottom: "1px solid var(--sidebar-border)" }}
       >
         <Link
           href="/suppliers"
+          onClick={onNavigate}
           className="text-[20px] font-bold leading-none tracking-tight"
           style={{ color: "var(--sidebar-foreground)" }}
         >
@@ -69,6 +66,7 @@ export function SidebarView() {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={onNavigate}
                 className="flex h-10 items-center rounded-sm px-3 text-[13px] font-semibold transition-colors"
                 style={{
                   color: "var(--sidebar-foreground)",

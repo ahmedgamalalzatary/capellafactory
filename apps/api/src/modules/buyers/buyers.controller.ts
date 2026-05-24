@@ -14,7 +14,14 @@ export async function listBuyersHandler(request: Request, response: Response) {
 }
 
 export async function getBuyerHandler(request: Request, response: Response) {
-  const buyer = await getBuyer(Number(request.params.id));
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "Invalid buyer id" });
+    return;
+  }
+
+  const buyer = await getBuyer(id);
 
   if (!buyer) {
     response.status(404).json({ message: "Buyer not found" });
@@ -39,8 +46,15 @@ export async function createBuyerHandler(request: Request, response: Response) {
 }
 
 export async function updateBuyerHandler(request: Request, response: Response) {
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "Invalid buyer id" });
+    return;
+  }
+
   try {
-    const buyer = await editBuyer(Number(request.params.id), request.body);
+    const buyer = await editBuyer(id, request.body);
 
     if (!buyer) {
       response.status(404).json({ message: "Buyer not found" });
@@ -59,7 +73,14 @@ export async function updateBuyerHandler(request: Request, response: Response) {
 }
 
 export async function deleteBuyerHandler(request: Request, response: Response) {
-  const deleted = await removeBuyer(Number(request.params.id));
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "Invalid id" });
+    return;
+  }
+
+  const deleted = await removeBuyer(id);
 
   if (!deleted) {
     response.status(404).json({ message: "Buyer not found" });
