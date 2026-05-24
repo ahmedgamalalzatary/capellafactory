@@ -12,7 +12,7 @@ test("all navigation items are real routes", () => {
   expect(sidebarViewSource).toContain('{ label: "المخزون", href: "/inventory" }');
   expect(sidebarViewSource).toContain('{ label: "المشتريات", href: "/purchases" }');
   expect(sidebarViewSource).toContain('{ label: "المبيعات", href: "/sales" }');
-  expect(sidebarViewSource).toContain('{ label: "المحاسبة", href: "/accounting" }');
+  expect(sidebarViewSource).toContain('{ label: "المشترون", href: "/buyers" }');
   expect(sidebarViewSource).toContain('{ label: "التقارير", href: "/reports" }');
 });
 

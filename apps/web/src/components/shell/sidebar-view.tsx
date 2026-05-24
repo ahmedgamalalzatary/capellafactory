@@ -13,7 +13,7 @@ export const sidebarItems: readonly SidebarItem[] = [
   { label: "المخزون", href: "/inventory" },
   { label: "المشتريات", href: "/purchases" },
   { label: "المبيعات", href: "/sales" },
-  { label: "المحاسبة", href: "/accounting" },
+  { label: "المشترون", href: "/buyers" },
   { label: "التقارير", href: "/reports" },
 ] as const;
 

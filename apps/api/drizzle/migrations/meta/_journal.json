@@ -22,6 +22,13 @@
       "when": 1779628010631,
       "tag": "0002_organic_thunderbolts",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1779633678079,
+      "tag": "0003_low_speedball",
+      "breakpoints": true
     }
   ]
 }

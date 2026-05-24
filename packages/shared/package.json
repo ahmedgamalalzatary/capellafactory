@@ -5,6 +5,14 @@
   "type": "module",
   "types": "./dist/index.d.ts",
   "exports": {
+    "./buyers/buyer.types": {
+      "types": "./dist/buyers/buyer.types.d.ts",
+      "default": "./dist/buyers/buyer.types.js"
+    },
+    "./buyers/buyer.schema": {
+      "types": "./dist/buyers/buyer.schema.d.ts",
+      "default": "./dist/buyers/buyer.schema.js"
+    },
     "./suppliers/supplier.types": {
       "types": "./dist/suppliers/supplier.types.d.ts",
       "default": "./dist/suppliers/supplier.types.js"

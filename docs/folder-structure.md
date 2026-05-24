@@ -16,12 +16,21 @@ capella/
 │  │  │  │  │  ├─ page.tsx
 │  │  │  │  │  ├─ loading.tsx
 │  │  │  │  │  └─ error.tsx
+│  │  │  │  ├─ buyers/
+│  │  │  │  │  ├─ page.tsx
+│  │  │  │  │  ├─ loading.tsx
+│  │  │  │  │  └─ error.tsx
 │  │  │  ├─ components/
 │  │  │  │  ├─ suppliers/
 │  │  │  │  │  ├─ suppliers-table.tsx
 │  │  │  │  │  ├─ supplier-form.tsx
 │  │  │  │  │  ├─ supplier-dialog.tsx
 │  │  │  │  │  └─ delete-supplier-dialog.tsx
+│  │  │  │  ├─ buyers/
+│  │  │  │  │  ├─ buyers-table.tsx
+│  │  │  │  │  ├─ buyer-form.tsx
+│  │  │  │  │  ├─ buyer-dialog.tsx
+│  │  │  │  │  └─ delete-buyer-dialog.tsx
 │  │  │  │  └─ ui/
 │  │  │  │     ├─ button.tsx
 │  │  │  │     ├─ card.tsx
@@ -32,9 +41,10 @@ capella/
 │  │  │  │     ├─ table.tsx
 │  │  │  │     └─ textarea.tsx
 │  │  │  ├─ lib/
-│  │  │  │  └─ api.ts
-│  │  │  └─ api-client/
-│  │  │     └─ suppliers.ts
+│  │  │  │  ├─ api.ts
+│  │  │  │  └─ api/
+│  │  │  │     ├─ suppliers.ts
+│  │  │  │     └─ buyers.ts
 │  │  ├─ package.json
 │  │  ├─ tsconfig.json
 │  │  ├─ next.config.ts
@@ -50,6 +60,7 @@ capella/
 │  │  │  │  ├─ index.ts
 │  │  │  │  └─ schema/
 │  │  │  │     ├─ suppliers.ts
+│  │  │  │     ├─ buyers.ts
 │  │  │  │     └─ index.ts
 │  │  │  ├─ modules/
 │  │  │  │  └─ suppliers/
@@ -59,6 +70,13 @@ capella/
 │  │  │  │     ├─ suppliers.repository.ts
 │  │  │  │     ├─ suppliers.validation.ts
 │  │  │  │     └─ suppliers.types.ts
+│  │  │  │  └─ buyers/
+│  │  │  │     ├─ buyers.routes.ts
+│  │  │  │     ├─ buyers.controller.ts
+│  │  │  │     ├─ buyers.service.ts
+│  │  │  │     ├─ buyers.repository.ts
+│  │  │  │     ├─ buyers.validation.ts
+│  │  │  │     └─ buyers.types.ts
 │  │  │  ├─ middlewares/
 │  │  │  │  ├─ error.middleware.ts
 │  │  │  │  ├─ not-found.middleware.ts
@@ -87,6 +105,9 @@ capella/
 │  │  │  ├─ suppliers/
 │  │  │  │  ├─ supplier.types.ts
 │  │  │  │  └─ supplier.schema.ts
+│  │  │  ├─ buyers/
+│  │  │  │  ├─ buyer.types.ts
+│  │  │  │  └─ buyer.schema.ts
 │  │  │  └─ index.ts
 │  │  ├─ package.json
 │  │  └─ tsconfig.json
@@ -127,7 +148,7 @@ The `apps/web` application should use:
 - Tailwind CSS
 - `shadcn/ui`
 
-`shadcn/ui` components should be the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in the suppliers feature.
+`shadcn/ui` components should be the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in the suppliers and buyers features.
 
 ## Backend Organization
 
@@ -150,19 +171,20 @@ Use these responsibilities:
 - `src/db/client.ts`: MySQL connection and Drizzle database instance.
 - `src/db/index.ts`: backend database exports.
 - `src/db/schema/suppliers.ts`: suppliers table schema.
+- `src/db/schema/buyers.ts`: buyers table schema.
 - `src/db/schema/index.ts`: aggregates and re-exports schema files.
 
-## Suppliers Feature Scope
+## Suppliers And Buyers Feature Scope
 
-The initial suppliers CRUD feature should support this data model:
+The initial suppliers and buyers CRUD features should support this data model:
 
 ```txt
-supplier
+record
   id: number
   name: string
   phone: string
   where?: string
-  notes: string
+  notes?: string
   createdAt: Date
   updatedAt: Date
 ```
@@ -171,11 +193,11 @@ Required fields:
 
 - `name`
 - `phone`
-- `notes`
 
 Optional fields:
 
 - `where`
+- `notes`
 
 Recommended API routes:
 
@@ -185,6 +207,12 @@ GET    /suppliers/:id
 POST   /suppliers
 PATCH  /suppliers/:id
 DELETE /suppliers/:id
+
+GET    /buyers
+GET    /buyers/:id
+POST   /buyers
+PATCH  /buyers/:id
+DELETE /buyers/:id
 ```
 
 ## Authentication Scope
@@ -199,12 +227,12 @@ Do not add:
 - protected route wrappers
 - user, role, or permission modules
 
-The frontend should call the suppliers API directly.
+The frontend should call the suppliers and buyers APIs directly.
 
-The backend should expose suppliers routes without auth guards for now.
+The backend should expose suppliers and buyers routes without auth guards for now.
 
 ## Shared Package
 
-Put reusable supplier types and validation schemas in `packages/shared` so both the Next.js frontend and Express backend can use the same contracts.
+Put reusable supplier and buyer types and validation schemas in `packages/shared` so both the Next.js frontend and Express backend can use the same contracts.
 
 The backend should still own the Drizzle database schema because database details should not leak into frontend code.
