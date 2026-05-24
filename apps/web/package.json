@@ -5,7 +5,8 @@
     "build": "dotenv -e ../../.env -- next build",
     "dev": "dotenv -e ../../.env -- next dev",
     "lint": "dotenv -e ../../.env -- next lint",
-    "test": "echo \"No tests for web yet\"",
+    "test": "dotenv -e ../../.env -- vitest run",
+    "test:watch": "dotenv -e ../../.env -- vitest",
     "typecheck": "dotenv -e ../../.env -- tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -29,6 +30,7 @@
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.7"
   }
 }

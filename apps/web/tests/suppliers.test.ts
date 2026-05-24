@@ -1,21 +1,17 @@
-import test from "node:test";
-import assert from "node:assert/strict";
+import { expect, test } from "vitest";
 import { buildSuppliersUrl } from "../src/lib/api/suppliers.js";
 
 test("buildSuppliersUrl omits empty query", () => {
-  assert.equal(
+  expect(
     buildSuppliersUrl("http://localhost:4000", undefined),
-    "http://localhost:4000/suppliers",
-  );
-  assert.equal(
+  ).toBe("http://localhost:4000/suppliers");
+  expect(
     buildSuppliersUrl("http://localhost:4000", "   "),
-    "http://localhost:4000/suppliers",
-  );
+  ).toBe("http://localhost:4000/suppliers");
 });
 
 test("buildSuppliersUrl appends trimmed search query", () => {
-  assert.equal(
+  expect(
     buildSuppliersUrl("http://localhost:4000", "  Cairo Plastics  "),
-    "http://localhost:4000/suppliers?q=Cairo+Plastics",
-  );
+  ).toBe("http://localhost:4000/suppliers?q=Cairo+Plastics");
 });

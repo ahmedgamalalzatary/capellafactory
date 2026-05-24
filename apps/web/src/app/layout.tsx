@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AppShell } from "@/components/shell/app-shell";
+import { MainLayout } from "@/components/shell/main-layout";
 
 export const metadata: Metadata = {
   title: "كابيلا — نظام تخطيط الموارد",
@@ -21,7 +21,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <AppShell>{children}</AppShell>
+        <MainLayout>{children}</MainLayout>
       </body>
     </html>
   );
