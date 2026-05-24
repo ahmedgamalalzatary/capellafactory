@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { SupplierForm } from "./supplier-form";
 import { Button } from "@/components/ui/button";
@@ -17,23 +20,54 @@ type SupplierDialogProps = {
 
 export function SupplierDialog({
   supplier,
-  triggerLabel = "Add Supplier",
+  triggerLabel,
 }: SupplierDialogProps) {
+  const isEdit = Boolean(supplier);
+  const label = triggerLabel ?? (isEdit ? "Edit" : "New supplier");
+  const [open, setOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={open}>
       <DialogTrigger asChild>
-        <Button variant={supplier ? "outline" : "default"}>{triggerLabel}</Button>
+        <Button
+          variant={isEdit ? "outline" : "default"}
+          size={isEdit ? "sm" : "md"}
+          onClick={() => setOpen((current) => !current)}
+        >
+          {isEdit ? null : (
+            <span className="font-mono text-[14px] leading-none">+</span>
+          )}
+          {label}
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{supplier ? "Edit supplier" : "Create supplier"}</DialogTitle>
+          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">
+            {isEdit ? "Modify · F.001" : "Create · F.000"}
+          </p>
+          <DialogTitle>
+            {isEdit ? (
+              <>
+                Edit <span className="italic">supplier</span>
+              </>
+            ) : (
+              <>
+                Add a <span className="italic">supplier</span>
+              </>
+            )}
+          </DialogTitle>
           <DialogDescription>
-            Required fields are name, phone, and notes.
+            {isEdit
+              ? "Update the contact and operational details. Changes are written immediately to the registry."
+              : "Register a new partner in the supplier ledger. Name, phone, and notes are required."}
           </DialogDescription>
         </DialogHeader>
         <SupplierForm
+          supplierId={supplier?.id}
           initialValues={supplier}
-          submitLabel={supplier ? "Update Supplier" : "Create Supplier"}
+          onCancel={() => setOpen(false)}
+          onSuccess={() => setOpen(false)}
+          submitLabel={isEdit ? "Update supplier" : "Create supplier"}
         />
       </DialogContent>
     </Dialog>

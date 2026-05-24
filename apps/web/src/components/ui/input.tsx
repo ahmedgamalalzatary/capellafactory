@@ -6,7 +6,7 @@ export function Input({
 }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
-      className={`h-10 rounded-md border border-[var(--border)] bg-white px-3 text-sm outline-none ${className}`}
+      className={`h-10 w-full border border-[var(--line-strong)] bg-[var(--paper)] px-3 text-[13px] text-[var(--ink)] placeholder:text-[var(--muted-soft)] outline-none transition-colors hover:border-[var(--muted)] ${className}`}
       {...props}
     />
   );

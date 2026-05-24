@@ -1,63 +1,128 @@
+import { eq } from "drizzle-orm";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
+import { db } from "../../db/index.js";
+import { suppliersTable } from "../../db/schema/suppliers.js";
 
-const suppliersStore: Supplier[] = [
-  {
-    id: 1,
-    name: "Nile Paper Goods",
-    phone: "+20 100 000 0001",
-    where: "Cairo",
-    notes: "Primary supplier for packaging materials.",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+type SupplierRow = typeof suppliersTable.$inferSelect;
+type SupplierInsert = typeof suppliersTable.$inferInsert;
+
+export class DuplicateSupplierPhoneError extends Error {
+  constructor() {
+    super("Supplier phone must be unique");
+  }
+}
+
+export function mapSupplierRowToSupplier(row: SupplierRow): Supplier {
+  return {
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    where: row.where ?? undefined,
+    notes: row.notes,
+    createdAt: toIsoString(row.createdAt),
+    updatedAt: toIsoString(row.updatedAt),
+  };
+}
+
+export function toDatabaseError(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ER_DUP_ENTRY"
+  ) {
+    return new DuplicateSupplierPhoneError();
+  }
+
+  return error;
+}
 
 export async function listSuppliers() {
-  return suppliersStore;
+  const suppliers = await db.select().from(suppliersTable).orderBy(suppliersTable.id);
+  return suppliers.map(mapSupplierRowToSupplier);
 }
 
 export async function getSupplierById(id: number) {
-  return suppliersStore.find((supplier) => supplier.id === id) ?? null;
+  const supplier = await db.query.suppliersTable.findFirst({
+    where: eq(suppliersTable.id, id),
+  });
+
+  return supplier ? mapSupplierRowToSupplier(supplier) : null;
 }
 
 export async function createSupplier(
   input: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
 ) {
-  const supplier: Supplier = {
-    id: suppliersStore.length + 1,
-    ...input,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  try {
+    const inserted = await db
+      .insert(suppliersTable)
+      .values(toSupplierInsert(input))
+      .$returningId();
 
-  suppliersStore.push(supplier);
-  return supplier;
+    const supplier = await getSupplierById(inserted[0]?.id ?? 0);
+
+    if (!supplier) {
+      throw new Error("Failed to load created supplier");
+    }
+
+    return supplier;
+  } catch (error) {
+    throw toDatabaseError(error);
+  }
 }
 
 export async function updateSupplier(
   id: number,
   input: Partial<Omit<Supplier, "id" | "createdAt" | "updatedAt">>,
 ) {
-  const supplier = suppliersStore.find((item) => item.id === id);
+  const existingSupplier = await getSupplierById(id);
 
-  if (!supplier) {
+  if (!existingSupplier) {
     return null;
   }
 
-  Object.assign(supplier, input, {
-    updatedAt: new Date().toISOString(),
-  });
+  try {
+    await db
+      .update(suppliersTable)
+      .set({
+        ...toSupplierUpdate(input),
+        updatedAt: new Date(),
+      })
+      .where(eq(suppliersTable.id, id));
 
-  return supplier;
+    return getSupplierById(id);
+  } catch (error) {
+    throw toDatabaseError(error);
+  }
 }
 
 export async function deleteSupplier(id: number) {
-  const index = suppliersStore.findIndex((supplier) => supplier.id === id);
+  const result = await db.delete(suppliersTable).where(eq(suppliersTable.id, id));
+  return result[0].affectedRows > 0;
+}
 
-  if (index === -1) {
-    return false;
-  }
+function toSupplierInsert(
+  input: Omit<Supplier, "id" | "createdAt" | "updatedAt">,
+): SupplierInsert {
+  return {
+    name: input.name,
+    phone: input.phone,
+    where: input.where ?? null,
+    notes: input.notes,
+  };
+}
 
-  suppliersStore.splice(index, 1);
-  return true;
+function toSupplierUpdate(
+  input: Partial<Omit<Supplier, "id" | "createdAt" | "updatedAt">>,
+) {
+  return {
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.phone !== undefined ? { phone: input.phone } : {}),
+    ...(input.where !== undefined ? { where: input.where || null } : {}),
+    ...(input.notes !== undefined ? { notes: input.notes } : {}),
+  };
+}
+
+function toIsoString(value: Date | string) {
+  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }

@@ -1,31 +1,67 @@
-import type { Supplier } from "@capella/shared/suppliers/supplier.types";
+import type {
+  Supplier,
+  SupplierInput,
+} from "@capella/shared/suppliers/supplier.types";
 
 const API_URL = process.env.API_URL ?? "http://localhost:4000";
+const CLIENT_API_URL =
+  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
 
 export async function getSuppliers(): Promise<Supplier[]> {
-  try {
-    const response = await fetch(`${API_URL}/suppliers`, {
-      cache: "no-store",
-    });
+  const response = await fetch(`${API_URL}/suppliers`, {
+    cache: "no-store",
+  });
 
-    if (!response.ok) {
-      return fallbackSuppliers;
-    }
+  if (!response.ok) {
+    throw new Error("Failed to fetch suppliers");
+  }
 
-    return (await response.json()) as Supplier[];
-  } catch {
-    return fallbackSuppliers;
+  return (await response.json()) as Supplier[];
+}
+
+export async function createSupplier(input: SupplierInput) {
+  return mutateSupplier(`${CLIENT_API_URL}/suppliers`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function updateSupplier(id: number, input: Partial<SupplierInput>) {
+  return mutateSupplier(`${CLIENT_API_URL}/suppliers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteSupplier(id: number) {
+  const response = await fetch(`${CLIENT_API_URL}/suppliers/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null;
+
+    throw new Error(payload?.message ?? "Failed to delete supplier");
   }
 }
 
-const fallbackSuppliers: Supplier[] = [
-  {
-    id: 1,
-    name: "Nile Paper Goods",
-    phone: "+20 100 000 0001",
-    where: "Cairo",
-    notes: "Primary supplier for packaging materials.",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+async function mutateSupplier(url: string, init: RequestInit) {
+  const response = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    ...init,
+  });
+
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as
+      | { message?: string }
+      | null;
+
+    throw new Error(payload?.message ?? "Supplier request failed");
+  }
+
+  return (await response.json()) as Supplier;
+}

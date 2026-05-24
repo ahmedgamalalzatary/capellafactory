@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes } from "react";
 
 export function Card({
   children,
@@ -6,7 +6,7 @@ export function Card({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <section
-      className={`rounded-2xl border border-[var(--border)] bg-[var(--card)] shadow-sm ${className}`}
+      className={`border border-[var(--line)] bg-[var(--paper)] ${className}`}
     >
       {children}
     </section>
@@ -17,14 +17,26 @@ export function CardHeader({
   children,
   className = "",
 }: HTMLAttributes<HTMLDivElement>) {
-  return <header className={`border-b border-[var(--border)] p-6 ${className}`}>{children}</header>;
+  return (
+    <header
+      className={`flex items-center justify-between border-b border-[var(--line)] px-6 py-4 ${className}`}
+    >
+      {children}
+    </header>
+  );
 }
 
 export function CardTitle({
   children,
   className = "",
 }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h2 className={`text-2xl font-semibold ${className}`}>{children}</h2>;
+  return (
+    <h2
+      className={`font-display text-2xl leading-tight tracking-tight ${className}`}
+    >
+      {children}
+    </h2>
+  );
 }
 
 export function CardContent({
