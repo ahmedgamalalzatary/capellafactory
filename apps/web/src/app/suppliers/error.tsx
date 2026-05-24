@@ -2,44 +2,42 @@
 
 export default function SuppliersError() {
   return (
-    <div className="px-8 py-10">
-      <div className="max-w-2xl border border-[var(--ink)] bg-[var(--paper)] shadow-[8px_8px_0_0_var(--ink)]">
-        <div className="h-1 bg-[var(--ink)]" />
-        <div className="p-8">
-          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">
-            Error · E.503
-          </p>
-          <h1 className="mt-3 font-display text-5xl leading-tight tracking-tight">
-            Registry <span className="italic">unreachable</span>.
-          </h1>
-          <p className="mt-4 text-[14px] leading-relaxed text-[var(--muted)] max-w-prose">
-            Failed to load suppliers. The API did not respond, or the database
-            connection is currently unavailable. Check that the backend service
-            is running and that the MySQL instance is reachable from this
-            environment.
-          </p>
-
-          <div className="mt-6 border border-[var(--line)] bg-[var(--bone)] p-4 font-mono text-[12px] leading-relaxed">
-            <p className="text-[var(--muted)]">// diagnostic</p>
-            <p>GET /api/v1/suppliers <span className="text-[var(--muted)]">— failed</span></p>
-            <p className="text-[var(--muted)]">retry · check · escalate</p>
-          </div>
-
-          <div className="mt-6 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="h-10 px-4 bg-[var(--ink)] text-[var(--paper)] text-[13px]"
-            >
-              Retry connection
-            </button>
-            <a
-              href="/"
-              className="h-10 px-4 border border-[var(--line-strong)] hover:border-[var(--ink)] text-[13px] inline-flex items-center transition-colors"
-            >
-              Back to overview
-            </a>
-          </div>
+    <div className="px-8 py-16 max-w-6xl mx-auto">
+      <div
+        className="max-w-lg p-6"
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--radius-lg)",
+          boxShadow: "var(--shadow-sm)",
+        }}
+      >
+        <p className="text-[11px] text-destructive font-semibold tracking-wide uppercase mb-1">
+          خطأ في الاتصال
+        </p>
+        <h1 className="text-[18px] font-semibold text-foreground mt-1">
+          تعذّر تحميل بيانات الموردين
+        </h1>
+        <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
+          لم تستجب الواجهة البرمجية. تأكد من تشغيل خدمة الواجهة الخلفية وأن
+          قاعدة البيانات قابلة للوصول.
+        </p>
+        <div className="mt-5 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="h-9 px-4 bg-primary text-primary-foreground text-[13px] font-medium transition-colors hover:opacity-90"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            إعادة المحاولة
+          </button>
+          <a
+            href="/"
+            className="h-9 px-4 border border-border text-[13px] font-medium inline-flex items-center transition-colors hover:bg-accent"
+            style={{ borderRadius: "var(--radius)" }}
+          >
+            الرجوع للرئيسية
+          </a>
         </div>
       </div>
     </div>

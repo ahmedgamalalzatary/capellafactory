@@ -1,98 +1,94 @@
 @import "tailwindcss";
-
-@theme {
-  --color-ink: #0a0a0a;
-  --color-ink-soft: #1a1a1a;
-  --color-paper: #ffffff;
-  --color-bone: #fafaf9;
-  --color-chalk: #f4f4f3;
-  --color-line: #e5e5e3;
-  --color-line-strong: #d4d4d2;
-  --color-muted: #737373;
-  --color-muted-soft: #a3a3a3;
-}
+@plugin "tailwindcss-animate";
 
 :root {
-  --background: #fafaf9;
-  --foreground: #0a0a0a;
-  --paper: #ffffff;
-  --bone: #fafaf9;
-  --chalk: #f4f4f3;
-  --line: #e5e5e3;
-  --line-strong: #d4d4d2;
-  --muted: #737373;
-  --muted-soft: #a3a3a3;
-  --ink: #0a0a0a;
-  --ink-soft: #1a1a1a;
+  --background:            #ffffff;
+  --foreground:            #0a0a0a;
+  --card:                  #ffffff;
+  --card-foreground:       #0a0a0a;
+  --popover:               #ffffff;
+  --popover-foreground:    #0a0a0a;
+  --primary:               #171717;
+  --primary-foreground:    #fafafa;
+  --secondary:             #f5f5f5;
+  --secondary-foreground:  #171717;
+  --muted:                 #f5f5f5;
+  --muted-foreground:      #737373;
+  --accent:                #f5f5f5;
+  --accent-foreground:     #171717;
+  --destructive:           #e7000b;
+  --destructive-foreground:#ffffff;
+  --border:                #e5e5e5;
+  --input:                 #e5e5e5;
+  --ring:                  #a1a1a1;
+  --radius:                0.5rem;
 
-  --font-display: "Instrument Serif", "Times New Roman", serif;
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* Sidebar (dark) */
+  --sidebar:               #171717;
+  --sidebar-foreground:    #fafafa;
+  --sidebar-accent:        #262626;
+  --sidebar-border:        #282828;
+  --sidebar-muted:         #525252;
+
+  --sidebar-w:             240px;
+  --font-sans:             "IBM Plex Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+
+  /* Shadows (kept as custom props, not in @theme to avoid circular refs) */
+  --shadow-sm-val: 0 1px 3px 0px hsl(0 0% 0% / 0.08), 0 1px 2px -1px hsl(0 0% 0% / 0.08);
+  --shadow-md-val: 0 4px 12px 0px hsl(0 0% 0% / 0.10), 0 2px 4px -1px hsl(0 0% 0% / 0.06);
+  --shadow-lg-val: 0 8px 24px 0px hsl(0 0% 0% / 0.12), 0 4px 8px -2px hsl(0 0% 0% / 0.08);
 }
 
-* {
-  box-sizing: border-box;
+@theme inline {
+  --color-background:           var(--background);
+  --color-foreground:           var(--foreground);
+  --color-card:                 var(--card);
+  --color-card-foreground:      var(--card-foreground);
+  --color-popover:              var(--popover);
+  --color-popover-foreground:   var(--popover-foreground);
+  --color-primary:              var(--primary);
+  --color-primary-foreground:   var(--primary-foreground);
+  --color-secondary:            var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted:                var(--muted);
+  --color-muted-foreground:     var(--muted-foreground);
+  --color-accent:               var(--accent);
+  --color-accent-foreground:    var(--accent-foreground);
+  --color-destructive:          var(--destructive);
+  --color-border:               var(--border);
+  --color-input:                var(--input);
+  --color-ring:                 var(--ring);
+  --color-sidebar:              var(--sidebar);
+  --color-sidebar-foreground:   var(--sidebar-foreground);
+  --color-sidebar-accent:       var(--sidebar-accent);
+  --color-sidebar-border:       var(--sidebar-border);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
 }
 
-html, body {
-  margin: 0;
-  padding: 0;
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-color: var(--border);
+    outline-color: color-mix(in srgb, var(--ring) 50%, transparent);
+  }
+  html, body { height: 100%; }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--foreground); color: var(--background); }
+  input, textarea, select, button { font-family: inherit; }
+  button { cursor: pointer; }
 }
-
-body {
-  min-height: 100vh;
-  background: var(--bone);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  font-feature-settings: "ss01", "cv11";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-::selection {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-/* Subtle hairline texture for the canvas */
-.canvas-grain {
-  background-image:
-    linear-gradient(to right, rgba(10, 10, 10, 0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(10, 10, 10, 0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: -1px -1px;
-}
-
-.hairline-x {
-  background-image: linear-gradient(to right, var(--line) 50%, transparent 50%);
-  background-size: 6px 1px;
-  background-repeat: repeat-x;
-}
-
-.font-display { font-family: var(--font-display); }
-.font-mono    { font-family: var(--font-mono); }
-
-input, textarea, select, button {
-  font-family: inherit;
-}
-
-button { cursor: pointer; }
-
-input:focus-visible,
-textarea:focus-visible {
-  outline: none;
-  border-color: var(--ink) !important;
-  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
-}
-
-/* Marquee tick for the top status bar */
-@keyframes tick-blink {
-  0%, 60% { opacity: 1; }
-  61%, 100% { opacity: 0.25; }
-}
-.tick-dot { animation: tick-blink 1.4s steps(2, end) infinite; }

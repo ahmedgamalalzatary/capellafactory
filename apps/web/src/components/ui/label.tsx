@@ -1,13 +1,24 @@
-import type { LabelHTMLAttributes } from "react";
+"use client"
 
-export function Label({
-  className = "",
+import * as React from "react"
+import { Label as LabelPrimitive } from "radix-ui"
+
+import { cn } from "@/lib/utils"
+
+function Label({
+  className,
   ...props
-}: LabelHTMLAttributes<HTMLLabelElement>) {
+}: React.ComponentProps<typeof LabelPrimitive.Root>) {
   return (
-    <label
-      className={`font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--muted)] ${className}`}
+    <LabelPrimitive.Root
+      data-slot="label"
+      className={cn(
+        "flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        className
+      )}
       {...props}
     />
-  );
+  )
 }
+
+export { Label }

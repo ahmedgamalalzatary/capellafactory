@@ -1,53 +1,74 @@
 export default function SuppliersLoading() {
   return (
-    <div className="px-8 py-10">
-      <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">
-        <span className="inline-block h-px w-8 bg-[var(--ink)]" />
-        Module 01 · Suppliers
-      </div>
-      <h1 className="mt-5 font-display text-[64px] leading-[0.95] tracking-[-0.01em]">
-        Supplier <span className="italic">registry</span>
-        <span className="text-[var(--muted-soft)]">.</span>
-      </h1>
-
-      <div className="mt-10 border border-[var(--line)] bg-[var(--paper)]">
-        <div className="grid grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="px-6 py-5 border-r border-[var(--line)] last:border-r-0">
-              <div className="h-3 w-24 bg-[var(--chalk)] animate-pulse" />
-              <div className="mt-4 h-8 w-16 bg-[var(--chalk)] animate-pulse" />
-              <div className="mt-3 h-3 w-32 bg-[var(--chalk)] animate-pulse" />
-            </div>
-          ))}
-        </div>
+    <div className="px-8 py-8 max-w-6xl mx-auto">
+      {/* Breadcrumb skeleton */}
+      <div className="flex items-center gap-2 mb-6">
+        <div className="h-3 w-16 bg-secondary animate-pulse rounded" />
+        <div className="h-3 w-2 bg-secondary animate-pulse rounded" />
+        <div className="h-3 w-16 bg-secondary animate-pulse rounded" />
       </div>
 
-      <div className="mt-6 border border-[var(--line)] bg-[var(--paper)]">
-        <div className="px-6 py-4 border-b border-[var(--line)] flex items-center justify-between">
-          <div className="h-5 w-40 bg-[var(--chalk)] animate-pulse" />
-          <div className="h-3 w-24 bg-[var(--chalk)] animate-pulse" />
-        </div>
-        <div className="divide-y divide-[var(--line)]">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="px-6 py-4 grid grid-cols-[40px_1.5fr_1fr_1fr_2fr_120px] gap-4 items-center">
-              <div className="h-3 w-6 bg-[var(--chalk)] animate-pulse" />
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 bg-[var(--chalk)] animate-pulse" />
-                <div className="h-3 w-32 bg-[var(--chalk)] animate-pulse" />
-              </div>
-              <div className="h-3 w-24 bg-[var(--chalk)] animate-pulse" />
-              <div className="h-3 w-20 bg-[var(--chalk)] animate-pulse" />
-              <div className="h-3 w-full bg-[var(--chalk)] animate-pulse" />
-              <div className="h-7 w-full bg-[var(--chalk)] animate-pulse" />
-            </div>
-          ))}
-        </div>
+      {/* Header skeleton */}
+      <div className="mb-8">
+        <div className="h-7 w-36 bg-secondary animate-pulse rounded mb-2" />
+        <div className="h-3 w-72 bg-secondary animate-pulse rounded" />
       </div>
 
-      <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
-        <span className="inline-block h-1.5 w-1.5 bg-[var(--ink)] animate-pulse mr-2" />
-        loading registry · please wait
-      </p>
+      {/* KPI cards skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="px-5 py-4"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius-lg)",
+            }}
+          >
+            <div className="h-3 w-24 bg-secondary animate-pulse rounded mb-3" />
+            <div className="h-7 w-12 bg-secondary animate-pulse rounded mb-1" />
+            <div className="h-2.5 w-16 bg-secondary animate-pulse rounded" />
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar + table skeleton */}
+      <div
+        className="px-4 py-3 mb-0"
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--border)",
+          borderBottom: "none",
+          borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+        }}
+      >
+        <div className="h-8 w-48 bg-secondary animate-pulse rounded" />
+      </div>
+      <div
+        style={{
+          border: "1px solid var(--border)",
+          borderRadius: "0 0 var(--radius-lg) var(--radius-lg)",
+          overflow: "hidden",
+        }}
+      >
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="px-4 py-3 grid grid-cols-[40px_1.5fr_1fr_1fr_2fr_40px] gap-4 items-center"
+            style={{
+              background: i % 2 === 1 ? "var(--secondary)" : "var(--background)",
+              borderBottom: i < 5 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <div className="h-3 w-5 bg-secondary animate-pulse rounded" />
+            <div className="h-3 w-28 bg-secondary animate-pulse rounded" />
+            <div className="h-3 w-24 bg-secondary animate-pulse rounded" />
+            <div className="h-3 w-16 bg-secondary animate-pulse rounded" />
+            <div className="h-3 w-full bg-secondary animate-pulse rounded" />
+            <div className="h-6 w-6 bg-secondary animate-pulse rounded" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

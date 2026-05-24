@@ -5,71 +5,58 @@ import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { SupplierForm } from "./supplier-form";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 type SupplierDialogProps = {
   supplier?: Supplier;
   triggerLabel?: string;
 };
 
-export function SupplierDialog({
-  supplier,
-  triggerLabel,
-}: SupplierDialogProps) {
+export function SupplierDialog({ supplier, triggerLabel }: SupplierDialogProps) {
   const isEdit = Boolean(supplier);
-  const label = triggerLabel ?? (isEdit ? "Edit" : "New supplier");
+  const label = triggerLabel ?? (isEdit ? "تعديل" : "إضافة مورد");
   const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open}>
-      <DialogTrigger asChild>
-        <Button
-          variant={isEdit ? "outline" : "default"}
-          size={isEdit ? "sm" : "md"}
-          onClick={() => setOpen((current) => !current)}
-        >
-          {isEdit ? null : (
-            <span className="font-mono text-[14px] leading-none">+</span>
-          )}
+    <>
+      {isEdit ? (
+        <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
           {label}
         </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">
-            {isEdit ? "Modify · F.001" : "Create · F.000"}
-          </p>
-          <DialogTitle>
-            {isEdit ? (
-              <>
-                Edit <span className="italic">supplier</span>
-              </>
-            ) : (
-              <>
-                Add a <span className="italic">supplier</span>
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Update the contact and operational details. Changes are written immediately to the registry."
-              : "Register a new partner in the supplier ledger. Name, phone, and notes are required."}
-          </DialogDescription>
-        </DialogHeader>
-        <SupplierForm
-          supplierId={supplier?.id}
-          initialValues={supplier}
-          onCancel={() => setOpen(false)}
-          onSuccess={() => setOpen(false)}
-          submitLabel={isEdit ? "Update supplier" : "Create supplier"}
-        />
-      </DialogContent>
-    </Dialog>
+      ) : (
+        <Button onClick={() => setOpen(true)}>
+          + {label}
+        </Button>
+      )}
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="left" className="flex flex-col gap-0 p-0 sm:max-w-md">
+          <SheetHeader className="border-b px-6 py-5">
+            <SheetTitle>
+              {isEdit ? "تعديل مورد" : "إضافة مورد جديد"}
+            </SheetTitle>
+            <SheetDescription>
+              {isEdit
+                ? "حدّث بيانات الاتصال والمعلومات التشغيلية للمورد."
+                : "أضف موردًا جديدًا إلى السجل. الاسم والهاتف والملاحظات حقول مطلوبة."}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            <SupplierForm
+              supplierId={supplier?.id}
+              initialValues={supplier}
+              onCancel={() => setOpen(false)}
+              onSuccess={() => setOpen(false)}
+              submitLabel={isEdit ? "تحديث المورد" : "إنشاء مورد"}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

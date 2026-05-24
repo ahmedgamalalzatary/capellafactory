@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { SupplierInput } from "@capella/shared/suppliers/supplier.types";
 import { createSupplier, updateSupplier } from "@/api-client/suppliers";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,37 +21,32 @@ type SupplierFormProps = {
 function Field({
   id,
   label,
-  code,
   required,
   hint,
   children,
 }: {
   id: string;
   label: string;
-  code: string;
   required?: boolean;
   hint?: string;
   children: ReactNode;
 }) {
   return (
-    <div className="grid gap-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={id}>
-          {label}{" "}
-          {required ? (
-            <span className="ml-1 text-[var(--ink)]">*</span>
-          ) : (
-            <span className="ml-1 text-[var(--muted-soft)]">opt</span>
-          )}
-        </Label>
-        <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-[var(--muted-soft)]">
-          {code}
-        </span>
-      </div>
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>
+        {label}
+        {required ? (
+          <span className="ms-1 text-destructive">*</span>
+        ) : (
+          <span className="ms-1 text-muted-foreground text-xs font-normal">
+            (اختياري)
+          </span>
+        )}
+      </Label>
       {children}
-      {hint ? (
-        <p className="text-[11px] text-[var(--muted)]">{hint}</p>
-      ) : null}
+      {hint && (
+        <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>
+      )}
     </div>
   );
 }
@@ -58,17 +54,15 @@ function Field({
 export function SupplierForm({
   supplierId,
   initialValues,
-  submitLabel = "Save Supplier",
+  submitLabel = "حفظ",
   onCancel,
   onSuccess,
 }: SupplierFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(formData: FormData) {
     setIsSubmitting(true);
-    setError(null);
 
     const payload: SupplierInput = {
       name: String(formData.get("name") ?? "").trim(),
@@ -80,18 +74,15 @@ export function SupplierForm({
     try {
       if (supplierId) {
         await updateSupplier(supplierId, payload);
+        toast.success("تم تحديث بيانات المورد بنجاح");
       } else {
         await createSupplier(payload);
+        toast.success("تم إضافة المورد بنجاح");
       }
-
       router.refresh();
       onSuccess?.();
-    } catch (submissionError) {
-      setError(
-        submissionError instanceof Error
-          ? submissionError.message
-          : "Failed to save supplier",
-      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل حفظ المورد. حاول مجددًا.");
     } finally {
       setIsSubmitting(false);
     }
@@ -99,58 +90,32 @@ export function SupplierForm({
 
   return (
     <form action={onSubmit} className="grid gap-5">
-      <Field id="name" label="Name" code="F.01" required hint="Trading name as it appears on invoices.">
-        <Input
-          id="name"
-          name="name"
-          placeholder="Acme Manufacturing Co."
-          defaultValue={initialValues?.name}
-          required
-        />
+      <Field id="name" label="الاسم" required hint="الاسم التجاري كما يظهر في الفواتير.">
+        <Input id="name" name="name" placeholder="شركة المصانع المتحدة" defaultValue={initialValues?.name} required />
       </Field>
 
-      <Field id="phone" label="Phone" code="F.02" required hint="Include country code, e.g. +44 …">
-        <Input
-          id="phone"
-          name="phone"
-          placeholder="+44 20 7946 0000"
-          defaultValue={initialValues?.phone}
-          required
-        />
+      <Field id="phone" label="الهاتف" required hint="مع رمز الدولة، مثال: ‎+20 …">
+        <Input id="phone" name="phone" dir="ltr" placeholder="+20 100 000 0000" defaultValue={initialValues?.phone} required />
       </Field>
 
-      <Field id="where" label="Where" code="F.03" hint="City, region, or warehouse identifier.">
-        <Input
-          id="where"
-          name="where"
-          placeholder="Manchester, UK"
-          defaultValue={initialValues?.where}
-        />
+      <Field id="where" label="الموقع" hint="المدينة أو المنطقة أو رقم المستودع.">
+        <Input id="where" name="where" placeholder="القاهرة، مصر" defaultValue={initialValues?.where} />
       </Field>
 
-      <Field id="notes" label="Notes" code="F.04" required hint="Operational context: lead times, MOQ, payment terms…">
-        <Textarea
-          id="notes"
-          name="notes"
-          placeholder="Reliable on cast iron orders. Net‑30. 6 week lead time."
-          defaultValue={initialValues?.notes}
-          required
-        />
+      <Field id="notes" label="الملاحظات"  hint="معلومات تشغيلية: مدة التوريد، الحد الأدنى للطلب، شروط الدفع…">
+        <Textarea id="notes" name="notes" placeholder="مورد موثوق. الدفع آجل 30 يومًا." defaultValue={initialValues?.notes} />
       </Field>
 
-      <div className="mt-2 flex items-center justify-between border-t border-[var(--line)] pt-4">
-        <div className="space-y-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
-            <span className="text-[var(--ink)]">*</span> required · writes to api on submit
-          </p>
-          {error ? <p className="text-[12px] text-red-700">{error}</p> : null}
-        </div>
+      <div className="flex items-center justify-between border-t pt-4 mt-2">
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive">*</span> حقول مطلوبة
+        </p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            إلغاء
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : submitLabel}
+          <Button type="submit" size="sm" disabled={isSubmitting}>
+            {isSubmitting ? "جارٍ الحفظ…" : submitLabel}
           </Button>
         </div>
       </div>

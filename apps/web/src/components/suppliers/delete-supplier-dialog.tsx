@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { deleteSupplier } from "@/api-client/suppliers";
+import { useToast } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,20 +24,22 @@ export function DeleteSupplierDialog({
   supplierName,
 }: DeleteSupplierDialogProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function onDelete() {
     setIsSubmitting(true);
-    setError(null);
-
     try {
       await deleteSupplier(supplierId);
       setOpen(false);
       router.refresh();
-    } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : "Delete failed");
+      toast("تم حذف المورد بنجاح");
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "فشل الحذف. حاول مجددًا.",
+        "error",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -46,50 +49,41 @@ export function DeleteSupplierDialog({
     <Dialog open={open}>
       <DialogTrigger asChild>
         <Button
-          variant="destructive"
+          variant="ghost"
           size="sm"
-          onClick={() => setOpen((current) => !current)}
+          className="text-destructive hover:text-destructive"
+          onClick={() => setOpen(true)}
         >
-          Delete
+          حذف
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-[var(--muted)]">
-            Destructive · D.001
-          </p>
-          <DialogTitle>
-            Remove <span className="italic">{supplierName}</span>?
-          </DialogTitle>
+          <DialogTitle>تأكيد الحذف</DialogTitle>
           <DialogDescription>
-            This will permanently delete the supplier record from the registry.
-            Linked purchase orders and historical receipts will retain a
-            tombstoned reference to the original entity.
+            سيتم حذف بيانات المورد نهائيًا من السجل. لا يمكن التراجع عن هذه العملية.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="border border-[var(--line)] bg-[var(--bone)] px-4 py-3 mb-5">
-          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
-            Target record
-          </p>
-          <p className="mt-1 text-[14px] font-medium">{supplierName}</p>
+        <div
+          className="px-3 py-3 mb-5"
+          style={{
+            background: "var(--secondary)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--radius)",
+          }}
+        >
+          <p className="text-[11px] text-muted-foreground mb-0.5">السجل المستهدف</p>
+          <p className="text-[14px] font-semibold text-foreground">{supplierName}</p>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--muted)]">
-              Confirmation required
-            </p>
-            {error ? <p className="mt-1 text-[12px] text-red-700">{error}</p> : null}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="default" onClick={onDelete} disabled={isSubmitting}>
-              {isSubmitting ? "Deleting..." : "Delete supplier"}
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            إلغاء
+          </Button>
+          <Button variant="destructive" onClick={onDelete} disabled={isSubmitting}>
+            {isSubmitting ? "جارٍ الحذف…" : "تأكيد الحذف"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

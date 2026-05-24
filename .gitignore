@@ -1,10 +1,53 @@
-node_modules
-.turbo
-.next
-dist
-coverage
+# Dependencies
+node_modules/
+
+# pnpm
+.pnpm-store/
+.pnpm-debug.log*
+
+# Turborepo
+.turbo/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment and secrets
 .env
-.env.local
-pnpm-lock.yaml
-.agents
-.history
+.env.*
+!.env.example
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Deployment
+.vercel/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors and local tooling
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Local agent / editor history (not shared project config)
+.agents/
+.history/
