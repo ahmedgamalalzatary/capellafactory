@@ -1,0 +1,25 @@
+{
+  "name": "@capella/api",
+  "private": true,
+  "scripts": {
+    "build": "dotenv -e ../../.env -- tsc --project tsconfig.json",
+    "dev": "dotenv -e ../../.env -- tsx watch src/server.ts",
+    "lint": "dotenv -e ../../.env -- echo \"No lint for api yet\"",
+    "test": "echo \"No tests for api yet\"",
+    "typecheck": "dotenv -e ../../.env -- tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@capella/shared": "workspace:*",
+    "drizzle-orm": "^0.44.5",
+    "express": "^5.1.0",
+    "mysql2": "^3.14.5",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.0",
+    "drizzle-kit": "^0.31.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  }
+}

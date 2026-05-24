@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0a0a0a;
+  --color-ink-soft: #1a1a1a;
+  --color-paper: #ffffff;
+  --color-bone: #fafaf9;
+  --color-chalk: #f4f4f3;
+  --color-line: #e5e5e3;
+  --color-line-strong: #d4d4d2;
+  --color-muted: #737373;
+  --color-muted-soft: #a3a3a3;
+}
+
+:root {
+  --background: #fafaf9;
+  --foreground: #0a0a0a;
+  --paper: #ffffff;
+  --bone: #fafaf9;
+  --chalk: #f4f4f3;
+  --line: #e5e5e3;
+  --line-strong: #d4d4d2;
+  --muted: #737373;
+  --muted-soft: #a3a3a3;
+  --ink: #0a0a0a;
+  --ink-soft: #1a1a1a;
+
+  --font-display: "Instrument Serif", "Times New Roman", serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bone);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* Subtle hairline texture for the canvas */
+.canvas-grain {
+  background-image:
+    linear-gradient(to right, rgba(10, 10, 10, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(10, 10, 10, 0.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: -1px -1px;
+}
+
+.hairline-x {
+  background-image: linear-gradient(to right, var(--line) 50%, transparent 50%);
+  background-size: 6px 1px;
+  background-repeat: repeat-x;
+}
+
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+
+input, textarea, select, button {
+  font-family: inherit;
+}
+
+button { cursor: pointer; }
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--ink) !important;
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+/* Marquee tick for the top status bar */
+@keyframes tick-blink {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.25; }
+}
+.tick-dot { animation: tick-blink 1.4s steps(2, end) infinite; }
