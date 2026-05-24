@@ -141,11 +141,11 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
-          <TableHead className="w-10 text-start">#</TableHead>
-          <TableHead className="text-start">الاسم</TableHead>
-          <TableHead className="text-start">الهاتف</TableHead>
-          <TableHead className="text-start">الموقع</TableHead>
-          <TableHead className="text-start">الملاحظات</TableHead>
+          <TableHead className="w-10 text-center">#</TableHead>
+          <TableHead className="text-center">الاسم</TableHead>
+          <TableHead className="text-center">الهاتف</TableHead>
+          <TableHead className="text-center">الموقع</TableHead>
+          <TableHead className="text-center">الملاحظات</TableHead>
           <TableHead className="w-12" />
         </TableRow>
       </TableHeader>
@@ -155,18 +155,18 @@ export function SuppliersTable({ suppliers }: SuppliersTableProps) {
             key={supplier.id}
             className={idx % 2 === 1 ? "bg-muted/40" : ""}
           >
-            <TableCell className="text-xs text-muted-foreground">
+            <TableCell className="text-xs text-muted-foreground text-center">
               {idx + 1}
             </TableCell>
-            <TableCell className="font-medium">{supplier.name}</TableCell>
-            <TableCell dir="ltr" className="text-start text-muted-foreground">
+            <TableCell className="font-medium text-center">{supplier.name}</TableCell>
+            <TableCell dir="ltr" className="text-center text-muted-foreground">
               {supplier.phone}
             </TableCell>
-            <TableCell className="text-muted-foreground">
+            <TableCell className="text-muted-foreground text-center">
               {supplier.where ?? "—"}
             </TableCell>
-            <TableCell className="text-muted-foreground max-w-[28ch]">
-              <span className="line-clamp-2">{supplier.notes}</span>
+            <TableCell className="text-muted-foreground max-w-[28ch] text-center">
+              <span className="line-clamp-2">{supplier.notes ?? "—"}</span>
             </TableCell>
             <TableCell>
               <RowActions supplier={supplier} />

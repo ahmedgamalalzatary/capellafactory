@@ -25,7 +25,7 @@ export default async function SuppliersPage() {
       </div>
 
       {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {[
           {
             label: "إجمالي الموردين",
@@ -36,19 +36,6 @@ export default async function SuppliersPage() {
             label: "لديهم موقع",
             value: String(withLocation),
             sub: `من أصل ${total}`,
-          },
-          {
-            label: "في انتظار المزامنة",
-            value: "0",
-            sub: "لا يوجد",
-          },
-          {
-            label: "آخر تحديث",
-            value: new Date().toLocaleDateString("ar-EG", {
-              day: "numeric",
-              month: "short",
-            }),
-            sub: new Date().toLocaleDateString("ar-EG", { year: "numeric" }),
           },
         ].map((kpi, i) => (
           <div

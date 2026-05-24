@@ -1,0 +1,1 @@
+ALTER TABLE `suppliers` MODIFY COLUMN `notes` text;

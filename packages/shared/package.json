@@ -3,10 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "types": "./dist/index.d.ts",
   "exports": {
-    "./suppliers/supplier.types": "./src/suppliers/supplier.types.ts",
-    "./suppliers/supplier.schema": "./src/suppliers/supplier.schema.ts",
-    ".": "./src/index.ts"
+    "./suppliers/supplier.types": {
+      "types": "./dist/suppliers/supplier.types.d.ts",
+      "default": "./dist/suppliers/supplier.types.js"
+    },
+    "./suppliers/supplier.schema": {
+      "types": "./dist/suppliers/supplier.schema.d.ts",
+      "default": "./dist/suppliers/supplier.schema.js"
+    },
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",

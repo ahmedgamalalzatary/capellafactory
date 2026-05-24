@@ -14,7 +14,7 @@ export const suppliersTable = mysqlTable(
     name: varchar("name", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 50 }).notNull(),
     where: varchar("where", { length: 255 }),
-    notes: text("notes").notNull(),
+    notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

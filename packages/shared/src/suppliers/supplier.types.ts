@@ -3,7 +3,7 @@ export type Supplier = {
   name: string;
   phone: string;
   where?: string;
-  notes: string;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -12,5 +12,5 @@ export type SupplierInput = {
   name: string;
   phone: string;
   where?: string;
-  notes: string;
+  notes?: string;
 };

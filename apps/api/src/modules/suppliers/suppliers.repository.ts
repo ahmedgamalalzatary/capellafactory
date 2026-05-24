@@ -18,7 +18,7 @@ export function mapSupplierRowToSupplier(row: SupplierRow): Supplier {
     name: row.name,
     phone: row.phone,
     where: row.where ?? undefined,
-    notes: row.notes,
+    notes: row.notes ?? undefined,
     createdAt: toIsoString(row.createdAt),
     updatedAt: toIsoString(row.updatedAt),
   };
@@ -108,7 +108,7 @@ function toSupplierInsert(
     name: input.name,
     phone: input.phone,
     where: input.where ?? null,
-    notes: input.notes,
+    notes: input.notes ?? null,
   };
 }
 
@@ -119,7 +119,7 @@ function toSupplierUpdate(
     ...(input.name !== undefined ? { name: input.name } : {}),
     ...(input.phone !== undefined ? { phone: input.phone } : {}),
     ...(input.where !== undefined ? { where: input.where || null } : {}),
-    ...(input.notes !== undefined ? { notes: input.notes } : {}),
+    ...(input.notes !== undefined ? { notes: input.notes || null } : {}),
   };
 }
 

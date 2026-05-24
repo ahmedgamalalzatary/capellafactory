@@ -4,7 +4,7 @@ import {
   DuplicateSupplierPhoneError,
   mapSupplierRowToSupplier,
   toDatabaseError,
-} from "./suppliers.repository.js";
+} from "../modules/suppliers/suppliers.repository.js";
 
 test("maps supplier rows into shared supplier shape", () => {
   const supplier = mapSupplierRowToSupplier({
@@ -23,6 +23,28 @@ test("maps supplier rows into shared supplier shape", () => {
     phone: "+20 111 111 1111",
     where: "Giza",
     notes: "Packaging supplier",
+    createdAt: "2026-05-24T10:00:00.000Z",
+    updatedAt: "2026-05-24T11:00:00.000Z",
+  });
+});
+
+test("maps null optional fields to undefined", () => {
+  const supplier = mapSupplierRowToSupplier({
+    id: 5,
+    name: "Alex Metals",
+    phone: "+20 122 222 2222",
+    where: null,
+    notes: null,
+    createdAt: new Date("2026-05-24T10:00:00.000Z"),
+    updatedAt: new Date("2026-05-24T11:00:00.000Z"),
+  });
+
+  assert.deepEqual(supplier, {
+    id: 5,
+    name: "Alex Metals",
+    phone: "+20 122 222 2222",
+    where: undefined,
+    notes: undefined,
     createdAt: "2026-05-24T10:00:00.000Z",
     updatedAt: "2026-05-24T11:00:00.000Z",
   });

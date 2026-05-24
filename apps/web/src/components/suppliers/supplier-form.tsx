@@ -68,7 +68,7 @@ export function SupplierForm({
       name: String(formData.get("name") ?? "").trim(),
       phone: String(formData.get("phone") ?? "").trim(),
       where: normalizeOptionalField(formData.get("where")),
-      notes: String(formData.get("notes") ?? "").trim(),
+      notes: normalizeOptionalField(formData.get("notes")),
     };
 
     try {
