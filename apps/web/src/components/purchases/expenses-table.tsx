@@ -1,4 +1,5 @@
-import type { Expense, ExpenseType } from "@capella/shared/expenses/expense.types";
+import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
+import type { Expense } from "@capella/shared/expenses/expense.types";
 import {
   Table,
   TableBody,
@@ -10,17 +11,6 @@ import {
 
 type ExpensesTableProps = {
   expenses: Expense[];
-};
-
-const expenseTypeLabels: Record<ExpenseType, string> = {
-  rent: "إيجار",
-  food: "أكل",
-  water: "مياه",
-  gas: "غاز",
-  electricity: "كهرباء",
-  internet: "إنترنت",
-  salary: "مرتبات",
-  other: "أخرى",
 };
 
 function formatAmount(value: number) {

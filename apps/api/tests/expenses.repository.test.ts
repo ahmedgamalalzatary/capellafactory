@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  findExpenseTypesBySearchQuery,
   mapExpenseRowToExpense,
   normalizeExpenseSearchQuery,
 } from "../src/modules/expenses/expenses.repository.js";
@@ -32,4 +33,10 @@ test("normalizes expense search query", () => {
   assert.equal(normalizeExpenseSearchQuery(""), undefined);
   assert.equal(normalizeExpenseSearchQuery("   "), undefined);
   assert.equal(normalizeExpenseSearchQuery("  Ahmed  "), "Ahmed");
+});
+
+test("matches expense types by their Arabic labels", () => {
+  assert.deepEqual(findExpenseTypesBySearchQuery("مر"), ["salary"]);
+  assert.deepEqual(findExpenseTypesBySearchQuery("ميا"), ["water"]);
+  assert.deepEqual(findExpenseTypesBySearchQuery("خرى"), ["other"]);
 });

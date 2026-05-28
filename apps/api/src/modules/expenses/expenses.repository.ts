@@ -1,4 +1,5 @@
 import { and, asc, eq, like, or } from "drizzle-orm";
+import { findExpenseTypesByLabelQuery } from "@capella/shared/expenses/expense.constants";
 import type { Expense, ExpenseInput } from "@capella/shared/expenses/expense.types";
 import { db } from "../../db/index.js";
 import { expensesTable } from "../../db/schema/expenses.js";
@@ -24,8 +25,13 @@ export function normalizeExpenseSearchQuery(query?: string) {
   return normalized ? normalized : undefined;
 }
 
+export function findExpenseTypesBySearchQuery(query?: string) {
+  return findExpenseTypesByLabelQuery(query);
+}
+
 export async function listExpenses(query?: string) {
   const normalizedQuery = normalizeExpenseSearchQuery(query);
+  const matchingTypes = findExpenseTypesBySearchQuery(normalizedQuery);
   const expenses = await db
     .select()
     .from(expensesTable)
@@ -33,6 +39,7 @@ export async function listExpenses(query?: string) {
       and(
         normalizedQuery
           ? or(
+              ...matchingTypes.map((type) => eq(expensesTable.type, type)),
               like(expensesTable.type, `%${normalizedQuery}%`),
               like(expensesTable.notes, `%${normalizedQuery}%`),
               like(expensesTable.employeeName, `%${normalizedQuery}%`),
@@ -56,10 +63,16 @@ export async function getExpenseById(id: number) {
 
 export async function createExpense(input: ExpenseInput) {
   const inserted = await db.insert(expensesTable).values(toExpenseInsert(input)).$returningId();
-  const expense = await getExpenseById(inserted[0]?.id ?? 0);
+  const id = inserted[0]?.id;
+
+  if (!id) {
+    throw new Error(`Insert did not return a valid id; got: ${JSON.stringify(inserted)}`);
+  }
+
+  const expense = await getExpenseById(id);
 
   if (!expense) {
-    throw new Error("Failed to load created expense");
+    throw new Error(`Failed to load created expense with id ${id}`);
   }
 
   return expense;

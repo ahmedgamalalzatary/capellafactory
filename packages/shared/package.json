@@ -41,6 +41,10 @@
       "types": "./dist/expenses/expense.types.d.ts",
       "default": "./dist/expenses/expense.types.js"
     },
+    "./expenses/expense.constants": {
+      "types": "./dist/expenses/expense.constants.d.ts",
+      "default": "./dist/expenses/expense.constants.js"
+    },
     "./expenses/expense.schema": {
       "types": "./dist/expenses/expense.schema.d.ts",
       "default": "./dist/expenses/expense.schema.js"
