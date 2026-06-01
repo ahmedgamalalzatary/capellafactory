@@ -2,12 +2,12 @@
   "name": "@capella/web",
   "private": true,
   "scripts": {
-    "build": "dotenv -e ../../.env -- next build",
+    "build": "next build",
     "dev": "dotenv -e ../../.env -- next dev",
-    "lint": "dotenv -e ../../.env -- next lint",
-    "test": "dotenv -e ../../.env -- vitest run",
-    "test:watch": "dotenv -e ../../.env -- vitest",
-    "typecheck": "dotenv -e ../../.env -- tsc --project tsconfig.json --noEmit"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
     "@capella/shared": "workspace:*",

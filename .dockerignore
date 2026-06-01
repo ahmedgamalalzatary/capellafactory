@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+.pnpm-store
+.turbo
+.git
+.history
+.agents
+coverage
+dist
+build
+out
+apps/*/.next
+apps/*/dist
+packages/*/dist
+*.log
+.env
+.env.production

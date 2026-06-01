@@ -21,6 +21,7 @@ out/
 .env
 .env.*
 !.env.example
+!.env.docker
 
 # Test and coverage
 coverage/
