@@ -57,6 +57,13 @@
       "when": 1780302000000,
       "tag": "0007_sudden_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1780341657521,
+      "tag": "0008_clear_killraven",
+      "breakpoints": true
     }
   ]
 }

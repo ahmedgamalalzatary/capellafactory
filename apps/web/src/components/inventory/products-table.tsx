@@ -199,6 +199,8 @@ function ProductCard({ product, idx }: { product: Product; idx: number }) {
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
         <dt className="text-muted-foreground">الرصيد</dt>
         <dd className="text-foreground">{product.stockQuantity.toFixed(3)}</dd>
+        <dt className="text-muted-foreground">متوسط التكلفة</dt>
+        <dd className="text-foreground">{product.averageUnitCost.toFixed(6)}</dd>
         <dt className="text-muted-foreground">التاريخ</dt>
         <dd className="text-foreground">{product.hasHistory ? "موجود" : "لا يوجد"}</dd>
       </dl>
@@ -216,6 +218,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
               <TableHead className="w-10 text-center">#</TableHead>
               <TableHead className="text-center">المنتج</TableHead>
               <TableHead className="text-center">الرصيد</TableHead>
+              <TableHead className="text-center">متوسط التكلفة</TableHead>
               <TableHead className="text-center">الحالة</TableHead>
               <TableHead className="text-center">تاريخ الحركات</TableHead>
               <TableHead className="w-12" />
@@ -231,6 +234,9 @@ export function ProductsTable({ products }: ProductsTableProps) {
                 <TableCell className="text-center text-muted-foreground">
                   {product.stockQuantity.toFixed(3)}
                 </TableCell>
+                <TableCell className="text-center text-muted-foreground">
+                  {product.averageUnitCost.toFixed(6)}
+                </TableCell>
                 <TableCell className="text-center">
                   <StatusBadge archived={product.isArchived} />
                 </TableCell>
@@ -245,7 +251,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
 
             {products.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="py-20 text-center">
+                <TableCell colSpan={7} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد منتجات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     ابدأ بإضافة أول منتج نهائي إلى الكتالوج.

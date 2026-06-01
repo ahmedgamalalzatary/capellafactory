@@ -1,5 +1,8 @@
 import { defineConfig } from "drizzle-kit";
 
+// Load the repo-root .env (drizzle-kit runs from apps/api and doesn't load it otherwise)
+process.loadEnvFile(new URL("../../.env", import.meta.url));
+
 const password = process.env.DB_PASSWORD;
 
 export default defineConfig({

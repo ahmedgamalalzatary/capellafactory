@@ -11,3 +11,5 @@ export * from "./expenses/expense.constants.js";
 export * from "./expenses/expense.schema.js";
 export * from "./ingredient-purchases/ingredient-purchase.types.js";
 export * from "./ingredient-purchases/ingredient-purchase.schema.js";
+export * from "./production-batches/production-batch.types.js";
+export * from "./production-batches/production-batch.schema.js";

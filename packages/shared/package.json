@@ -57,6 +57,14 @@
       "types": "./dist/ingredient-purchases/ingredient-purchase.schema.d.ts",
       "default": "./dist/ingredient-purchases/ingredient-purchase.schema.js"
     },
+    "./production-batches/production-batch.types": {
+      "types": "./dist/production-batches/production-batch.types.d.ts",
+      "default": "./dist/production-batches/production-batch.types.js"
+    },
+    "./production-batches/production-batch.schema": {
+      "types": "./dist/production-batches/production-batch.schema.d.ts",
+      "default": "./dist/production-batches/production-batch.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

@@ -35,6 +35,7 @@ export function mapProductRowToProduct(row: ProductRow): Product {
     id: row.id,
     name: row.name,
     stockQuantity: Number(row.stockQuantity),
+    averageUnitCost: Number(row.averageUnitCost),
     hasHistory: Boolean(row.hasHistory),
     isArchived: Boolean(row.isArchived),
     createdAt: toIsoString(row.createdAt),
