@@ -9,3 +9,5 @@ export * from "./products/product.schema.js";
 export * from "./expenses/expense.types.js";
 export * from "./expenses/expense.constants.js";
 export * from "./expenses/expense.schema.js";
+export * from "./ingredient-purchases/ingredient-purchase.types.js";
+export * from "./ingredient-purchases/ingredient-purchase.schema.js";

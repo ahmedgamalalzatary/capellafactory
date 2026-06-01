@@ -1,0 +1,323 @@
+"use client";
+
+import { useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
+import type {
+  IngredientPurchaseInput,
+  IngredientPurchaseUnit,
+} from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type { Supplier } from "@capella/shared/suppliers/supplier.types";
+import { createIngredientPurchase } from "@/lib/api/ingredient-purchases";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  buildIsoDateTime,
+  getLocalDateInputValue,
+  getLocalTimeInputValue,
+  PurchaseDateTimeFields,
+} from "./datetime-fields";
+
+type IngredientPurchaseFormProps = {
+  suppliers: Supplier[];
+  ingredients: Ingredient[];
+  onCancel?: () => void;
+  onSuccess?: () => void;
+};
+
+type SupplierMode = "saved" | "typed";
+
+type DraftLine = {
+  ingredientId: number;
+  quantity: string;
+  unit: IngredientPurchaseUnit;
+  unitPrice: string;
+};
+
+const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
+  weight: ["kg", "g"],
+  volume: ["L", "ml"],
+  count: ["piece"],
+};
+
+function Field({
+  id,
+  label,
+  required,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>
+        {label}
+        {required ? (
+          <span className="ms-1 text-destructive">*</span>
+        ) : (
+          <span className="ms-1 text-xs font-normal text-muted-foreground">(اختياري)</span>
+        )}
+      </Label>
+      {children}
+      {hint ? <p className="text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
+    </div>
+  );
+}
+
+function createEmptyLine(ingredients: Ingredient[]): DraftLine {
+  const ingredient = ingredients[0];
+  return {
+    ingredientId: ingredient?.id ?? 0,
+    quantity: "",
+    unit: ingredient ? unitOptionsByFamily[ingredient.unitFamily][0] : "kg",
+    unitPrice: "",
+  };
+}
+
+export function IngredientPurchaseForm({
+  suppliers,
+  ingredients,
+  onCancel,
+  onSuccess,
+}: IngredientPurchaseFormProps) {
+  const router = useRouter();
+  const now = new Date();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [supplierMode, setSupplierMode] = useState<SupplierMode>("saved");
+  const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
+  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
+
+  function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
+    setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? updater(line) : line)));
+  }
+
+  function addLine() {
+    setLines((current) => [...current, createEmptyLine(ingredients)]);
+  }
+
+  function removeLine(index: number) {
+    setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
+  }
+
+  async function onSubmit(formData: FormData) {
+    setIsSubmitting(true);
+
+    const parsedLines = lines.map((line) => ({
+      ingredientId: Number(line.ingredientId),
+      quantity: Number(line.quantity),
+      unit: line.unit,
+      unitPrice: Number(line.unitPrice),
+    }));
+
+    const payload: IngredientPurchaseInput = {
+      occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+      notes: String(formData.get("notes") ?? "").trim() || undefined,
+      lines: parsedLines,
+      ...(supplierMode === "saved"
+        ? { supplierId: Number(formData.get("supplierId") ?? 0) }
+        : { supplierName: String(formData.get("supplierName") ?? "").trim() || undefined }),
+    };
+
+    try {
+      await createIngredientPurchase(payload);
+      toast.success("تم حفظ فاتورة شراء الخامات");
+      router.refresh();
+      onSuccess?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "فشل حفظ الفاتورة.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form action={onSubmit} className="grid gap-5">
+      <PurchaseDateTimeFields
+        dateId="occurredAtDate"
+        timeId="occurredAtTime"
+        label="وقت الفاتورة الفعلي"
+        hint="اختر تاريخ الفاتورة ووقتها الفعليين حتى تبقى حركة المخزون مرتبة زمنيًا."
+        defaultDate={getLocalDateInputValue(now)}
+        timeValue={occurredAtTime}
+        onTimeChange={setOccurredAtTime}
+      />
+
+      <div className="grid gap-2">
+        <Label>نوع المورد</Label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={supplierMode === "saved" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSupplierMode("saved")}
+          >
+            مورد محفوظ
+          </Button>
+          <Button
+            type="button"
+            variant={supplierMode === "typed" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSupplierMode("typed")}
+          >
+            اسم يدوي
+          </Button>
+        </div>
+      </div>
+
+      {supplierMode === "saved" ? (
+        <Field id="supplierId" label="المورد" required>
+          <select
+            id="supplierId"
+            name="supplierId"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            defaultValue={suppliers[0]?.id ?? ""}
+            required
+          >
+            {suppliers.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      ) : (
+        <Field id="supplierName" label="اسم المورد المكتوب" required>
+          <Input id="supplierName" name="supplierName" placeholder="سوق الجملة" required />
+        </Field>
+      )}
+
+      <div className="grid gap-4 rounded-xl border p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold">بنود الفاتورة</h3>
+            <p className="text-xs text-muted-foreground">
+              كل خامة تظهر مرة واحدة فقط داخل نفس الفاتورة.
+            </p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={addLine}>
+            + بند
+          </Button>
+        </div>
+
+        {lines.map((line, index) => {
+          const ingredient = ingredients.find((item) => item.id === line.ingredientId) ?? ingredients[0];
+          const allowedUnits = ingredient ? unitOptionsByFamily[ingredient.unitFamily] : ["kg"];
+          const total = (Number(line.quantity) || 0) * (Number(line.unitPrice) || 0);
+
+          return (
+            <div key={index} className="grid gap-3 rounded-lg border p-3">
+              <div className="grid gap-3 md:grid-cols-4">
+                <div className="grid gap-1.5">
+                  <Label>الخامة</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={line.ingredientId}
+                    onChange={(event) => {
+                      const nextIngredient = ingredients.find(
+                        (item) => item.id === Number(event.target.value),
+                      );
+                      updateLine(index, (current) => ({
+                        ...current,
+                        ingredientId: Number(event.target.value),
+                        unit: nextIngredient
+                          ? unitOptionsByFamily[nextIngredient.unitFamily][0]
+                          : current.unit,
+                      }));
+                    }}
+                  >
+                    {ingredients.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label>الكمية</Label>
+                  <Input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    value={line.quantity}
+                    onChange={(event) =>
+                      updateLine(index, (current) => ({ ...current, quantity: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label>الوحدة</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={line.unit}
+                    onChange={(event) =>
+                      updateLine(index, (current) => ({
+                        ...current,
+                        unit: event.target.value as IngredientPurchaseUnit,
+                      }))
+                    }
+                  >
+                    {allowedUnits.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label>سعر الوحدة</Label>
+                  <Input
+                    type="number"
+                    min="0.001"
+                    step="0.001"
+                    value={line.unitPrice}
+                    onChange={(event) =>
+                      updateLine(index, (current) => ({ ...current, unitPrice: event.target.value }))
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>إجمالي البند: {total.toFixed(3)}</span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)}>
+                  حذف البند
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Field id="notes" label="ملاحظات">
+        <Textarea id="notes" name="notes" rows={4} placeholder="تفاصيل إضافية..." />
+      </Field>
+
+      <div className="mt-2 flex items-center justify-between border-t pt-4">
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive">*</span> حقول مطلوبة
+        </p>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            إلغاء
+          </Button>
+          <Button type="submit" size="sm" disabled={isSubmitting}>
+            {isSubmitting ? "جارٍ الحفظ…" : "حفظ الفاتورة"}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+}

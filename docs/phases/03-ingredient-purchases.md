@@ -19,8 +19,8 @@ Deliver ingredient purchase invoices end to end, including the first real ingred
 - quantity plus unit price input, total derived automatically
 - normalized base quantities for `kg/g` and `L/ml`
 - weighted-average ingredient costing updates on save
-- backdated invoice entry with recalculation guard
-- block save if recalculation breaks later history
+- backdated invoice entry with chronological recalculation support
+- groundwork only for later-history conflict detection once later stock-affecting phases exist
 - stock movement history starts existing for ingredients
 
 ## Files To Create
@@ -61,6 +61,7 @@ Deliver ingredient purchase invoices end to end, including the first real ingred
 - saving an ingredient purchase invoice updates ingredient stock and ingredient average cost
 - purchase invoice validation and unit normalization are covered by tests
 - inventory screens can show current ingredient stock after purchases
+- the codebase is ready for later shared ledger conflict checks, but later-history invalidation is not considered complete until stock-consuming phases exist
 
 ## Out Of Scope
 

@@ -20,6 +20,9 @@ export const ingredientsTable = mysqlTable(
     stockQuantity: decimal("stock_quantity", { precision: 14, scale: 3 })
       .default("0.000")
       .notNull(),
+    averageUnitCost: decimal("average_unit_cost", { precision: 14, scale: 6 })
+      .default("0.000000")
+      .notNull(),
     hasHistory: boolean("has_history").default(false).notNull(),
     isArchived: boolean("is_archived").default(false).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),

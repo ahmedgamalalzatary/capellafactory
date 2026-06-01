@@ -49,6 +49,14 @@
       "types": "./dist/expenses/expense.schema.d.ts",
       "default": "./dist/expenses/expense.schema.js"
     },
+    "./ingredient-purchases/ingredient-purchase.types": {
+      "types": "./dist/ingredient-purchases/ingredient-purchase.types.d.ts",
+      "default": "./dist/ingredient-purchases/ingredient-purchase.types.js"
+    },
+    "./ingredient-purchases/ingredient-purchase.schema": {
+      "types": "./dist/ingredient-purchases/ingredient-purchase.schema.d.ts",
+      "default": "./dist/ingredient-purchases/ingredient-purchase.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

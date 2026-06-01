@@ -9,6 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  buildIsoDateTime,
+  getLocalDateInputValue,
+  getLocalTimeInputValue,
+  PurchaseDateTimeFields,
+} from "./datetime-fields";
 
 type ExpenseFormProps = {
   onCancel?: () => void;
@@ -56,20 +62,16 @@ function Field({
   );
 }
 
-function toDatetimeLocalValue(value: Date) {
-  const offset = value.getTimezoneOffset();
-  const localValue = new Date(value.getTime() - offset * 60_000);
-  return localValue.toISOString().slice(0, 16);
-}
-
 export function ExpenseForm({
   onCancel,
   onSuccess,
   submitLabel = "حفظ المصروف",
 }: ExpenseFormProps) {
   const router = useRouter();
+  const now = new Date();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expenseType, setExpenseType] = useState<ExpenseType>("rent");
+  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
 
   async function onSubmit(formData: FormData) {
     setIsSubmitting(true);
@@ -77,7 +79,7 @@ export function ExpenseForm({
     const payload: ExpenseInput = {
       type: String(formData.get("type") ?? "rent") as ExpenseType,
       amount: Number(formData.get("amount") ?? 0),
-      occurredAt: new Date(String(formData.get("occurredAt") ?? "")).toISOString(),
+      occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
       notes: String(formData.get("notes") ?? "").trim() || undefined,
       employeeName: String(formData.get("employeeName") ?? "").trim() || undefined,
       otherLabel: String(formData.get("otherLabel") ?? "").trim() || undefined,
@@ -117,20 +119,15 @@ export function ExpenseForm({
         <Input id="amount" name="amount" type="number" min="0.001" step="0.001" required />
       </Field>
 
-      <Field
-        id="occurredAt"
+      <PurchaseDateTimeFields
+        dateId="occurredAtDate"
+        timeId="occurredAtTime"
         label="وقت الدفع الفعلي"
-        required
         hint="يسمح بإدخال تاريخ ووقت سابقين لأن المصروف لا يؤثر على المخزون."
-      >
-        <Input
-          id="occurredAt"
-          name="occurredAt"
-          type="datetime-local"
-          defaultValue={toDatetimeLocalValue(new Date())}
-          required
-        />
-      </Field>
+        defaultDate={getLocalDateInputValue(now)}
+        timeValue={occurredAtTime}
+        onTimeChange={setOccurredAtTime}
+      />
 
       {expenseType === "salary" ? (
         <Field

@@ -20,6 +20,7 @@ Deliver production batches end to end so ingredients can be consumed and finishe
 - batch cost snapshot based on current ingredient average cost
 - finished-product weighted-average cost update on batch save
 - backdated production with recalculation guard
+- real later-history invalidation guard begins here because backdated records can now break future stock-consuming history
 - stock movement history for ingredient consumption and finished-product output
 
 ## Files To Create
@@ -57,6 +58,7 @@ Deliver production batches end to end so ingredients can be consumed and finishe
 - saving a batch consumes ingredient stock and creates finished-product stock
 - batch cost is snapshotted and finished-product average cost updates correctly
 - inventory screens can show produced-product balances
+- backdated saves are blocked when shared ledger replay shows that a later stock-affecting record would become invalid
 
 ## Out Of Scope
 
