@@ -31,7 +31,7 @@ This project runs three long-lived services and one one-shot migration service:
 
 Inside Docker:
 
-- `web` talks to `api` with `API_URL=http://api:4010`
+- `web` talks to `api` with `API_URL=http://api:4000`
 - `api` talks to MySQL with `DB_HOST=db`
 - browser requests use `NEXT_PUBLIC_API_URL`, not the internal Docker hostname
 
@@ -42,8 +42,8 @@ Default published host ports for this repo:
 
 Container-internal ports stay:
 
-- `web`: `3010`
-- `api`: `4010`
+- `web`: `3000`
+- `api`: `4000`
 - `db`: `3306`
 
 ## Required Environment Values
@@ -54,8 +54,8 @@ Keep these aligned in `.env.docker` and `.env.production`:
 WEB_HOST_PORT=3010
 API_HOST_PORT=4010
 
-API_PORT=4010
-API_URL=http://api:4010
+API_PORT=4000
+API_URL=http://api:4000
 NEXT_PUBLIC_API_URL=http://localhost:4010
 CORS_ORIGIN=http://localhost:3010
 
@@ -74,7 +74,7 @@ MYSQL_PASSWORD=your-db-password
 
 Production notes:
 
-- keep `API_URL=http://api:4010`
+- keep `API_URL=http://api:4000`
 - set `NEXT_PUBLIC_API_URL` to the public API URL or the public proxied path
 - set `CORS_ORIGIN` to the public web origin
 
@@ -262,6 +262,12 @@ docker compose --env-file .env.production build api
 docker compose --env-file .env.production build web
 ```
 
+Rebuild and restart the full production stack:
+
+```bash
+docker compose --env-file .env.production up -d --build
+```
+
 Stop without deleting data:
 
 ```bash
@@ -311,6 +317,16 @@ docker compose --env-file .env.production logs api --tail 80
 docker compose --env-file .env.production logs web --tail 80
 docker compose --env-file .env.production logs db --tail 80
 docker compose --env-file .env.production logs migrate --tail 80
+```
+
+Typical production check sequence:
+
+```bash
+docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs api --tail 80
+docker compose --env-file .env.production logs web --tail 80
+docker compose --env-file .env.production logs db --tail 80
+docker compose --env-file .env.production up -d --build
 ```
 
 For local Docker, replace `.env.production` with `.env.docker`.

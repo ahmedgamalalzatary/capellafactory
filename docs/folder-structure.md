@@ -1,10 +1,14 @@
-# Recommended Folder Structure
+# Folder Structure
 
-This project should use a `pnpm` workspace monorepo with Turborepo for running builds, development scripts, linting, and tests across apps and packages.
+This project is a `pnpm` workspace monorepo with Turborepo for running builds, development scripts, linting, and tests across apps and packages.
 
-The monorepo should have separate apps for the frontend and backend, plus shared packages for reusable types and validation schemas.
+The monorepo has separate apps for the frontend and backend, plus a shared package for reusable types and validation schemas.
 
-The `web` app should use `shadcn/ui` as the component library on top of Next.js, Tailwind CSS, and TypeScript.
+The `web` app uses `shadcn/ui` as the component library on top of Next.js, Tailwind CSS, and TypeScript. Tests on the web app are run with Vitest.
+
+The `api` app is an Express + Drizzle (MySQL) backend. Tests on the API are run with Vitest.
+
+The whole monorepo is containerised with Docker (`Dockerfile.api`, `Dockerfile.web`, `docker-compose.yml`).
 
 ```txt
 capella/
@@ -12,6 +16,9 @@ capella/
 │  ├─ web/
 │  │  ├─ src/
 │  │  │  ├─ app/
+│  │  │  │  ├─ layout.tsx
+│  │  │  │  ├─ page.tsx
+│  │  │  │  ├─ globals.css
 │  │  │  │  ├─ suppliers/
 │  │  │  │  │  ├─ page.tsx
 │  │  │  │  │  ├─ loading.tsx
@@ -21,36 +28,35 @@ capella/
 │  │  │  │  │  ├─ loading.tsx
 │  │  │  │  │  └─ error.tsx
 │  │  │  │  ├─ inventory/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ loading.tsx
-│  │  │  │  │  └─ error.tsx
+│  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ purchases/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ loading.tsx
-│  │  │  │  │  └─ error.tsx
+│  │  │  │  │  └─ page.tsx
 │  │  │  │  ├─ sales/
-│  │  │  │  │  ├─ page.tsx
-│  │  │  │  │  ├─ loading.tsx
-│  │  │  │  │  └─ error.tsx
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  ├─ accounting/
+│  │  │  │  │  └─ page.tsx
+│  │  │  │  └─ reports/
+│  │  │  │     └─ page.tsx
 │  │  │  ├─ components/
 │  │  │  │  ├─ suppliers/
 │  │  │  │  │  ├─ suppliers-table.tsx
+│  │  │  │  │  ├─ suppliers-search-input.tsx
 │  │  │  │  │  ├─ supplier-form.tsx
 │  │  │  │  │  ├─ supplier-dialog.tsx
 │  │  │  │  │  └─ delete-supplier-dialog.tsx
 │  │  │  │  ├─ buyers/
 │  │  │  │  │  ├─ buyers-table.tsx
+│  │  │  │  │  ├─ buyers-search-input.tsx
 │  │  │  │  │  ├─ buyer-form.tsx
-│  │  │  │  │  ├─ buyer-dialog.tsx
-│  │  │  │  │  └─ delete-buyer-dialog.tsx
+│  │  │  │  │  └─ buyer-dialog.tsx
 │  │  │  │  ├─ inventory/
 │  │  │  │  │  ├─ ingredients-table.tsx
+│  │  │  │  │  ├─ inventory-search-input.tsx
 │  │  │  │  │  ├─ ingredient-form.tsx
 │  │  │  │  │  ├─ ingredient-dialog.tsx
 │  │  │  │  │  ├─ products-table.tsx
 │  │  │  │  │  ├─ product-form.tsx
-│  │  │  │  │  ├─ product-dialog.tsx
-│  │  │  │  │  └─ stock-movements-table.tsx
+│  │  │  │  │  └─ product-dialog.tsx
 │  │  │  │  ├─ purchases/
 │  │  │  │  │  ├─ expenses-table.tsx
 │  │  │  │  │  ├─ expense-form.tsx
@@ -58,47 +64,54 @@ capella/
 │  │  │  │  │  ├─ ingredient-purchases-table.tsx
 │  │  │  │  │  ├─ ingredient-purchase-form.tsx
 │  │  │  │  │  ├─ ingredient-purchase-dialog.tsx
-│  │  │  │  │  ├─ ingredient-adjustments-table.tsx
-│  │  │  │  │  ├─ ingredient-adjustment-form.tsx
-│  │  │  │  │  └─ ingredient-adjustment-dialog.tsx
-│  │  │  │  ├─ sales/
-│  │  │  │  │  ├─ sales-invoices-table.tsx
-│  │  │  │  │  ├─ sales-invoice-form.tsx
-│  │  │  │  │  └─ sales-invoice-dialog.tsx
-│  │  │  │  ├─ production/
-│  │  │  │  │  ├─ production-batches-table.tsx
-│  │  │  │  │  ├─ production-batch-form.tsx
-│  │  │  │  │  └─ production-batch-dialog.tsx
+│  │  │  │  │  ├─ datetime-fields.tsx
+│  │  │  │  │  └─ purchases-search-input.tsx
+│  │  │  │  ├─ shell/
+│  │  │  │  │  ├─ main-layout.tsx
+│  │  │  │  │  ├─ mobile-top-bar.tsx
+│  │  │  │  │  ├─ sidebar-nav.ts
+│  │  │  │  │  └─ sidebar-view.tsx
 │  │  │  │  └─ ui/
 │  │  │  │     ├─ button.tsx
 │  │  │  │     ├─ card.tsx
 │  │  │  │     ├─ dialog.tsx
+│  │  │  │     ├─ dropdown-menu.tsx
 │  │  │  │     ├─ form.tsx
 │  │  │  │     ├─ input.tsx
 │  │  │  │     ├─ label.tsx
+│  │  │  │     ├─ sheet.tsx
+│  │  │  │     ├─ sonner.tsx
 │  │  │  │     ├─ table.tsx
-│  │  │  │     └─ textarea.tsx
-│  │  │  ├─ lib/
-│  │  │  │  ├─ api.ts
-│  │  │  │  ├─ stock/
-│  │  │  │  │  ├─ units.ts
-│  │  │  │  │  └─ formatting.ts
-│  │  │  │  └─ api/
-│  │  │  │     ├─ suppliers.ts
-│  │  │  │     ├─ buyers.ts
-│  │  │  │     ├─ ingredients.ts
-│  │  │  │     ├─ products.ts
-│  │  │  │     ├─ expenses.ts
-│  │  │  │     ├─ ingredient-purchases.ts
-│  │  │  │     ├─ production-batches.ts
-│  │  │  │     ├─ sales-invoices.ts
-│  │  │  │     └─ ingredient-adjustments.ts
+│  │  │  │     ├─ textarea.tsx
+│  │  │  │     └─ toaster.tsx
+│  │  │  └─ lib/
+│  │  │     ├─ api.ts
+│  │  │     ├─ inventory.ts
+│  │  │     ├─ utils.ts
+│  │  │     └─ api/
+│  │  │        ├─ suppliers.ts
+│  │  │        ├─ buyers.ts
+│  │  │        ├─ ingredients.ts
+│  │  │        ├─ products.ts
+│  │  │        ├─ expenses.ts
+│  │  │        └─ ingredient-purchases.ts
+│  │  ├─ tests/
+│  │  │  ├─ app-shell.test.ts
+│  │  │  ├─ suppliers.test.ts
+│  │  │  ├─ buyers.test.ts
+│  │  │  ├─ inventory.test.ts
+│  │  │  ├─ ingredients.test.ts
+│  │  │  ├─ products.test.ts
+│  │  │  ├─ expenses.test.ts
+│  │  │  └─ ingredient-purchases.test.ts
 │  │  ├─ package.json
 │  │  ├─ tsconfig.json
 │  │  ├─ next.config.ts
+│  │  ├─ next-env.d.ts
 │  │  ├─ postcss.config.js
 │  │  ├─ components.json
-│  │  └─ tailwind.config.ts
+│  │  ├─ tailwind.config.ts
+│  │  └─ vitest.config.ts
 │  ├─ api/
 │  │  ├─ src/
 │  │  │  ├─ app.ts
@@ -113,9 +126,6 @@ capella/
 │  │  │  │     ├─ products.ts
 │  │  │  │     ├─ expenses.ts
 │  │  │  │     ├─ ingredient-purchases.ts
-│  │  │  │     ├─ production-batches.ts
-│  │  │  │     ├─ sales-invoices.ts
-│  │  │  │     ├─ ingredient-adjustments.ts
 │  │  │  │     └─ index.ts
 │  │  │  ├─ modules/
 │  │  │  │  ├─ suppliers/
@@ -153,35 +163,15 @@ capella/
 │  │  │  │  │  ├─ expenses.repository.ts
 │  │  │  │  │  ├─ expenses.validation.ts
 │  │  │  │  │  └─ expenses.types.ts
-│  │  │  │  ├─ ingredient-purchases/
-│  │  │  │  │  ├─ ingredient-purchases.routes.ts
-│  │  │  │  │  ├─ ingredient-purchases.controller.ts
-│  │  │  │  │  ├─ ingredient-purchases.service.ts
-│  │  │  │  │  ├─ ingredient-purchases.repository.ts
-│  │  │  │  │  ├─ ingredient-purchases.validation.ts
-│  │  │  │  │  └─ ingredient-purchases.types.ts
-│  │  │  │  ├─ production-batches/
-│  │  │  │  │  ├─ production-batches.routes.ts
-│  │  │  │  │  ├─ production-batches.controller.ts
-│  │  │  │  │  ├─ production-batches.service.ts
-│  │  │  │  │  ├─ production-batches.repository.ts
-│  │  │  │  │  ├─ production-batches.validation.ts
-│  │  │  │  │  └─ production-batches.types.ts
-│  │  │  │  ├─ sales-invoices/
-│  │  │  │  │  ├─ sales-invoices.routes.ts
-│  │  │  │  │  ├─ sales-invoices.controller.ts
-│  │  │  │  │  ├─ sales-invoices.service.ts
-│  │  │  │  │  ├─ sales-invoices.repository.ts
-│  │  │  │  │  ├─ sales-invoices.validation.ts
-│  │  │  │  │  └─ sales-invoices.types.ts
-│  │  │  │  └─ ingredient-adjustments/
-│  │  │  │     ├─ ingredient-adjustments.routes.ts
-│  │  │  │     ├─ ingredient-adjustments.controller.ts
-│  │  │  │     ├─ ingredient-adjustments.service.ts
-│  │  │  │     ├─ ingredient-adjustments.repository.ts
-│  │  │  │     ├─ ingredient-adjustments.validation.ts
-│  │  │  │     └─ ingredient-adjustments.types.ts
+│  │  │  │  └─ ingredient-purchases/
+│  │  │  │     ├─ ingredient-purchases.routes.ts
+│  │  │  │     ├─ ingredient-purchases.controller.ts
+│  │  │  │     ├─ ingredient-purchases.service.ts
+│  │  │  │     ├─ ingredient-purchases.repository.ts
+│  │  │  │     ├─ ingredient-purchases.validation.ts
+│  │  │  │     └─ ingredient-purchases.types.ts
 │  │  │  ├─ middlewares/
+│  │  │  │  ├─ cors.middleware.ts
 │  │  │  │  ├─ error.middleware.ts
 │  │  │  │  ├─ not-found.middleware.ts
 │  │  │  │  └─ validate.middleware.ts
@@ -200,16 +190,44 @@ capella/
 │  │  │     ├─ async-handler.ts
 │  │  │     ├─ http-error.ts
 │  │  │     ├─ pagination.ts
-│  │  │     ├─ quantity-normalization.ts
-│  │  │     └─ stock-ledger.ts
+│  │  │     └─ quantity-normalization.ts
+│  │  ├─ tests/
+│  │  │  ├─ app.test.ts
+│  │  │  ├─ suppliers.repository.test.ts
+│  │  │  ├─ suppliers.validation.test.ts
+│  │  │  ├─ buyers.controller.test.ts
+│  │  │  ├─ buyers.repository.test.ts
+│  │  │  ├─ buyers.validation.test.ts
+│  │  │  ├─ ingredients.repository.test.ts
+│  │  │  ├─ ingredients.validation.test.ts
+│  │  │  ├─ products.repository.test.ts
+│  │  │  ├─ products.validation.test.ts
+│  │  │  ├─ expenses.repository.test.ts
+│  │  │  ├─ expenses.validation.test.ts
+│  │  │  ├─ ingredient-purchases.repository.test.ts
+│  │  │  ├─ ingredient-purchases.validation.test.ts
+│  │  │  ├─ invoice-code.service.test.ts
+│  │  │  └─ quantity-normalization.test.ts
 │  │  ├─ drizzle/
 │  │  │  └─ migrations/
+│  │  │     ├─ 0000_overjoyed_metal_master.sql
+│  │  │     ├─ 0001_melted_excalibur.sql
+│  │  │     ├─ 0002_organic_thunderbolts.sql
+│  │  │     ├─ 0003_low_speedball.sql
+│  │  │     ├─ 0004_great_manta.sql
+│  │  │     ├─ 0005_aromatic_grey_gargoyle.sql
+│  │  │     ├─ 0006_wide_hercules.sql
+│  │  │     ├─ 0007_sudden_stature.sql
+│  │  │     └─ meta/
+│  │  │        ├─ _journal.json
+│  │  │        └─ 0000_snapshot.json ... 0006_snapshot.json
 │  │  ├─ drizzle.config.ts
 │  │  ├─ package.json
 │  │  └─ tsconfig.json
 ├─ packages/
 │  ├─ shared/
 │  │  ├─ src/
+│  │  │  ├─ index.ts
 │  │  │  ├─ suppliers/
 │  │  │  │  ├─ supplier.types.ts
 │  │  │  │  └─ supplier.schema.ts
@@ -224,36 +242,49 @@ capella/
 │  │  │  │  └─ product.schema.ts
 │  │  │  ├─ expenses/
 │  │  │  │  ├─ expense.types.ts
-│  │  │  │  └─ expense.schema.ts
-│  │  │  ├─ ingredient-purchases/
-│  │  │  │  ├─ ingredient-purchase.types.ts
-│  │  │  │  └─ ingredient-purchase.schema.ts
-│  │  │  ├─ production-batches/
-│  │  │  │  ├─ production-batch.types.ts
-│  │  │  │  └─ production-batch.schema.ts
-│  │  │  ├─ sales-invoices/
-│  │  │  │  ├─ sales-invoice.types.ts
-│  │  │  │  └─ sales-invoice.schema.ts
-│  │  │  ├─ ingredient-adjustments/
-│  │  │  │  ├─ ingredient-adjustment.types.ts
-│  │  │  │  └─ ingredient-adjustment.schema.ts
-│  │  │  └─ index.ts
+│  │  │  │  ├─ expense.schema.ts
+│  │  │  │  └─ expense.constants.ts
+│  │  │  └─ ingredient-purchases/
+│  │  │     ├─ ingredient-purchase.types.ts
+│  │  │     └─ ingredient-purchase.schema.ts
 │  │  ├─ package.json
 │  │  └─ tsconfig.json
 ├─ docs/
 │  ├─ erp-specs.md
-│  └─ folder-structure.md
+│  ├─ folder-structure.md
+│  ├─ docker.md
+│  └─ phases/
+│     ├─ README.md
+│     ├─ 01-inventory-foundation.md
+│     ├─ 02-expenses.md
+│     ├─ 03-ingredient-purchases.md
+│     ├─ 04-production-batches.md
+│     ├─ 05-sales-invoices.md
+│     └─ 06-ingredient-adjustments.md
+├─ .dockerignore
+├─ .env
+├─ .env.docker
+├─ .env.example
+├─ .gitignore
+├─ docker-compose.yml
+├─ Dockerfile.api
+├─ Dockerfile.web
 ├─ package.json
+├─ pnpm-lock.yaml
 ├─ pnpm-workspace.yaml
 ├─ turbo.json
 └─ tsconfig.base.json
 ```
 
+Notes on what is intentionally not shown in the tree:
+
+- `node_modules/`, `dist/`, `.next/`, `.turbo/`, `.history/`, and `.agents/` are present locally and in containers but are build/cache artefacts and are not part of the source tree.
+- `apps/api/dist/...` and `packages/shared/dist/...` are TypeScript build outputs.
+- `apps/web/tsconfig.tsbuildinfo` is a TypeScript incremental build cache file.
+
 ## Monorepo Tooling
 
-Use `pnpm` as the package manager and workspace manager.
-
-Use Turborepo for task orchestration across the monorepo:
+`pnpm` is the package manager and workspace manager. Turborepo orchestrates tasks across the monorepo:
 
 ```txt
 pnpm dev
@@ -262,50 +293,84 @@ pnpm lint
 pnpm test
 ```
 
-The root workspace should include:
+The root workspace includes:
 
 - `pnpm-workspace.yaml`: declares workspace packages.
 - `turbo.json`: defines shared pipelines such as `dev`, `build`, `lint`, and `test`.
 - `package.json`: root scripts that call `turbo`.
 - `tsconfig.base.json`: shared TypeScript compiler settings.
+- `pnpm-lock.yaml`: the generated lockfile.
 
 ## Frontend Stack
 
-The `apps/web` application should use:
+The `apps/web` application uses:
 
-- Next.js
+- Next.js (App Router)
 - TypeScript
 - Tailwind CSS
 - `shadcn/ui`
+- Vitest for component and page tests
 
-`shadcn/ui` components should be the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in suppliers, buyers, inventory, purchases, production, and sales flows.
+`shadcn/ui` components are the default base for forms, dialogs, tables, buttons, inputs, labels, and other UI building blocks in suppliers, buyers, inventory, purchases, sales, accounting, and reports flows.
+
+Top-level app routes currently shipping:
+
+- `suppliers`
+- `buyers`
+- `inventory`
+- `purchases`
+- `sales`
+- `accounting`
+- `reports`
+
+A `shell/` components folder holds the application chrome (`main-layout`, `mobile-top-bar`, `sidebar-nav`, `sidebar-view`).
 
 ## Backend Organization
 
-Use a module-first backend structure. Feature-specific code should live inside its own module, and top-level backend folders should only contain global or reusable code:
+The API uses a module-first backend structure. Feature-specific code lives inside its own module, and top-level backend folders only contain global or reusable code:
 
-- `middlewares/`: Express middleware reused across modules.
-- `routes/`: Global route registration, usually `routes/index.ts`.
-- `services/`: Cross-feature services only, such as logging, invoice-code generation, or costing helpers.
+- `middlewares/`: Express middleware reused across modules (CORS, error, not-found, validate).
+- `routes/`: Global route registration, `routes/index.ts`.
+- `services/`: Cross-feature services only, such as logging, invoice-code generation, and weighted-average stock costing.
 - `repositories/`: Shared/base repository helpers only.
 - `types/`: Backend-only TypeScript types and Express type extensions.
-- `utils/`: Small reusable backend utilities.
+- `utils/`: Small reusable backend utilities (async handler, HTTP error, pagination, quantity normalization).
 - `db/`: Drizzle client, schema definitions, and migrations.
+
+Each feature module (`suppliers`, `buyers`, `ingredients`, `products`, `expenses`, `ingredient-purchases`) contains its own `routes`, `controller`, `service`, `repository`, `validation`, and `types` files.
 
 ## Drizzle ORM Files
 
-Use these responsibilities:
+Responsibilities:
 
 - `drizzle.config.ts`: Drizzle Kit configuration.
-- `drizzle/migrations/`: generated SQL migrations.
+- `drizzle/migrations/`: generated SQL migrations and the `meta/` folder with snapshots and journal.
 - `src/db/client.ts`: MySQL connection and Drizzle database instance.
 - `src/db/index.ts`: backend database exports.
-- `src/db/schema/*.ts`: backend-owned table schemas for master data, invoices, batches, and adjustments.
+- `src/db/schema/*.ts`: backend-owned table schemas for master data and transactions.
 - `src/db/schema/index.ts`: aggregates and re-exports schema files.
 
-## Feature Scope Summary
+## Tests
 
-This structure supports these documented areas:
+Both apps have co-located `tests/` folders run with Vitest:
+
+- `apps/web/tests/`: page, shell, and form tests (one file per feature area plus `app-shell`).
+- `apps/api/tests/`: validation, repository, service, and app boot tests (one file per module/unit under test).
+
+## Docker Setup
+
+The repository is configured to run both apps and a MySQL database in containers:
+
+- `Dockerfile.api`: production-style image for the Express + Drizzle backend.
+- `Dockerfile.web`: production-style image for the Next.js frontend.
+- `docker-compose.yml`: orchestrates `api`, `web`, and the MySQL service.
+- `.env.docker`, `.env.example`, `.env`: environment variable templates and local overrides.
+- `.dockerignore`: excludes non-build paths from the image context.
+- `docs/docker.md`: describes the Docker workflow.
+
+## Feature Scope
+
+Code currently shipping in this tree covers:
 
 - supplier CRUD
 - buyer CRUD
@@ -313,42 +378,26 @@ This structure supports these documented areas:
 - finished-product catalog and stock
 - purchase expenses
 - ingredient purchase invoices
-- production batches
-- sales invoices
-- ingredient adjustments
 
-Additional v1 behavior expectations tied to this structure:
+The following feature areas are designed and documented in `docs/phases/` but their backend modules, frontend routes, and Drizzle schemas are not yet present in this tree:
 
-- sales invoices allow one line per finished product only
-- production batches allow one line per ingredient only
-- typed buyer and supplier names stay invoice-only
-- no recipe master is part of the current scope yet
-- stock movement history is surfaced from inventory views
-- ingredients and finished products are manually archivable only at zero stock
-- archived inventory items are hidden from all new transaction forms until manually reactivated
-- ingredient and finished-product names stay unique and reserved even after archive
-- buyer and supplier names may repeat, but linked buyer/supplier records become non-editable and non-deletable
+- production batches (`docs/phases/04-production-batches.md`)
+- sales invoices (`docs/phases/05-sales-invoices.md`)
+- ingredient adjustments (`docs/phases/06-ingredient-adjustments.md`)
 
-## Transaction Rules To Preserve In Implementation
-
-- sales invoices are create/list/view only
-- expenses are create/list/view only
-- ingredient purchase invoices are create/list/view only
-- production batches are create/list/view only
-- ingredient adjustments are create/list/view only
-- ingredient and finished-product stock must never go negative
-- weighted-average costing is used for ingredients and finished products
-- ingredient quantities are normalized to base units
-- ingredient unit families include weight, volume, and count
-- stock movements should remain traceable through transaction history
-- backdated expenses are allowed
-- backdated sales and ingredient adjustments are not allowed
-- backdated purchases and production are allowed only if recalculation keeps later history valid
-- same-datetime stock records use creation order as the tie-breaker
-- ingredient/product deletion is allowed only when stock is zero and no history exists
+When those land, the structure for each will mirror the existing modules (route, controller, service, repository, validation, types), and shared schemas/types will be added to `packages/shared/src/`.
 
 ## Shared Package
 
-Put reusable supplier, buyer, inventory, invoice, batch, and adjustment types and validation schemas in `packages/shared` so both the Next.js frontend and Express backend can use the same contracts.
+Reusable types and validation schemas live in `packages/shared` so both the Next.js frontend and Express backend use the same contracts. The backend still owns the Drizzle database schema because database details should not leak into frontend code.
 
-The backend should still own the Drizzle database schema because database details should not leak into frontend code.
+Shared domains currently exported:
+
+- `suppliers` (`supplier.types.ts`, `supplier.schema.ts`)
+- `buyers` (`buyer.types.ts`, `buyer.schema.ts`)
+- `ingredients` (`ingredient.types.ts`, `ingredient.schema.ts`)
+- `products` (`product.types.ts`, `product.schema.ts`)
+- `expenses` (`expense.types.ts`, `expense.schema.ts`, `expense.constants.ts`)
+- `ingredient-purchases` (`ingredient-purchase.types.ts`, `ingredient-purchase.schema.ts`)
+
+All of these are re-exported from `packages/shared/src/index.ts`.
