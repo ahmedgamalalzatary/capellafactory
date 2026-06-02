@@ -15,6 +15,10 @@ export function buildExpensesUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
+export function buildExpenseDetailUrl(baseUrl: string, id: number) {
+  return new URL(`/expenses/${id}`, baseUrl).toString();
+}
+
 export async function getExpenses(query?: string): Promise<Expense[]> {
   const response = await fetch(buildExpensesUrl(API_URL, query), {
     cache: "no-store",
@@ -25,6 +29,18 @@ export async function getExpenses(query?: string): Promise<Expense[]> {
   }
 
   return (await response.json()) as Expense[];
+}
+
+export async function getExpense(id: number): Promise<Expense> {
+  const response = await fetch(buildExpenseDetailUrl(API_URL, id), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch expense");
+  }
+
+  return (await response.json()) as Expense;
 }
 
 export async function createExpense(input: ExpenseInput) {

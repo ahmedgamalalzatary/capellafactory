@@ -183,10 +183,12 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
       }),
     );
 
+    // Recalculate inside the same transaction so the purchase and the derived
+    // stock balances commit (or roll back) atomically.
+    await recalculateIngredientBalances(tx);
+
     return purchaseId;
   });
-
-  await recalculateIngredientBalances();
 
   const purchase = await getIngredientPurchaseById(insertedId);
 

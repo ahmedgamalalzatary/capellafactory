@@ -1,5 +1,6 @@
 import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
 import type { Expense } from "@capella/shared/expenses/expense.types";
+import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -63,6 +64,12 @@ function ExpenseCard({ expense, idx }: { expense: Expense; idx: number }) {
         <dt className="text-muted-foreground">ملاحظات</dt>
         <dd className="text-foreground">{expense.notes ?? "لا توجد"}</dd>
       </dl>
+      <Link
+        href={`/purchases/expenses/${expense.id}`}
+        className="inline-flex h-9 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
+      >
+        عرض
+      </Link>
     </div>
   );
 }
@@ -80,6 +87,7 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
               <TableHead className="text-center">المبلغ</TableHead>
               <TableHead className="text-center">وقت الدفع</TableHead>
               <TableHead className="text-center">ملاحظات</TableHead>
+              <TableHead className="text-center">اخرى</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,12 +111,20 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
                 <TableCell className="text-center text-muted-foreground">
                   {expense.notes ?? "لا توجد"}
                 </TableCell>
+                <TableCell className="text-center">
+                  <Link
+                    href={`/purchases/expenses/${expense.id}`}
+                    className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
+                  >
+                    عرض
+                  </Link>
+                </TableCell>
               </TableRow>
             ))}
 
             {expenses.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="py-20 text-center">
+                <TableCell colSpan={7} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد مصروفات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     ابدأ بتسجيل أول مصروف تشغيلي من شاشة المشتريات.

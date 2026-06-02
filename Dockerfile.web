@@ -9,6 +9,10 @@ COPY packages/shared/package.json packages/shared/package.json
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS builder
+# NEXT_PUBLIC_* values are inlined at build time, so the runtime API URL must be
+# supplied as a build-arg (forwarded by docker-compose) before `next build`.
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 COPY apps/web apps/web
 COPY packages/shared packages/shared
 RUN pnpm --filter @capella/shared build

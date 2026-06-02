@@ -343,5 +343,15 @@ export function buildIsoDateTime(date: FormDataEntryValue | null, time: FormData
   const dateValue = String(date ?? "").trim();
   const timeValue = String(time ?? "").trim();
 
-  return new Date(`${dateValue}T${timeValue}`).toISOString();
+  if (!dateValue || !timeValue) {
+    throw new Error("التاريخ والوقت مطلوبان.");
+  }
+
+  const dt = new Date(`${dateValue}T${timeValue}`);
+
+  if (Number.isNaN(dt.getTime())) {
+    throw new Error("التاريخ أو الوقت غير صالح.");
+  }
+
+  return dt.toISOString();
 }

@@ -18,6 +18,10 @@ export function buildProductionBatchesUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
+export function buildProductionBatchDetailUrl(baseUrl: string, id: number) {
+  return new URL(`/production-batches/${id}`, baseUrl).toString();
+}
+
 export function mergeJsonHeaders(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders);
 
@@ -38,6 +42,18 @@ export async function getProductionBatches(query?: string) {
   }
 
   return (await response.json()) as ProductionBatch[];
+}
+
+export async function getProductionBatch(id: number) {
+  const response = await fetch(buildProductionBatchDetailUrl(API_URL, id), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch production batch");
+  }
+
+  return (await response.json()) as ProductionBatch;
 }
 
 export async function createProductionBatch(input: ProductionBatchInput) {

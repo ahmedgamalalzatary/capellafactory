@@ -64,8 +64,9 @@ function Field({
   );
 }
 
-function createEmptyLine(ingredients: Ingredient[]): DraftLine {
-  const ingredient = ingredients[0];
+function createEmptyLine(ingredients: Ingredient[], usedIngredientIds: number[] = []): DraftLine {
+  const ingredient =
+    ingredients.find((item) => !usedIngredientIds.includes(item.id)) ?? ingredients[0];
   return {
     ingredientId: ingredient?.id ?? 0,
     quantity: "",
@@ -90,7 +91,13 @@ export function ProductionBatchForm({
   }
 
   function addLine() {
-    setLines((current) => [...current, createEmptyLine(ingredients)]);
+    setLines((current) => [
+      ...current,
+      createEmptyLine(
+        ingredients,
+        current.map((line) => line.ingredientId),
+      ),
+    ]);
   }
 
   function removeLine(index: number) {
@@ -100,19 +107,19 @@ export function ProductionBatchForm({
   async function onSubmit(formData: FormData) {
     setIsSubmitting(true);
 
-    const payload: ProductionBatchInput = {
-      occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-      productId: Number(formData.get("productId") ?? 0),
-      producedQuantity: Number(formData.get("producedQuantity") ?? 0),
-      notes: String(formData.get("notes") ?? "").trim() || undefined,
-      lines: lines.map((line) => ({
-        ingredientId: Number(line.ingredientId),
-        quantity: Number(line.quantity),
-        unit: line.unit,
-      })),
-    };
-
     try {
+      const payload: ProductionBatchInput = {
+        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+        productId: Number(formData.get("productId") ?? 0),
+        producedQuantity: Number(formData.get("producedQuantity") ?? 0),
+        notes: String(formData.get("notes") ?? "").trim() || undefined,
+        lines: lines.map((line) => ({
+          ingredientId: Number(line.ingredientId),
+          quantity: Number(line.quantity),
+          unit: line.unit,
+        })),
+      };
+
       await createProductionBatch(payload);
       toast.success("تم حفظ تشغيلة الإنتاج");
       router.refresh();
@@ -197,7 +204,14 @@ export function ProductionBatchForm({
                     }}
                   >
                     {ingredients.map((item) => (
-                      <option key={item.id} value={item.id}>
+                      <option
+                        key={item.id}
+                        value={item.id}
+                        disabled={
+                          item.id !== line.ingredientId &&
+                          lines.some((other) => other.ingredientId === item.id)
+                        }
+                      >
                         {item.name}
                       </option>
                     ))}

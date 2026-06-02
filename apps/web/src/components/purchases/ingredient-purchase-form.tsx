@@ -110,23 +110,53 @@ export function IngredientPurchaseForm({
   async function onSubmit(formData: FormData) {
     setIsSubmitting(true);
 
-    const parsedLines = lines.map((line) => ({
-      ingredientId: Number(line.ingredientId),
-      quantity: Number(line.quantity),
-      unit: line.unit,
-      unitPrice: Number(line.unitPrice),
-    }));
-
-    const payload: IngredientPurchaseInput = {
-      occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-      notes: String(formData.get("notes") ?? "").trim() || undefined,
-      lines: parsedLines,
-      ...(supplierMode === "saved"
-        ? { supplierId: Number(formData.get("supplierId") ?? 0) }
-        : { supplierName: String(formData.get("supplierName") ?? "").trim() || undefined }),
-    };
-
     try {
+      const parsedLines = lines.map((line) => ({
+        ingredientId: Number(line.ingredientId),
+        quantity: Number(line.quantity),
+        unit: line.unit,
+        unitPrice: Number(line.unitPrice),
+      }));
+
+      const hasInvalidLine = parsedLines.some(
+        (line) =>
+          !Number.isFinite(line.ingredientId) ||
+          line.ingredientId <= 0 ||
+          !Number.isFinite(line.quantity) ||
+          line.quantity <= 0 ||
+          !Number.isFinite(line.unitPrice) ||
+          line.unitPrice <= 0,
+      );
+
+      if (hasInvalidLine) {
+        toast.error("تأكد من صحة الكمية وسعر الوحدة لكل بند.");
+        return;
+      }
+
+      let supplierFields: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">;
+
+      if (supplierMode === "saved") {
+        const supplierId = Number(formData.get("supplierId") ?? 0);
+
+        if (!Number.isFinite(supplierId) || supplierId <= 0) {
+          toast.error("اختر موردًا صالحًا.");
+          return;
+        }
+
+        supplierFields = { supplierId };
+      } else {
+        supplierFields = {
+          supplierName: String(formData.get("supplierName") ?? "").trim() || undefined,
+        };
+      }
+
+      const payload: IngredientPurchaseInput = {
+        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+        notes: String(formData.get("notes") ?? "").trim() || undefined,
+        lines: parsedLines,
+        ...supplierFields,
+      };
+
       await createIngredientPurchase(payload);
       toast.success("تم حفظ فاتورة شراء الخامات");
       router.refresh();

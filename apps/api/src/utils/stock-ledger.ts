@@ -14,6 +14,7 @@ export type StockLedgerBalance = {
 export type StockLedgerSnapshot = StockLedgerBalance & {
   averageUnitCost: number;
   hasHistory: boolean;
+  residualCost: number;
 };
 
 export function applyStockLedgerEntry(
@@ -33,13 +34,21 @@ export function getStockLedgerSnapshot(
   itemId: number,
 ): StockLedgerSnapshot {
   const balance = balances.get(itemId);
-  const quantity = balance?.quantity ?? 0;
-  const totalCost = balance?.totalCost ?? 0;
+  const rawQuantity = balance?.quantity ?? 0;
+  const rawTotalCost = balance?.totalCost ?? 0;
+
+  // Clamp to non-negative stock. When over-consumption/rounding drives quantity
+  // to zero or below, zero out the carried cost but surface the leftover as
+  // residualCost so it isn't silently lost.
+  const quantity = Math.max(0, rawQuantity);
+  const totalCost = rawQuantity > 0 ? rawTotalCost : 0;
+  const residualCost = rawQuantity > 0 ? 0 : rawTotalCost;
 
   return {
     quantity,
     totalCost,
     averageUnitCost: quantity > 0 ? totalCost / quantity : 0,
     hasHistory: Boolean(balance),
+    residualCost,
   };
 }

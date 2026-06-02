@@ -1,7 +1,12 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "drizzle-kit";
 
-// Load the repo-root .env (drizzle-kit runs from apps/api and doesn't load it otherwise)
-process.loadEnvFile(new URL("../../.env", import.meta.url));
+// Load the repo-root .env (drizzle-kit runs from apps/api and doesn't load it otherwise).
+// Guard against its absence so CI/Docker environments without a repo-root .env don't crash.
+const rootEnvUrl = new URL("../../.env", import.meta.url);
+if (existsSync(rootEnvUrl)) {
+  process.loadEnvFile(rootEnvUrl);
+}
 
 const password = process.env.DB_PASSWORD;
 

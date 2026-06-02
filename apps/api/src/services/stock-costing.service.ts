@@ -14,6 +14,9 @@ import {
   type StockLedgerBalances,
 } from "../utils/stock-ledger.js";
 
+type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type StockExecutor = typeof db | DrizzleTransaction;
+
 type StockReplayEvent =
   | {
       id: number;
@@ -40,8 +43,18 @@ type StockReplayEvent =
       cost: number;
     };
 
-export async function recalculateStockBalances() {
-  const purchases = await db
+export async function recalculateStockBalances(executor?: StockExecutor) {
+  // Run the whole recompute atomically. When called inside an existing
+  // transaction (e.g. while creating a purchase/batch) reuse that handle so the
+  // mutation and balance update commit or roll back together; otherwise open a
+  // dedicated transaction.
+  if (!executor) {
+    await db.transaction((tx) => recalculateStockBalances(tx));
+    return;
+  }
+
+  const tx = executor;
+  const purchases = await tx
     .select({
       purchaseId: ingredientPurchasesTable.id,
       occurredAt: ingredientPurchasesTable.occurredAt,
@@ -56,7 +69,7 @@ export async function recalculateStockBalances() {
     )
     .orderBy(asc(ingredientPurchasesTable.occurredAt), asc(ingredientPurchasesTable.id));
 
-  const productionLines = await db
+  const productionLines = await tx
     .select({
       batchId: productionBatchesTable.id,
       occurredAt: productionBatchesTable.occurredAt,
@@ -126,21 +139,21 @@ export async function recalculateStockBalances() {
     }
   }
 
-  await persistIngredientBalances(ingredientBalances);
-  await persistProductBalances(productBalances);
+  await persistIngredientBalances(tx, ingredientBalances);
+  await persistProductBalances(tx, productBalances);
 }
 
-export async function recalculateIngredientBalances() {
-  await recalculateStockBalances();
+export async function recalculateIngredientBalances(executor?: StockExecutor) {
+  await recalculateStockBalances(executor);
 }
 
-async function persistIngredientBalances(balances: StockLedgerBalances) {
-  const ingredients = await db.select().from(ingredientsTable);
+async function persistIngredientBalances(tx: StockExecutor, balances: StockLedgerBalances) {
+  const ingredients = await tx.select().from(ingredientsTable);
 
   for (const ingredient of ingredients) {
     const snapshot = getStockLedgerSnapshot(balances, ingredient.id);
 
-    await db
+    await tx
       .update(ingredientsTable)
       .set({
         stockQuantity: snapshot.quantity.toFixed(3),
@@ -152,13 +165,13 @@ async function persistIngredientBalances(balances: StockLedgerBalances) {
   }
 }
 
-async function persistProductBalances(balances: StockLedgerBalances) {
-  const products = await db.select().from(productsTable);
+async function persistProductBalances(tx: StockExecutor, balances: StockLedgerBalances) {
+  const products = await tx.select().from(productsTable);
 
   for (const product of products) {
     const snapshot = getStockLedgerSnapshot(balances, product.id);
 
-    await db
+    await tx
       .update(productsTable)
       .set({
         stockQuantity: snapshot.quantity.toFixed(3),
@@ -190,5 +203,26 @@ function compareStockReplayEvents(left: StockReplayEvent, right: StockReplayEven
     return leftTime - rightTime;
   }
 
+  // Purchase and consumption/output ids come from independent sequences
+  // (purchaseId vs batchId), so break ties by event kind first to keep the
+  // replay deterministic: stock must arrive (purchase) before it is consumed,
+  // and consumption before the produced output is added.
+  const kindWeight = stockEventKindWeight(left.kind) - stockEventKindWeight(right.kind);
+
+  if (kindWeight !== 0) {
+    return kindWeight;
+  }
+
   return left.id - right.id;
+}
+
+function stockEventKindWeight(kind: StockReplayEvent["kind"]) {
+  switch (kind) {
+    case "ingredient-purchase":
+      return 0;
+    case "production-consumption":
+      return 1;
+    case "production-output":
+      return 2;
+  }
 }

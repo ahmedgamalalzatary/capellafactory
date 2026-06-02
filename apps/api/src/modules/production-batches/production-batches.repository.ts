@@ -180,6 +180,10 @@ export async function createProductionBatch(input: ProductionBatchInput) {
     })),
   );
 
+  if (input.producedQuantity <= 0) {
+    throw new ProductionBatchValidationError("producedQuantity must be > 0");
+  }
+
   const totalCost = preparedLines.reduce((sum, line) => sum + line.lineCost, 0);
   const unitCost = totalCost / input.producedQuantity;
 
@@ -221,10 +225,12 @@ export async function createProductionBatch(input: ProductionBatchInput) {
       })),
     );
 
+    // Recalculate inside the same transaction so the batch and the derived
+    // stock balances commit (or roll back) atomically.
+    await recalculateStockBalances(tx);
+
     return batchId;
   });
-
-  await recalculateStockBalances();
 
   const batch = await getProductionBatchById(insertedId);
 

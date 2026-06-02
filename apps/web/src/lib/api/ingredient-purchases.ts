@@ -17,6 +17,10 @@ export function buildIngredientPurchasesUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
+export function buildIngredientPurchaseDetailUrl(baseUrl: string, id: number) {
+  return new URL(`/ingredient-purchases/${id}`, baseUrl).toString();
+}
+
 export function mergeJsonHeaders(initHeaders?: HeadersInit) {
   const headers = new Headers(initHeaders);
 
@@ -37,6 +41,18 @@ export async function getIngredientPurchases(query?: string) {
   }
 
   return (await response.json()) as IngredientPurchase[];
+}
+
+export async function getIngredientPurchase(id: number) {
+  const response = await fetch(buildIngredientPurchaseDetailUrl(API_URL, id), {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch ingredient purchase");
+  }
+
+  return (await response.json()) as IngredientPurchase;
 }
 
 export async function createIngredientPurchase(input: IngredientPurchaseInput) {
