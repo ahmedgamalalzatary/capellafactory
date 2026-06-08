@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function SuppliersError() {
   return (
     <div className="px-8 py-16 max-w-6xl mx-auto">
@@ -31,13 +33,13 @@ export default function SuppliersError() {
           >
             إعادة المحاولة
           </button>
-          <a
+          <Link
             href="/"
             className="h-9 px-4 border border-border text-[13px] font-medium inline-flex items-center transition-colors hover:bg-accent"
             style={{ borderRadius: "var(--radius)" }}
           >
             الرجوع للرئيسية
-          </a>
+          </Link>
         </div>
       </div>
     </div>

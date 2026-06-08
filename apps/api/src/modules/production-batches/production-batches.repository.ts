@@ -15,6 +15,7 @@ import {
 import { buildProductionBatchCode } from "../../services/invoice-code.service.js";
 import { recalculateStockBalances } from "../../services/stock-costing.service.js";
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
+import { StockLedgerConflictError } from "../../utils/stock-ledger.js";
 import type { ProductionBatchStockCheck } from "./production-batches.types.js";
 
 export class ProductionBatchValidationError extends Error {
@@ -187,50 +188,7 @@ export async function createProductionBatch(input: ProductionBatchInput) {
   const totalCost = preparedLines.reduce((sum, line) => sum + line.lineCost, 0);
   const unitCost = totalCost / input.producedQuantity;
 
-  const insertedId = await db.transaction(async (tx) => {
-    const occurredAt = new Date(input.occurredAt);
-    const inserted = await tx
-      .insert(productionBatchesTable)
-      .values({
-        batchCode: "",
-        occurredAt,
-        productId: input.productId,
-        producedQuantity: input.producedQuantity.toFixed(3),
-        totalCost: totalCost.toFixed(3),
-        unitCost: unitCost.toFixed(6),
-        notes: input.notes,
-      })
-      .$returningId();
-
-    const batchId = inserted[0]?.id;
-
-    if (!batchId) {
-      throw new Error("Failed to create production batch");
-    }
-
-    await tx
-      .update(productionBatchesTable)
-      .set({ batchCode: buildProductionBatchCode(occurredAt, batchId) })
-      .where(eq(productionBatchesTable.id, batchId));
-
-    await tx.insert(productionBatchLinesTable).values(
-      preparedLines.map((line) => ({
-        batchId,
-        ingredientId: line.ingredientId,
-        quantity: line.quantity.toFixed(3),
-        unit: line.unit,
-        normalizedQuantity: line.normalizedQuantity.toFixed(3),
-        unitCost: line.unitCost.toFixed(6),
-        lineCost: line.lineCost.toFixed(3),
-      })),
-    );
-
-    // Recalculate inside the same transaction so the batch and the derived
-    // stock balances commit (or roll back) atomically.
-    await recalculateStockBalances(tx);
-
-    return batchId;
-  });
+  const insertedId = await createProductionBatchTransaction(input, preparedLines, totalCost, unitCost);
 
   const batch = await getProductionBatchById(insertedId);
 
@@ -239,6 +197,76 @@ export async function createProductionBatch(input: ProductionBatchInput) {
   }
 
   return batch;
+}
+
+type PreparedProductionLine = ProductionBatchInput["lines"][number] & {
+  normalizedQuantity: number;
+  unitCost: number;
+  lineCost: number;
+};
+
+async function createProductionBatchTransaction(
+  input: ProductionBatchInput,
+  preparedLines: PreparedProductionLine[],
+  totalCost: number,
+  unitCost: number,
+) {
+  try {
+    return await db.transaction(async (tx) => {
+      const occurredAt = new Date(input.occurredAt);
+      const inserted = await tx
+        .insert(productionBatchesTable)
+        .values({
+          batchCode: "",
+          occurredAt,
+          productId: input.productId,
+          producedQuantity: input.producedQuantity.toFixed(3),
+          totalCost: totalCost.toFixed(3),
+          unitCost: unitCost.toFixed(6),
+          notes: input.notes,
+        })
+        .$returningId();
+
+      const batchId = inserted[0]?.id;
+
+      if (!batchId) {
+        throw new Error("Failed to create production batch");
+      }
+
+      await tx
+        .update(productionBatchesTable)
+        .set({ batchCode: buildProductionBatchCode(occurredAt, batchId) })
+        .where(eq(productionBatchesTable.id, batchId));
+
+      await tx.insert(productionBatchLinesTable).values(
+        preparedLines.map((line) => ({
+          batchId,
+          ingredientId: line.ingredientId,
+          quantity: line.quantity.toFixed(3),
+          unit: line.unit,
+          normalizedQuantity: line.normalizedQuantity.toFixed(3),
+          unitCost: line.unitCost.toFixed(6),
+          lineCost: line.lineCost.toFixed(3),
+        })),
+      );
+
+      // Recalculate inside the same transaction so the batch and the derived
+      // stock balances commit (or roll back) atomically. A backdated batch that
+      // makes a later record over-consume surfaces here as a ledger conflict and
+      // rolls the whole insert back.
+      await recalculateStockBalances(tx);
+
+      return batchId;
+    });
+  } catch (error) {
+    if (error instanceof StockLedgerConflictError) {
+      throw new ProductionBatchValidationError(
+        "Saving this batch would make a later record's ingredient stock negative",
+      );
+    }
+
+    throw error;
+  }
 }
 
 async function validateProductionBatchRelations(input: ProductionBatchInput) {

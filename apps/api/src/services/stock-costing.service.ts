@@ -9,39 +9,14 @@ import {
   productsTable,
 } from "../db/schema/index.js";
 import {
-  applyStockLedgerEntry,
   getStockLedgerSnapshot,
+  replayStockEvents,
   type StockLedgerBalances,
+  type StockReplayEvent,
 } from "../utils/stock-ledger.js";
 
 type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type StockExecutor = typeof db | DrizzleTransaction;
-
-type StockReplayEvent =
-  | {
-      id: number;
-      occurredAt: Date | string;
-      kind: "ingredient-purchase";
-      ingredientId: number;
-      quantity: number;
-      cost: number;
-    }
-  | {
-      id: number;
-      occurredAt: Date | string;
-      kind: "production-consumption";
-      ingredientId: number;
-      quantity: number;
-      cost: number;
-    }
-  | {
-      id: number;
-      occurredAt: Date | string;
-      kind: "production-output";
-      productId: number;
-      quantity: number;
-      cost: number;
-    };
 
 export async function recalculateStockBalances(executor?: StockExecutor) {
   // Run the whole recompute atomically. When called inside an existing
@@ -112,32 +87,12 @@ export async function recalculateStockBalances(executor?: StockExecutor) {
       quantity: Number(line.producedQuantity),
       cost: Number(line.totalCost),
     })),
-  ].sort(compareStockReplayEvents);
+  ];
 
-  const ingredientBalances: StockLedgerBalances = new Map();
-  const productBalances: StockLedgerBalances = new Map();
-
-  for (const event of events) {
-    if (event.kind === "ingredient-purchase") {
-      applyStockLedgerEntry(ingredientBalances, {
-        itemId: event.ingredientId,
-        quantityDelta: event.quantity,
-        costDelta: event.cost,
-      });
-    } else if (event.kind === "production-consumption") {
-      applyStockLedgerEntry(ingredientBalances, {
-        itemId: event.ingredientId,
-        quantityDelta: -event.quantity,
-        costDelta: -event.cost,
-      });
-    } else {
-      applyStockLedgerEntry(productBalances, {
-        itemId: event.productId,
-        quantityDelta: event.quantity,
-        costDelta: event.cost,
-      });
-    }
-  }
+  // Chronological replay. Throws StockLedgerConflictError if any event (e.g. a
+  // backdated batch) drives an ingredient balance negative, which rolls back
+  // the surrounding transaction.
+  const { ingredientBalances, productBalances } = replayStockEvents(events);
 
   await persistIngredientBalances(tx, ingredientBalances);
   await persistProductBalances(tx, productBalances);
@@ -193,36 +148,4 @@ function dedupeProductionOutputs<T extends { batchId: number }>(lines: T[]) {
     seenBatchIds.add(line.batchId);
     return true;
   });
-}
-
-function compareStockReplayEvents(left: StockReplayEvent, right: StockReplayEvent) {
-  const leftTime = new Date(left.occurredAt).getTime();
-  const rightTime = new Date(right.occurredAt).getTime();
-
-  if (leftTime !== rightTime) {
-    return leftTime - rightTime;
-  }
-
-  // Purchase and consumption/output ids come from independent sequences
-  // (purchaseId vs batchId), so break ties by event kind first to keep the
-  // replay deterministic: stock must arrive (purchase) before it is consumed,
-  // and consumption before the produced output is added.
-  const kindWeight = stockEventKindWeight(left.kind) - stockEventKindWeight(right.kind);
-
-  if (kindWeight !== 0) {
-    return kindWeight;
-  }
-
-  return left.id - right.id;
-}
-
-function stockEventKindWeight(kind: StockReplayEvent["kind"]) {
-  switch (kind) {
-    case "ingredient-purchase":
-      return 0;
-    case "production-consumption":
-      return 1;
-    case "production-output":
-      return 2;
-  }
 }

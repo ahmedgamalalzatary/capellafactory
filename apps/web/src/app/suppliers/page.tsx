@@ -13,8 +13,6 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
   const suppliers = await getSuppliers(query);
-  const total = suppliers.length;
-  const withLocation = suppliers.filter((s) => Boolean(s.where)).length;
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 mx-auto">
