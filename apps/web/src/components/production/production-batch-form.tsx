@@ -86,7 +86,23 @@ export function ProductionBatchForm({
   const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
+  const [occurredAtDate, setOccurredAtDate] = useState(getLocalDateInputValue(now));
   const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
+  const [productId, setProductId] = useState(String(products[0]?.id ?? ""));
+  const [producedQuantity, setProducedQuantity] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Cleared only after a successful save. On a rejected submit we deliberately
+  // leave every field untouched so the user can fix the problem and retry.
+  function resetForm() {
+    const next = new Date();
+    setLines([createEmptyLine(ingredients)]);
+    setOccurredAtDate(getLocalDateInputValue(next));
+    setOccurredAtTime(getLocalTimeInputValue(next));
+    setProductId(String(products[0]?.id ?? ""));
+    setProducedQuantity("");
+    setNotes("");
+  }
 
   function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
     setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? updater(line) : line)));
@@ -106,14 +122,14 @@ export function ProductionBatchForm({
     setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
   }
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit() {
     await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
       try {
         const payload: ProductionBatchInput = {
-          occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-          productId: Number(formData.get("productId") ?? 0),
-          producedQuantity: Number(formData.get("producedQuantity") ?? 0),
-          notes: String(formData.get("notes") ?? "").trim() || undefined,
+          occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
+          productId: Number(productId || 0),
+          producedQuantity: Number(producedQuantity || 0),
+          notes: notes.trim() || undefined,
           lines: lines.map((line) => ({
             ingredientId: Number(line.ingredientId),
             quantity: Number(line.quantity),
@@ -123,6 +139,7 @@ export function ProductionBatchForm({
 
         await createProductionBatch(payload);
         toast.success("تم حفظ تشغيلة الإنتاج");
+        resetForm();
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -139,6 +156,8 @@ export function ProductionBatchForm({
         label="وقت الإنتاج الفعلي"
         hint="اختر تاريخ ووقت التشغيلة حتى يتم ترتيب حركات المخزون زمنيًا."
         defaultDate={getLocalDateInputValue(now)}
+        dateValue={occurredAtDate}
+        onDateChange={setOccurredAtDate}
         timeValue={occurredAtTime}
         onTimeChange={setOccurredAtTime}
       />
@@ -149,7 +168,8 @@ export function ProductionBatchForm({
             id="productId"
             name="productId"
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            defaultValue={products[0]?.id ?? ""}
+            value={productId}
+            onChange={(event) => setProductId(event.target.value)}
             required
           >
             {products.map((product) => (
@@ -161,7 +181,16 @@ export function ProductionBatchForm({
         </Field>
 
         <Field id="producedQuantity" label="الكمية المنتجة" required>
-          <Input id="producedQuantity" name="producedQuantity" type="number" min="0.001" step="0.001" required />
+          <Input
+            id="producedQuantity"
+            name="producedQuantity"
+            type="number"
+            min="0.001"
+            step="0.001"
+            value={producedQuantity}
+            onChange={(event) => setProducedQuantity(event.target.value)}
+            required
+          />
         </Field>
       </div>
 
@@ -264,7 +293,14 @@ export function ProductionBatchForm({
       </div>
 
       <Field id="notes" label="ملاحظات">
-        <Textarea id="notes" name="notes" rows={4} placeholder="تفاصيل إضافية..." />
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={4}
+          placeholder="تفاصيل إضافية..."
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
       </Field>
 
       <div className="mt-2 flex items-center justify-between border-t pt-4">

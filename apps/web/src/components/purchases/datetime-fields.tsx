@@ -14,6 +14,12 @@ type PurchaseDateTimeFieldsProps = {
   defaultDate: string;
   timeValue: string;
   onTimeChange: (value: string) => void;
+  /**
+   * When provided, the date input is controlled so it survives React's
+   * post-submit form reset. Falls back to the uncontrolled `defaultDate`.
+   */
+  dateValue?: string;
+  onDateChange?: (value: string) => void;
 };
 
 export function PurchaseDateTimeFields({
@@ -24,6 +30,8 @@ export function PurchaseDateTimeFields({
   defaultDate,
   timeValue,
   onTimeChange,
+  dateValue,
+  onDateChange,
 }: PurchaseDateTimeFieldsProps) {
   const displayTimeValue = toDisplayTimeValue(timeValue);
 
@@ -38,7 +46,18 @@ export function PurchaseDateTimeFields({
           <Label htmlFor={dateId} className="text-xs font-normal text-muted-foreground">
             التاريخ
           </Label>
-          <Input id={dateId} name={dateId} type="date" defaultValue={defaultDate} required />
+          {onDateChange ? (
+            <Input
+              id={dateId}
+              name={dateId}
+              type="date"
+              value={dateValue ?? defaultDate}
+              onChange={(event) => onDateChange(event.target.value)}
+              required
+            />
+          ) : (
+            <Input id={dateId} name={dateId} type="date" defaultValue={defaultDate} required />
+          )}
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor={timeId} className="text-xs font-normal text-muted-foreground">

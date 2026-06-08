@@ -58,6 +58,23 @@ test("ProductionBatchesTable has a mobile card layout", () => {
   expect(source).toContain("divide-y sm:hidden");
 });
 
+test("production batch form keeps entered values when a submit is rejected", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/production/production-batch-form.tsx"),
+    "utf8",
+  );
+
+  // All fields are controlled by React state so React 19's post-action form
+  // reset cannot wipe them when the server rejects the batch.
+  expect(source).toContain("value={productId}");
+  expect(source).toContain("value={producedQuantity}");
+  expect(source).toContain("value={notes}");
+  expect(source).toContain("onDateChange={setOccurredAtDate}");
+
+  // The form is cleared only after a successful save, never on error.
+  expect(source).toContain("function resetForm");
+});
+
 test("production batch detail page has mobile line cards", () => {
   const source = readFileSync(
     resolve(process.cwd(), "src/app/products/production-batches/[id]/page.tsx"),

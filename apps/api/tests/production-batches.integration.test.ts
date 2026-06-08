@@ -142,8 +142,9 @@ test(
     assert.ok(pool && repo);
 
     const productId = await seedProduct(`TEST_PROD_CONFLICT_${Date.now()}`);
+    const conflictIngredientName = `TEST_ING_CONFLICT_${Date.now()}`;
     const ingredientId = await seedIngredientWithStock(
-      `TEST_ING_CONFLICT_${Date.now()}`,
+      conflictIngredientName,
       "500.000",
       "0.100000",
     );
@@ -159,7 +160,8 @@ test(
         }),
       (error: unknown) =>
         error instanceof repo!.ProductionBatchValidationError &&
-        /later record/i.test(error.message),
+        error.message.includes("سجل لاحق") &&
+        error.message.includes(conflictIngredientName),
     );
 
     assert.equal(await countRows("production_batches"), 0);

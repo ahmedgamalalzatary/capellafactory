@@ -83,12 +83,25 @@ export function normalizeProductionBatchSearchQuery(query?: string) {
   return normalized ? normalized : undefined;
 }
 
+function formatStockQuantity(value: number) {
+  return parseFloat(value.toFixed(3)).toString();
+}
+
 export function validateProductionBatchStock(checks: ProductionBatchStockCheck[]) {
-  for (const check of checks) {
-    if (check.requestedQuantity > check.availableQuantity) {
-      throw new ProductionBatchValidationError("Insufficient ingredient stock");
-    }
+  const shortages = checks.filter((check) => check.requestedQuantity > check.availableQuantity);
+
+  if (shortages.length === 0) {
+    return;
   }
+
+  const details = shortages
+    .map(
+      (check) =>
+        `${check.ingredientName} (متاح ${formatStockQuantity(check.availableQuantity)}، مطلوب ${formatStockQuantity(check.requestedQuantity)})`,
+    )
+    .join("؛ ");
+
+  throw new ProductionBatchValidationError(`المخزون غير كافٍ من: ${details}`);
 }
 
 export function validateProductionBatchLineUnit(
@@ -170,12 +183,14 @@ export async function createProductionBatch(input: ProductionBatchInput) {
       unitCost,
       lineCost,
       availableQuantity: Number(ingredient.stockQuantity),
+      ingredientName: ingredient.name,
     };
   });
 
   validateProductionBatchStock(
     preparedLines.map((line) => ({
       ingredientId: line.ingredientId,
+      ingredientName: line.ingredientName,
       requestedQuantity: line.normalizedQuantity,
       availableQuantity: line.availableQuantity,
     })),
@@ -203,6 +218,8 @@ type PreparedProductionLine = ProductionBatchInput["lines"][number] & {
   normalizedQuantity: number;
   unitCost: number;
   lineCost: number;
+  availableQuantity: number;
+  ingredientName: string;
 };
 
 async function createProductionBatchTransaction(
@@ -260,8 +277,12 @@ async function createProductionBatchTransaction(
     });
   } catch (error) {
     if (error instanceof StockLedgerConflictError) {
+      const conflicting = preparedLines.find((line) => line.ingredientId === error.ingredientId);
+      const ingredientLabel = conflicting
+        ? conflicting.ingredientName
+        : `#${error.ingredientId}`;
       throw new ProductionBatchValidationError(
-        "Saving this batch would make a later record's ingredient stock negative",
+        `حفظ هذه التشغيلة سيجعل مخزون الخامة (${ingredientLabel}) بالسالب في سجل لاحق`,
       );
     }
 

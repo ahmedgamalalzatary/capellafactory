@@ -87,18 +87,62 @@ test("normalizes production batch search query", () => {
   assert.equal(normalizeProductionBatchSearchQuery("  PRD  "), "PRD");
 });
 
-test("stock validation rejects insufficient ingredient quantity", () => {
+test("stock validation rejects insufficient ingredient quantity and names it", () => {
   assert.throws(
     () =>
       validateProductionBatchStock([
         {
           ingredientId: 2,
-          requestedQuantity: 1500,
-          availableQuantity: 1000,
+          ingredientName: "علبه 500مم",
+          requestedQuantity: 90,
+          availableQuantity: 50,
         },
       ]),
     (error: unknown) =>
       error instanceof ProductionBatchValidationError &&
-      error.message === "Insufficient ingredient stock",
+      error.message === "المخزون غير كافٍ من: علبه 500مم (متاح 50، مطلوب 90)",
+  );
+});
+
+test("stock validation lists every insufficient ingredient and skips sufficient ones", () => {
+  assert.throws(
+    () =>
+      validateProductionBatchStock([
+        {
+          ingredientId: 1,
+          ingredientName: "مياه مقطره",
+          requestedQuantity: 40000,
+          availableQuantity: 75000,
+        },
+        {
+          ingredientId: 2,
+          ingredientName: "علبه 500مم",
+          requestedQuantity: 90,
+          availableQuantity: 50,
+        },
+        {
+          ingredientId: 3,
+          ingredientName: "زنزان",
+          requestedQuantity: 600,
+          availableQuantity: 100,
+        },
+      ]),
+    (error: unknown) =>
+      error instanceof ProductionBatchValidationError &&
+      error.message ===
+        "المخزون غير كافٍ من: علبه 500مم (متاح 50، مطلوب 90)؛ زنزان (متاح 100، مطلوب 600)",
+  );
+});
+
+test("stock validation passes when every ingredient has enough", () => {
+  assert.doesNotThrow(() =>
+    validateProductionBatchStock([
+      {
+        ingredientId: 2,
+        ingredientName: "علبه 500مم",
+        requestedQuantity: 50,
+        availableQuantity: 50,
+      },
+    ]),
   );
 });

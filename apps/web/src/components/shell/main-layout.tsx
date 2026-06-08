@@ -13,7 +13,7 @@ export function MainLayout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
-      <Toaster position="bottom-left" richColors />
+      <Toaster position="top-left" richColors />
     </div>
   );
 }
