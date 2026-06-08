@@ -3,7 +3,7 @@ services:
     image: mysql:8.4
     restart: unless-stopped
     env_file:
-      - ${ENV_FILE:-.env.docker}
+      - ${ENV_FILE}
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -15,7 +15,7 @@ services:
   migrate:
     image: capellafactory-api:latest
     env_file:
-      - ${ENV_FILE:-.env.docker}
+      - ${ENV_FILE}
     depends_on:
       db:
         condition: service_healthy
@@ -34,7 +34,7 @@ services:
       dockerfile: Dockerfile.api
     restart: unless-stopped
     env_file:
-      - ${ENV_FILE:-.env.docker}
+      - ${ENV_FILE}
     depends_on:
       db:
         condition: service_healthy
@@ -52,7 +52,7 @@ services:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:4010}
     restart: unless-stopped
     env_file:
-      - ${ENV_FILE:-.env.docker}
+      - ${ENV_FILE}
     depends_on:
       api:
         condition: service_started
