@@ -5,6 +5,8 @@ import {
   mapIngredientPurchaseRowToIngredientPurchase,
   mapIngredientPurchaseLineRow,
   normalizeIngredientPurchaseSearchQuery,
+  resolveIngredientPurchaseLineCost,
+  resolveIngredientPurchaseSupplierFields,
   validateIngredientPurchaseLineUnit,
 } from "../src/modules/ingredient-purchases/ingredient-purchases.repository.js";
 
@@ -80,6 +82,23 @@ test("normalizes ingredient purchase search query", () => {
   assert.equal(normalizeIngredientPurchaseSearchQuery(""), undefined);
   assert.equal(normalizeIngredientPurchaseSearchQuery("   "), undefined);
   assert.equal(normalizeIngredientPurchaseSearchQuery("  sugar  "), "sugar");
+});
+
+test("snapshots saved supplier name on ingredient purchase insert", () => {
+  assert.deepEqual(
+    resolveIngredientPurchaseSupplierFields({ supplierId: 7, supplierName: undefined }, "Factory Supplier"),
+    {
+      supplierId: 7,
+      supplierName: "Factory Supplier",
+    },
+  );
+});
+
+test("derives ingredient purchase unit price from entered line total", () => {
+  assert.deepEqual(resolveIngredientPurchaseLineCost({ quantity: 2.5, lineTotal: 100 }), {
+    unitPrice: 40,
+    lineTotal: 100,
+  });
 });
 
 test("accepts unit when it matches ingredient family", () => {

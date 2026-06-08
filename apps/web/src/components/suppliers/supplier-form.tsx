@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { SupplierInput } from "@capella/shared/suppliers/supplier.types";
 import { createSupplier, updateSupplier } from "@/lib/api/suppliers";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,33 +60,32 @@ export function SupplierForm({
   onSuccess,
 }: SupplierFormProps) {
   const router = useRouter();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      const payload: SupplierInput = {
+        name: String(formData.get("name") ?? "").trim(),
+        phone: String(formData.get("phone") ?? "").trim(),
+        where: normalizeOptionalField(formData.get("where")),
+        notes: normalizeOptionalField(formData.get("notes")),
+      };
 
-    const payload: SupplierInput = {
-      name: String(formData.get("name") ?? "").trim(),
-      phone: String(formData.get("phone") ?? "").trim(),
-      where: normalizeOptionalField(formData.get("where")),
-      notes: normalizeOptionalField(formData.get("notes")),
-    };
-
-    try {
-      if (supplierId) {
-        await updateSupplier(supplierId, payload);
-        toast.success("تم تحديث بيانات المورد بنجاح");
-      } else {
-        await createSupplier(payload);
-        toast.success("تم إضافة المورد بنجاح");
+      try {
+        if (supplierId) {
+          await updateSupplier(supplierId, payload);
+          toast.success("تم تحديث بيانات المورد بنجاح");
+        } else {
+          await createSupplier(payload);
+          toast.success("تم إضافة المورد بنجاح");
+        }
+        router.refresh();
+        onSuccess?.();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "فشل حفظ المورد. حاول مجددًا.");
       }
-      router.refresh();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل حفظ المورد. حاول مجددًا.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

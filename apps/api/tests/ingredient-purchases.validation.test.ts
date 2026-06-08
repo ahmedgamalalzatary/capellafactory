@@ -6,7 +6,7 @@ test("create ingredient purchase accepts saved supplier with valid lines", () =>
   const result = createIngredientPurchaseSchema.safeParse({
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierId: 7,
-    lines: [{ ingredientId: 1, quantity: 2.5, unit: "kg", unitPrice: 40 }],
+    lines: [{ ingredientId: 1, quantity: 2.5, unit: "kg", lineTotal: 100 }],
   });
 
   assert.equal(result.success, true);
@@ -16,7 +16,7 @@ test("create ingredient purchase accepts typed supplier with valid lines", () =>
   const result = createIngredientPurchaseSchema.safeParse({
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierName: "Cash market",
-    lines: [{ ingredientId: 1, quantity: 500, unit: "g", unitPrice: 12 }],
+    lines: [{ ingredientId: 1, quantity: 500, unit: "g", lineTotal: 12 }],
   });
 
   assert.equal(result.success, true);
@@ -25,7 +25,7 @@ test("create ingredient purchase accepts typed supplier with valid lines", () =>
 test("create ingredient purchase rejects when supplier is missing", () => {
   const result = createIngredientPurchaseSchema.safeParse({
     occurredAt: "2026-05-24T12:00:00.000Z",
-    lines: [{ ingredientId: 1, quantity: 500, unit: "g", unitPrice: 12 }],
+    lines: [{ ingredientId: 1, quantity: 500, unit: "g", lineTotal: 12 }],
   });
 
   assert.equal(result.success, false);
@@ -36,7 +36,7 @@ test("create ingredient purchase rejects when both supplier modes are used", () 
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierId: 3,
     supplierName: "Duplicated source",
-    lines: [{ ingredientId: 1, quantity: 500, unit: "g", unitPrice: 12 }],
+    lines: [{ ingredientId: 1, quantity: 500, unit: "g", lineTotal: 12 }],
   });
 
   assert.equal(result.success, false);
@@ -47,8 +47,8 @@ test("create ingredient purchase rejects duplicate ingredient lines", () => {
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierId: 7,
     lines: [
-      { ingredientId: 1, quantity: 1, unit: "kg", unitPrice: 40 },
-      { ingredientId: 1, quantity: 250, unit: "g", unitPrice: 10 },
+      { ingredientId: 1, quantity: 1, unit: "kg", lineTotal: 40 },
+      { ingredientId: 1, quantity: 250, unit: "g", lineTotal: 10 },
     ],
   });
 
@@ -60,6 +60,16 @@ test("create ingredient purchase requires at least one line", () => {
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierId: 7,
     lines: [],
+  });
+
+  assert.equal(result.success, false);
+});
+
+test("create ingredient purchase rejects line unit price input", () => {
+  const result = createIngredientPurchaseSchema.safeParse({
+    occurredAt: "2026-05-24T12:00:00.000Z",
+    supplierId: 7,
+    lines: [{ ingredientId: 1, quantity: 2.5, unit: "kg", unitPrice: 40 }],
   });
 
   assert.equal(result.success, false);

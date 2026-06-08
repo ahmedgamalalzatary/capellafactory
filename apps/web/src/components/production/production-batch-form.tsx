@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
 import type { IngredientPurchaseUnit } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
 import { createProductionBatch } from "@/lib/api/production-batches";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,6 +83,7 @@ export function ProductionBatchForm({
 }: ProductionBatchFormProps) {
   const router = useRouter();
   const now = new Date();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
   const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
@@ -105,30 +107,28 @@ export function ProductionBatchForm({
   }
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      try {
+        const payload: ProductionBatchInput = {
+          occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+          productId: Number(formData.get("productId") ?? 0),
+          producedQuantity: Number(formData.get("producedQuantity") ?? 0),
+          notes: String(formData.get("notes") ?? "").trim() || undefined,
+          lines: lines.map((line) => ({
+            ingredientId: Number(line.ingredientId),
+            quantity: Number(line.quantity),
+            unit: line.unit,
+          })),
+        };
 
-    try {
-      const payload: ProductionBatchInput = {
-        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-        productId: Number(formData.get("productId") ?? 0),
-        producedQuantity: Number(formData.get("producedQuantity") ?? 0),
-        notes: String(formData.get("notes") ?? "").trim() || undefined,
-        lines: lines.map((line) => ({
-          ingredientId: Number(line.ingredientId),
-          quantity: Number(line.quantity),
-          unit: line.unit,
-        })),
-      };
-
-      await createProductionBatch(payload);
-      toast.success("تم حفظ تشغيلة الإنتاج");
-      router.refresh();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل حفظ التشغيلة.");
-    } finally {
-      setIsSubmitting(false);
-    }
+        await createProductionBatch(payload);
+        toast.success("تم حفظ تشغيلة الإنتاج");
+        router.refresh();
+        onSuccess?.();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "فشل حفظ التشغيلة.");
+      }
+    });
   }
 
   return (

@@ -1,6 +1,7 @@
 import type {
   IngredientPurchaseInput,
   IngredientPurchase,
+  IngredientPurchaseLineInput,
   IngredientPurchaseLine,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { IngredientUnitFamily } from "@capella/shared/ingredients/ingredient.types";
@@ -90,6 +91,32 @@ export function validateIngredientPurchaseLineUnit(
   }
 }
 
+export function resolveIngredientPurchaseSupplierFields(
+  input: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">,
+  savedSupplierName?: string,
+) {
+  if (input.supplierId !== undefined) {
+    return {
+      supplierId: input.supplierId,
+      supplierName: savedSupplierName,
+    };
+  }
+
+  return {
+    supplierId: undefined,
+    supplierName: input.supplierName,
+  };
+}
+
+export function resolveIngredientPurchaseLineCost(
+  line: Pick<IngredientPurchaseLineInput, "quantity" | "lineTotal">,
+) {
+  return {
+    unitPrice: line.lineTotal / line.quantity,
+    lineTotal: line.lineTotal,
+  };
+}
+
 export async function listIngredientPurchases(query?: string) {
   const normalizedQuery = normalizeIngredientPurchaseSearchQuery(query);
   const rows = await db
@@ -131,6 +158,10 @@ export async function getIngredientPurchaseById(id: number) {
 
 export async function createIngredientPurchase(input: IngredientPurchaseInput) {
   const relationState = await validateIngredientPurchaseRelations(input);
+  const supplierFields = resolveIngredientPurchaseSupplierFields(
+    input,
+    relationState.supplierName,
+  );
 
   const insertedId = await db.transaction(async (tx) => {
     const occurredAt = new Date(input.occurredAt);
@@ -140,8 +171,8 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
       .values({
         invoiceCode: "",
         occurredAt,
-        supplierId: input.supplierId,
-        supplierName: input.supplierName,
+        supplierId: supplierFields.supplierId,
+        supplierName: supplierFields.supplierName,
         notes: input.notes,
       })
       .$returningId();
@@ -170,14 +201,15 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
         validateIngredientPurchaseLineUnit(ingredient.unitFamily, line.unit);
 
         const normalizedQuantity = normalizeIngredientQuantity(ingredient.unitFamily, line.quantity, line.unit);
+        const lineCost = resolveIngredientPurchaseLineCost(line);
 
         return {
           purchaseId,
           ingredientId: line.ingredientId,
           quantity: line.quantity.toFixed(3),
           unit: line.unit,
-          unitPrice: line.unitPrice.toFixed(3),
-          lineTotal: (line.quantity * line.unitPrice).toFixed(3),
+          unitPrice: lineCost.unitPrice.toFixed(3),
+          lineTotal: lineCost.lineTotal.toFixed(3),
           normalizedQuantity: normalizedQuantity.toFixed(3),
         };
       }),
@@ -200,6 +232,8 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
 }
 
 async function validateIngredientPurchaseRelations(input: IngredientPurchaseInput) {
+  let supplierName: string | undefined;
+
   if (input.supplierId !== undefined) {
     const supplier = await db.query.suppliersTable.findFirst({
       where: eq(suppliersTable.id, input.supplierId),
@@ -208,6 +242,8 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
     if (!supplier) {
       throw new IngredientPurchaseValidationError("Supplier not found");
     }
+
+    supplierName = supplier.name;
   }
 
   const ingredientIds = [...new Set(input.lines.map((line) => line.ingredientId))];
@@ -234,6 +270,7 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
 
   return {
     ingredientsById,
+    supplierName,
   };
 }
 

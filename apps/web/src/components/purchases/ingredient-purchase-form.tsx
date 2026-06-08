@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
 import type {
@@ -9,6 +9,7 @@ import type {
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { createIngredientPurchase } from "@/lib/api/ingredient-purchases";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +35,7 @@ type DraftLine = {
   ingredientId: number;
   quantity: string;
   unit: IngredientPurchaseUnit;
-  unitPrice: string;
+  lineTotal: string;
 };
 
 const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
@@ -78,7 +79,7 @@ function createEmptyLine(ingredients: Ingredient[]): DraftLine {
     ingredientId: ingredient?.id ?? 0,
     quantity: "",
     unit: ingredient ? unitOptionsByFamily[ingredient.unitFamily][0] : "kg",
-    unitPrice: "",
+    lineTotal: "",
   };
 }
 
@@ -90,6 +91,7 @@ export function IngredientPurchaseForm({
 }: IngredientPurchaseFormProps) {
   const router = useRouter();
   const now = new Date();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [supplierMode, setSupplierMode] = useState<SupplierMode>("saved");
   const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
@@ -108,64 +110,62 @@ export function IngredientPurchaseForm({
   }
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
-
-    try {
-      const parsedLines = lines.map((line) => ({
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      try {
+        const parsedLines = lines.map((line) => ({
         ingredientId: Number(line.ingredientId),
         quantity: Number(line.quantity),
         unit: line.unit,
-        unitPrice: Number(line.unitPrice),
+        lineTotal: Number(line.lineTotal),
       }));
 
-      const hasInvalidLine = parsedLines.some(
-        (line) =>
-          !Number.isFinite(line.ingredientId) ||
-          line.ingredientId <= 0 ||
-          !Number.isFinite(line.quantity) ||
-          line.quantity <= 0 ||
-          !Number.isFinite(line.unitPrice) ||
-          line.unitPrice <= 0,
-      );
+        const hasInvalidLine = parsedLines.some(
+          (line) =>
+            !Number.isFinite(line.ingredientId) ||
+            line.ingredientId <= 0 ||
+            !Number.isFinite(line.quantity) ||
+            line.quantity <= 0 ||
+            !Number.isFinite(line.lineTotal) ||
+            line.lineTotal <= 0,
+        );
 
-      if (hasInvalidLine) {
-        toast.error("تأكد من صحة الكمية وسعر الوحدة لكل بند.");
-        return;
-      }
-
-      let supplierFields: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">;
-
-      if (supplierMode === "saved") {
-        const supplierId = Number(formData.get("supplierId") ?? 0);
-
-        if (!Number.isFinite(supplierId) || supplierId <= 0) {
-          toast.error("اختر موردًا صالحًا.");
+        if (hasInvalidLine) {
+          toast.error("تأكد من صحة الكمية وإجمالي السعر لكل بند.");
           return;
         }
 
-        supplierFields = { supplierId };
-      } else {
-        supplierFields = {
-          supplierName: String(formData.get("supplierName") ?? "").trim() || undefined,
+        let supplierFields: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">;
+
+        if (supplierMode === "saved") {
+          const supplierId = Number(formData.get("supplierId") ?? 0);
+
+          if (!Number.isFinite(supplierId) || supplierId <= 0) {
+            toast.error("اختر موردًا صالحًا.");
+            return;
+          }
+
+          supplierFields = { supplierId };
+        } else {
+          supplierFields = {
+            supplierName: String(formData.get("supplierName") ?? "").trim() || undefined,
+          };
+        }
+
+        const payload: IngredientPurchaseInput = {
+          occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+          notes: String(formData.get("notes") ?? "").trim() || undefined,
+          lines: parsedLines,
+          ...supplierFields,
         };
+
+        await createIngredientPurchase(payload);
+        toast.success("تم حفظ فاتورة شراء الخامات");
+        router.refresh();
+        onSuccess?.();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "فشل حفظ الفاتورة.");
       }
-
-      const payload: IngredientPurchaseInput = {
-        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-        notes: String(formData.get("notes") ?? "").trim() || undefined,
-        lines: parsedLines,
-        ...supplierFields,
-      };
-
-      await createIngredientPurchase(payload);
-      toast.success("تم حفظ فاتورة شراء الخامات");
-      router.refresh();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل حفظ الفاتورة.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (
@@ -240,7 +240,9 @@ export function IngredientPurchaseForm({
         {lines.map((line, index) => {
           const ingredient = ingredients.find((item) => item.id === line.ingredientId) ?? ingredients[0];
           const allowedUnits = ingredient ? unitOptionsByFamily[ingredient.unitFamily] : ["kg"];
-          const total = (Number(line.quantity) || 0) * (Number(line.unitPrice) || 0);
+          const quantity = Number(line.quantity) || 0;
+          const total = Number(line.lineTotal) || 0;
+          const unitPrice = quantity > 0 ? total / quantity : 0;
 
           return (
             <div key={index} className="grid gap-3 rounded-lg border p-3">
@@ -306,14 +308,14 @@ export function IngredientPurchaseForm({
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label>سعر الوحدة</Label>
+                  <Label>إجمالي السعر</Label>
                   <Input
                     type="number"
                     min="0.001"
                     step="0.001"
-                    value={line.unitPrice}
+                    value={line.lineTotal}
                     onChange={(event) =>
-                      updateLine(index, (current) => ({ ...current, unitPrice: event.target.value }))
+                      updateLine(index, (current) => ({ ...current, lineTotal: event.target.value }))
                     }
                     required
                   />
@@ -321,6 +323,7 @@ export function IngredientPurchaseForm({
               </div>
 
               <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>سعر الوحدة المحسوب: {unitPrice.toFixed(3)}</span>
                 <span>إجمالي البند: {total.toFixed(3)}</span>
                 <Button type="button" variant="ghost" size="sm" onClick={() => removeLine(index)}>
                   حذف البند

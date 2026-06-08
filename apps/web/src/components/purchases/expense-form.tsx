@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ExpenseInput, ExpenseType } from "@capella/shared/expenses/expense.types";
 import { createExpense } from "@/lib/api/expenses";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,32 +70,31 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const router = useRouter();
   const now = new Date();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expenseType, setExpenseType] = useState<ExpenseType>("rent");
   const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      const payload: ExpenseInput = {
+        type: String(formData.get("type") ?? "rent") as ExpenseType,
+        amount: Number(formData.get("amount") ?? 0),
+        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+        notes: String(formData.get("notes") ?? "").trim() || undefined,
+        employeeName: String(formData.get("employeeName") ?? "").trim() || undefined,
+        otherLabel: String(formData.get("otherLabel") ?? "").trim() || undefined,
+      };
 
-    const payload: ExpenseInput = {
-      type: String(formData.get("type") ?? "rent") as ExpenseType,
-      amount: Number(formData.get("amount") ?? 0),
-      occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-      notes: String(formData.get("notes") ?? "").trim() || undefined,
-      employeeName: String(formData.get("employeeName") ?? "").trim() || undefined,
-      otherLabel: String(formData.get("otherLabel") ?? "").trim() || undefined,
-    };
-
-    try {
-      await createExpense(payload);
-      toast.success("تم تسجيل المصروف بنجاح");
-      router.refresh();
-      onSuccess?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "فشل تسجيل المصروف. حاول مجددًا.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      try {
+        await createExpense(payload);
+        toast.success("تم تسجيل المصروف بنجاح");
+        router.refresh();
+        onSuccess?.();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "فشل تسجيل المصروف. حاول مجددًا.");
+      }
+    });
   }
 
   return (

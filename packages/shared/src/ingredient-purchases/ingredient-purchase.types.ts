@@ -6,7 +6,7 @@ export type IngredientPurchaseLineInput = {
   ingredientId: number;
   quantity: number;
   unit: IngredientPurchaseUnit;
-  unitPrice: number;
+  lineTotal: number;
 };
 
 export type IngredientPurchaseInput = {

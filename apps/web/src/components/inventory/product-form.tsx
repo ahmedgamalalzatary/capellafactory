@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ProductInput } from "@capella/shared/products/product.types";
 import { createProduct, updateProduct } from "@/lib/api/products";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,31 +57,30 @@ export function ProductForm({
   onSuccess,
 }: ProductFormProps) {
   const router = useRouter();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      const payload: ProductInput = {
+        name: String(formData.get("name") ?? "").trim(),
+      };
 
-    const payload: ProductInput = {
-      name: String(formData.get("name") ?? "").trim(),
-    };
+      try {
+        if (productId) {
+          await updateProduct(productId, payload);
+          toast.success("تم تحديث المنتج بنجاح");
+        } else {
+          await createProduct(payload);
+          toast.success("تم إضافة المنتج بنجاح");
+        }
 
-    try {
-      if (productId) {
-        await updateProduct(productId, payload);
-        toast.success("تم تحديث المنتج بنجاح");
-      } else {
-        await createProduct(payload);
-        toast.success("تم إضافة المنتج بنجاح");
+        router.refresh();
+        onSuccess?.();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "فشل حفظ المنتج. حاول مجددًا.");
       }
-
-      router.refresh();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل حفظ المنتج. حاول مجددًا.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

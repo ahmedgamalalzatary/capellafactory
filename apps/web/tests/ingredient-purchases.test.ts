@@ -68,3 +68,14 @@ test("ingredient purchase detail page has mobile line cards", () => {
   expect(source).toContain("hidden sm:block");
   expect(source).toContain("divide-y sm:hidden");
 });
+
+test("ingredient purchase form submits line total instead of unit price", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/components/purchases/ingredient-purchase-form.tsx"),
+    "utf8",
+  );
+
+  expect(source).toContain("lineTotal: Number(line.lineTotal)");
+  expect(source).not.toContain("unitPrice: Number(line.unitPrice)");
+  expect(source).toContain("إجمالي البند");
+});

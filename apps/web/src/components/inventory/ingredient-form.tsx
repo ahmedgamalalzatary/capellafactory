@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type {
   IngredientInput,
   IngredientUnitFamily,
 } from "@capella/shared/ingredients/ingredient.types";
 import { createIngredient, updateIngredient } from "@/lib/api/ingredients";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,32 +60,31 @@ export function IngredientForm({
   onSuccess,
 }: IngredientFormProps) {
   const router = useRouter();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      const payload: IngredientInput = {
+        name: String(formData.get("name") ?? "").trim(),
+        unitFamily: String(formData.get("unitFamily") ?? "weight") as IngredientUnitFamily,
+      };
 
-    const payload: IngredientInput = {
-      name: String(formData.get("name") ?? "").trim(),
-      unitFamily: String(formData.get("unitFamily") ?? "weight") as IngredientUnitFamily,
-    };
+      try {
+        if (ingredientId) {
+          await updateIngredient(ingredientId, payload);
+          toast.success("تم تحديث بيانات الخام بنجاح");
+        } else {
+          await createIngredient(payload);
+          toast.success("تم إضافة الخام بنجاح");
+        }
 
-    try {
-      if (ingredientId) {
-        await updateIngredient(ingredientId, payload);
-        toast.success("تم تحديث بيانات الخام بنجاح");
-      } else {
-        await createIngredient(payload);
-        toast.success("تم إضافة الخام بنجاح");
+        router.refresh();
+        onSuccess?.();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "فشل حفظ الخام. حاول مجددًا.");
       }
-
-      router.refresh();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل حفظ الخام. حاول مجددًا.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

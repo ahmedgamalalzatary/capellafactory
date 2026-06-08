@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { BuyerInput } from "@capella/shared/buyers/buyer.types";
 import { createBuyer, updateBuyer } from "@/lib/api/buyers";
+import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,33 +60,32 @@ export function BuyerForm({
   onSuccess,
 }: BuyerFormProps) {
   const router = useRouter();
+  const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function onSubmit(formData: FormData) {
-    setIsSubmitting(true);
+    await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
+      const payload: BuyerInput = {
+        name: String(formData.get("name") ?? "").trim(),
+        phone: String(formData.get("phone") ?? "").trim(),
+        where: normalizeOptionalField(formData.get("where")),
+        notes: normalizeOptionalField(formData.get("notes")),
+      };
 
-    const payload: BuyerInput = {
-      name: String(formData.get("name") ?? "").trim(),
-      phone: String(formData.get("phone") ?? "").trim(),
-      where: normalizeOptionalField(formData.get("where")),
-      notes: normalizeOptionalField(formData.get("notes")),
-    };
-
-    try {
-      if (buyerId) {
-        await updateBuyer(buyerId, payload);
-        toast.success("تم تحديث بيانات المشتري بنجاح");
-      } else {
-        await createBuyer(payload);
-        toast.success("تم إضافة المشتري بنجاح");
+      try {
+        if (buyerId) {
+          await updateBuyer(buyerId, payload);
+          toast.success("تم تحديث بيانات المشتري بنجاح");
+        } else {
+          await createBuyer(payload);
+          toast.success("تم إضافة المشتري بنجاح");
+        }
+        router.refresh();
+        onSuccess?.();
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "فشل حفظ المشتري. حاول مجددًا.");
       }
-      router.refresh();
-      onSuccess?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "فشل حفظ المشتري. حاول مجددًا.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    });
   }
 
   return (

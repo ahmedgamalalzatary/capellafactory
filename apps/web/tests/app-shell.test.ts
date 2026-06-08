@@ -10,7 +10,7 @@ test("all navigation items are real routes", () => {
     { label: "المشترون", href: "/buyers" },
     { label: "المخزون", href: "/inventory" },
     { label: "المشتريات", href: "/purchases" },
-    { label: "المنتجات المنتجة", href: "/products" },
+    { label: "التصنيع", href: "/products" },
     { label: "المبيعات", href: "/sales" },
     { label: "التقارير", href: "/reports" },
   ]);

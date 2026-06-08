@@ -39,7 +39,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
                 Production
               </p>
               <h1 className="text-[28px] font-bold leading-tight tracking-tight text-slate-950 sm:text-[34px]">
-                المنتجات المنتجة
+                التصنيع
               </h1>
               <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-slate-600 sm:text-[14px]">
                 تسجيل تشغيلات الإنتاج التي تستهلك الخامات وتضيف رصيد المنتجات النهائية.

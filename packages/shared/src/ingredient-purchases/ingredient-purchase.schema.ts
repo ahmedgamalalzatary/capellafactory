@@ -14,8 +14,8 @@ export const ingredientPurchaseLineInputSchema = z.object({
   ingredientId: z.coerce.number().int().positive("Ingredient is required"),
   quantity: z.coerce.number().positive("Quantity must be greater than zero"),
   unit: ingredientPurchaseUnitSchema,
-  unitPrice: z.coerce.number().positive("Unit price must be greater than zero"),
-});
+  lineTotal: z.coerce.number().positive("Line total must be greater than zero"),
+}).strict();
 
 export const ingredientPurchaseInputSchema = z
   .object({
