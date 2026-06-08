@@ -73,6 +73,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      API_URL: ${API_URL:?set API_URL in env file}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
     depends_on:
       api:
