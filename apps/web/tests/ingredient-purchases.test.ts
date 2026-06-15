@@ -91,3 +91,18 @@ test("ingredient purchase form submits line total instead of unit price", () => 
   expect(source).not.toContain("unitPrice: Number(line.unitPrice)");
   expect(source).toContain("إجمالي البند");
 });
+
+test("ingredient purchase form requires choosing a saved supplier", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredient-purchase-form.tsx",
+    ),
+    "utf8",
+  );
+
+  expect(source).toContain('name="supplierId"');
+  expect(source).not.toContain("supplierMode");
+  expect(source).not.toContain('name="supplierName"');
+  expect(source).not.toContain("اسم يدوي");
+});

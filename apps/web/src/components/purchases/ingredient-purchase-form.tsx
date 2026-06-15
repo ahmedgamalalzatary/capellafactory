@@ -29,8 +29,6 @@ type IngredientPurchaseFormProps = {
   onSuccess?: () => void;
 };
 
-type SupplierMode = "saved" | "typed";
-
 type DraftLine = {
   ingredientId: number;
   quantity: string;
@@ -93,7 +91,6 @@ export function IngredientPurchaseForm({
   const now = new Date();
   const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [supplierMode, setSupplierMode] = useState<SupplierMode>("saved");
   const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
   const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
 
@@ -134,28 +131,18 @@ export function IngredientPurchaseForm({
           return;
         }
 
-        let supplierFields: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">;
+        const supplierId = Number(formData.get("supplierId") ?? 0);
 
-        if (supplierMode === "saved") {
-          const supplierId = Number(formData.get("supplierId") ?? 0);
-
-          if (!Number.isFinite(supplierId) || supplierId <= 0) {
-            toast.error("اختر موردًا صالحًا.");
-            return;
-          }
-
-          supplierFields = { supplierId };
-        } else {
-          supplierFields = {
-            supplierName: String(formData.get("supplierName") ?? "").trim() || undefined,
-          };
+        if (!Number.isFinite(supplierId) || supplierId <= 0) {
+          toast.error("اختر موردًا صالحًا.");
+          return;
         }
 
         const payload: IngredientPurchaseInput = {
           occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
+          supplierId,
           notes: String(formData.get("notes") ?? "").trim() || undefined,
           lines: parsedLines,
-          ...supplierFields,
         };
 
         await createIngredientPurchase(payload);
@@ -180,49 +167,26 @@ export function IngredientPurchaseForm({
         onTimeChange={setOccurredAtTime}
       />
 
-      <div className="grid gap-2">
-        <Label>نوع المورد</Label>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={supplierMode === "saved" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSupplierMode("saved")}
-          >
-            مورد محفوظ
-          </Button>
-          <Button
-            type="button"
-            variant={supplierMode === "typed" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setSupplierMode("typed")}
-          >
-            اسم يدوي
-          </Button>
-        </div>
-      </div>
-
-      {supplierMode === "saved" ? (
-        <Field id="supplierId" label="المورد" required>
-          <select
-            id="supplierId"
-            name="supplierId"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            defaultValue={suppliers[0]?.id ?? ""}
-            required
-          >
-            {suppliers.map((supplier) => (
-              <option key={supplier.id} value={supplier.id}>
-                {supplier.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      ) : (
-        <Field id="supplierName" label="اسم المورد المكتوب" required>
-          <Input id="supplierName" name="supplierName" placeholder="سوق الجملة" required />
-        </Field>
-      )}
+      <Field
+        id="supplierId"
+        label="المورد المعتمد"
+        required
+        hint="لا يمكن حفظ فاتورة خامات بدون اختيار مورد محفوظ من قائمة الموردين."
+      >
+        <select
+          id="supplierId"
+          name="supplierId"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          defaultValue={suppliers[0]?.id ?? ""}
+          required
+        >
+          {suppliers.map((supplier) => (
+            <option key={supplier.id} value={supplier.id}>
+              {supplier.name}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <div className="grid gap-4 rounded-xl border p-4">
         <div className="flex items-center justify-between">

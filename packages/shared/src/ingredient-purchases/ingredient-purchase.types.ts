@@ -11,8 +11,7 @@ export type IngredientPurchaseLineInput = {
 
 export type IngredientPurchaseInput = {
   occurredAt: string;
-  supplierId?: number;
-  supplierName?: string;
+  supplierId: number;
   notes?: string;
   lines: IngredientPurchaseLineInput[];
 };

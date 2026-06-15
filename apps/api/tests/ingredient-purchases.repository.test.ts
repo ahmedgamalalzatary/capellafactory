@@ -86,7 +86,7 @@ test("normalizes ingredient purchase search query", () => {
 
 test("snapshots saved supplier name on ingredient purchase insert", () => {
   assert.deepEqual(
-    resolveIngredientPurchaseSupplierFields({ supplierId: 7, supplierName: undefined }, "Factory Supplier"),
+    resolveIngredientPurchaseSupplierFields({ supplierId: 7 }, "Factory Supplier"),
     {
       supplierId: 7,
       supplierName: "Factory Supplier",

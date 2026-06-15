@@ -22,27 +22,23 @@ export const ingredientPurchaseInputSchema = z
     occurredAt: z
       .string()
       .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
-    supplierId: z.coerce.number().int().positive().optional(),
-    supplierName: optionalTrimmedString,
+    supplierId: z.coerce.number().int().positive("Supplier is required"),
     notes: optionalTrimmedString,
     lines: z
       .array(ingredientPurchaseLineInputSchema)
       .min(1, "At least one ingredient line is required"),
   })
+  .strict()
   .transform((value) => ({
     ...value,
-    supplierName: value.supplierName?.trim(),
     notes: value.notes?.trim(),
   }))
   .superRefine((value, ctx) => {
-    const hasSupplierId = value.supplierId !== undefined;
-    const hasSupplierName = Boolean(value.supplierName);
-
-    if (hasSupplierId === hasSupplierName) {
+    if ("supplierName" in value) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: hasSupplierId ? ["supplierName"] : ["supplierId"],
-        message: "Choose one supplier source: saved supplier or typed supplier name",
+        path: ["supplierName"],
+        message: "Ingredient purchases must use a saved supplier",
       });
     }
 

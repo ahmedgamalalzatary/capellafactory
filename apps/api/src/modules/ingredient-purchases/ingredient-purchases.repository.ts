@@ -92,19 +92,12 @@ export function validateIngredientPurchaseLineUnit(
 }
 
 export function resolveIngredientPurchaseSupplierFields(
-  input: Pick<IngredientPurchaseInput, "supplierId" | "supplierName">,
+  input: Pick<IngredientPurchaseInput, "supplierId">,
   savedSupplierName?: string,
 ) {
-  if (input.supplierId !== undefined) {
-    return {
-      supplierId: input.supplierId,
-      supplierName: savedSupplierName,
-    };
-  }
-
   return {
-    supplierId: undefined,
-    supplierName: input.supplierName,
+    supplierId: input.supplierId,
+    supplierName: savedSupplierName,
   };
 }
 
@@ -232,18 +225,12 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
 }
 
 async function validateIngredientPurchaseRelations(input: IngredientPurchaseInput) {
-  let supplierName: string | undefined;
+  const supplier = await db.query.suppliersTable.findFirst({
+    where: eq(suppliersTable.id, input.supplierId),
+  });
 
-  if (input.supplierId !== undefined) {
-    const supplier = await db.query.suppliersTable.findFirst({
-      where: eq(suppliersTable.id, input.supplierId),
-    });
-
-    if (!supplier) {
-      throw new IngredientPurchaseValidationError("Supplier not found");
-    }
-
-    supplierName = supplier.name;
+  if (!supplier) {
+    throw new IngredientPurchaseValidationError("Supplier not found");
   }
 
   const ingredientIds = [...new Set(input.lines.map((line) => line.ingredientId))];
@@ -270,7 +257,7 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
 
   return {
     ingredientsById,
-    supplierName,
+    supplierName: supplier.name,
   };
 }
 

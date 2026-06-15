@@ -12,14 +12,14 @@ test("create ingredient purchase accepts saved supplier with valid lines", () =>
   assert.equal(result.success, true);
 });
 
-test("create ingredient purchase accepts typed supplier with valid lines", () => {
+test("create ingredient purchase rejects typed supplier names", () => {
   const result = createIngredientPurchaseSchema.safeParse({
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierName: "Cash market",
     lines: [{ ingredientId: 1, quantity: 500, unit: "g", lineTotal: 12 }],
   });
 
-  assert.equal(result.success, true);
+  assert.equal(result.success, false);
 });
 
 test("create ingredient purchase rejects when supplier is missing", () => {
@@ -31,7 +31,7 @@ test("create ingredient purchase rejects when supplier is missing", () => {
   assert.equal(result.success, false);
 });
 
-test("create ingredient purchase rejects when both supplier modes are used", () => {
+test("create ingredient purchase rejects when both supplier id and supplier name are used", () => {
   const result = createIngredientPurchaseSchema.safeParse({
     occurredAt: "2026-05-24T12:00:00.000Z",
     supplierId: 3,
