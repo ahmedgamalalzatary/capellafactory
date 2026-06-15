@@ -4,8 +4,8 @@ import { IngredientPurchasesTable } from "@/components/purchases/ingredient-purc
 import { ExpensesTable } from "@/components/purchases/expenses-table";
 import { PurchasesSearchInput } from "@/components/purchases/purchases-search-input";
 import { MetricCard } from "@/components/shared/metric-card";
-import type { PurchasesPageProps } from "@/app/_types/types.purchases";
-import { buildPurchasesHref, formatPurchasesAmount } from "@/app/_utils/utils.purchases";
+import type { PurchasesPageProps } from "@/app/types/types.purchases";
+import { buildPurchasesHref, formatPurchasesAmount } from "@/app/utils/utils.purchases";
 import { getExpenses } from "@/lib/api/expenses";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredientPurchases } from "@/lib/api/ingredient-purchases";
@@ -97,21 +97,19 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
               <div className="mb-3 flex flex-wrap gap-2">
                 <a
                   href={buildPurchasesHref("expenses", query)}
-                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    activeTab === "expenses"
-                      ? "bg-slate-950 text-white shadow-sm"
-                      : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
-                  }`}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${activeTab === "expenses"
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+                    }`}
                 >
                   المصروفات
                 </a>
                 <a
                   href={buildPurchasesHref("ingredient-purchases", query)}
-                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${
-                    activeTab === "ingredient-purchases"
-                      ? "bg-slate-950 text-white shadow-sm"
-                      : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
-                  }`}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${activeTab === "ingredient-purchases"
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+                    }`}
                 >
                   فواتير شراء الخامات
                 </a>

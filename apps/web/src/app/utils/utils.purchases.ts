@@ -1,4 +1,4 @@
-import type { PurchasesTab } from "@/app/_types/types.purchases";
+import type { PurchasesTab } from "@/app/types/types.purchases";
 
 export function formatPurchasesAmount(value: number) {
   return new Intl.NumberFormat("en-US", {

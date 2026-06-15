@@ -1,8 +1,8 @@
 import { ProductionBatchDialog } from "@/components/production/production-batch-dialog";
 import { ProductionBatchesTable } from "@/components/production/production-batches-table";
 import { MetricCard } from "@/components/shared/metric-card";
-import type { ProductsPageProps } from "@/app/_types/types.products";
-import { formatProductsAmount } from "@/app/_utils/utils.products";
+import type { ProductsPageProps } from "@/app/types/types.products";
+import { formatProductsAmount } from "@/app/utils/utils.products";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getProducts } from "@/lib/api/products";
 import { getProductionBatches } from "@/lib/api/production-batches";

@@ -11,9 +11,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ingredientUnitFilters, inventoryTabs } from "@/app/_constants/constants.inventory";
-import type { InventoryPageProps } from "@/app/_types/types.inventory";
-import { buildInventoryHref } from "@/app/_utils/utils.inventory";
+import { ingredientUnitFilters, inventoryTabs } from "@/app/constants/constants.inventory";
+import type { InventoryPageProps } from "@/app/types/types.inventory";
+import { buildInventoryHref } from "@/app/utils/utils.inventory";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getProducts } from "@/lib/api/products";
@@ -98,11 +98,10 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                       archived: showArchived,
                       unitFamily: tab.key === "ingredients" ? ingredientUnitFilter : "all",
                     })}
-                    className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${
-                      isActive
-                        ? "bg-slate-950 text-white shadow-sm"
-                        : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
-                    }`}
+                    className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${isActive
+                      ? "bg-slate-950 text-white shadow-sm"
+                      : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+                      }`}
                   >
                     {tab.label}
                   </a>
@@ -151,11 +150,10 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
                   q: query,
                   archived: !showArchived,
                 })}
-                className={`inline-flex h-10 items-center rounded-full border px-4 text-sm font-semibold ${
-                  showArchived
-                    ? "border-amber-300 bg-amber-100 text-amber-950"
-                    : "border-slate-200 bg-white text-slate-700"
-                }`}
+                className={`inline-flex h-10 items-center rounded-full border px-4 text-sm font-semibold ${showArchived
+                  ? "border-amber-300 bg-amber-100 text-amber-950"
+                  : "border-slate-200 bg-white text-slate-700"
+                  }`}
               >
                 {showArchived ? "إخفاء المؤرشف" : "إظهار المؤرشف"}
               </a>
