@@ -67,7 +67,7 @@ export default async function ProductionBatchDetailPage({
               </h1>
               <p className="mt-2 text-sm text-slate-600">{productName}</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:min-w-[420px]">
+            <div className="grid grid-cols-2 gap-3 sm:min-w-105">
               <Metric label="الكمية المنتجة" value={formatQuantity(batch.producedQuantity)} />
               <Metric label="إجمالي التكلفة" value={formatAmount(batch.totalCost)} />
             </div>

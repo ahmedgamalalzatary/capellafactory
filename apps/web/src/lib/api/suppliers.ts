@@ -68,13 +68,21 @@ export async function deleteSupplier(id: number) {
   await handleApiResponse(response, "Failed to delete supplier");
 }
 
+export function mergeJsonHeaders(initHeaders?: HeadersInit) {
+  const headers = new Headers(initHeaders);
+
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  return headers;
+}
+
 async function mutateSupplier(url: string, init: RequestInit) {
   const response = await fetch(url, {
     ...withApiCredentials({
-      headers: {
-        "Content-Type": "application/json",
-      },
       ...init,
+      headers: mergeJsonHeaders(init.headers),
     }),
   });
 

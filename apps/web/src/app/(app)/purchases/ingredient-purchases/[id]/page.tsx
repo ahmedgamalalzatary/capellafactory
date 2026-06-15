@@ -64,7 +64,7 @@ export default async function IngredientPurchaseDetailPage({
               </h1>
               <p className="mt-2 text-sm text-slate-600">{supplierLabel(purchase)}</p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:min-w-[360px]">
+            <div className="grid grid-cols-2 gap-3 sm:min-w-90">
               <Metric label="عدد البنود" value={String(purchase.lines.length)} />
               <Metric label="الإجمالي" value={formatAmount(total)} />
             </div>
@@ -194,7 +194,11 @@ function DetailItem({ label, value }: { label: string; value: string }) {
 }
 
 function supplierLabel(purchase: { supplierId?: number; supplierName?: string }) {
-  return purchase.supplierName ?? `مورد محفوظ #${purchase.supplierId}`;
+  if (purchase.supplierName) {
+    return purchase.supplierName;
+  }
+
+  return purchase.supplierId ? `مورد محفوظ #${purchase.supplierId}` : "مورد محفوظ";
 }
 
 function formatAmount(value: number) {

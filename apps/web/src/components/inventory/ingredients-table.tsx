@@ -233,7 +233,7 @@ function IngredientCard({ ingredient, idx }: { ingredient: Ingredient; idx: numb
             </StatusBadge>
           </div>
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <RowActions ingredient={ingredient} />
         </div>
       </div>

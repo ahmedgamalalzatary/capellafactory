@@ -50,33 +50,94 @@ Container-internal ports stay:
 
 Keep these aligned in `.env.docker` and `.env.production`:
 
-```env
-WEB_HOST_PORT=3010
-API_HOST_PORT=4010
+Production `.env.production` on the VPS (domain `capellaerp.cloud`):
 
+```env
 API_PORT=4000
-API_URL=http://api:4000
-NEXT_PUBLIC_API_URL=http://localhost:4010
-CORS_ORIGIN=http://localhost:3010
+API_HOST_PORT=4010
+WEB_HOST_PORT=3010
 
 DB_HOST=db
 DB_PORT=3306
 DB_USER=capella_app
-DB_PASSWORD=your-db-password
+DB_PASSWORD=<secret>
 DB_NAME=capella_factory
-DB_ROOT_PASSWORD=your-root-password
-
-MYSQL_ROOT_PASSWORD=your-root-password
+DB_ROOT_PASSWORD=<secret>
+MYSQL_ROOT_PASSWORD=<secret>
 MYSQL_DATABASE=capella_factory
 MYSQL_USER=capella_app
-MYSQL_PASSWORD=your-db-password
+MYSQL_PASSWORD=<secret>
+
+API_URL=http://api:4000
+NEXT_PUBLIC_API_URL=/api
+AUTH_USERNAME=capella
+AUTH_PASSWORD=<secret>
+AUTH_SECRET=<secret>
+CORS_ORIGIN=https://capellaerp.cloud
 ```
+
+Port mapping for this deployment:
+
+- `web`: host `3010` → container `3000`
+- `api`: host `4010` → container `4000`
+- `db`: container `3306`
 
 Production notes:
 
 - keep `API_URL=http://api:4000`
-- set `NEXT_PUBLIC_API_URL` to the public API URL or the public proxied path
+- recommended: set `NEXT_PUBLIC_API_URL=/api` and let Nginx proxy that path to the API container
 - set `CORS_ORIGIN` to the public web origin
+
+Recommended production values behind Nginx:
+
+```env
+API_URL=http://api:4000
+NEXT_PUBLIC_API_URL=/api
+CORS_ORIGIN=https://capellaerp.cloud
+```
+
+Why this is the preferred production setup:
+
+- the browser talks to `https://capellaerp.cloud/api/...` instead of `https://api.capellaerp.cloud/...`
+- login and data requests stay on the same origin as the app
+- the auth cookie is then issued for the app origin, so SSR pages can forward it correctly
+- server-side Next.js requests still use `API_URL=http://api:4000` inside Docker
+
+## Nginx Same-Origin API Proxy
+
+Use this on the public web host so browser calls to `/api/...` are forwarded to the API container on `127.0.0.1:4010`.
+
+Example:
+
+```nginx
+server {
+    server_name capellaerp.cloud;
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:4010/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:3010;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Notes:
+
+- `proxy_pass http://127.0.0.1:4010/;` with a trailing slash is important here. It strips the `/api/` prefix before forwarding, so `/api/auth/login` becomes `/auth/login` at the Express API.
+- After changing `NEXT_PUBLIC_API_URL`, rebuild the `web` image because `NEXT_PUBLIC_*` values are baked in at build time.
+- If you keep `api.capellaerp.cloud` for direct API checks, that is fine, but the web app should use `/api`.
 
 ## Production Fresh DB Flow
 
@@ -131,8 +192,9 @@ curl -I http://127.0.0.1:3010
 If Nginx is in front, also verify the public URLs:
 
 ```bash
-curl https://your-public-api-domain-or-path/health
-curl -I https://your-public-web-domain-or-path
+curl https://capellaerp.cloud/api/health
+curl -I https://capellaerp.cloud
+curl -i https://capellaerp.cloud/api/health
 ```
 
 ## Production Existing DB Flow
@@ -180,8 +242,9 @@ curl -I http://127.0.0.1:3010
 If Nginx is in front, also verify the public URLs:
 
 ```bash
-curl https://your-public-api-domain-or-path/health
-curl -I https://your-public-web-domain-or-path
+curl https://capellaerp.cloud/api/health
+curl -I https://capellaerp.cloud
+curl -i https://capellaerp.cloud/api/health
 ```
 
 ## Local Docker Fresh DB Flow
@@ -385,4 +448,5 @@ Local non-Docker:
 - Inside Docker, services talk to each other by service name such as `db` and `api`, not `localhost`.
 - `API_URL` is for server-side Next.js calls inside Docker. Do not point it at the browser-facing host port.
 - `NEXT_PUBLIC_API_URL` is for browser calls. It must be reachable by the browser.
+- In production behind Nginx, prefer `NEXT_PUBLIC_API_URL=/api` and proxy `/api/` to `127.0.0.1:4010`.
 - If another project already uses `3010` and `4010` on the VPS, keep this repo on `3010` and `4010` and let Nginx route traffic.

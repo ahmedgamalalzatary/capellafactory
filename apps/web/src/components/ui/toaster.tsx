@@ -20,7 +20,7 @@ type ToastContextValue = {
   toast: (message: string, type?: ToastType) => void;
 };
 
-const ToastContext = createContext<ToastContextValue>({ toast: () => {} });
+const ToastContext = createContext<ToastContextValue>({ toast: () => { } });
 
 export function useToast() {
   return useContext(ToastContext);
@@ -59,7 +59,7 @@ export function ToasterProvider({ children }: { children: ReactNode }) {
               animation: "toast-in 0.22s ease-out",
             }}
           >
-            <span className="text-[15px] leading-none flex-shrink-0">
+            <span className="text-[15px] leading-none shrink-0">
               {t.type === "success" ? "✓" : "✕"}
             </span>
             <span>{t.message}</span>

@@ -27,7 +27,7 @@ export default async function BuyersPage({ searchParams }: BuyersPageProps) {
             إدارة بيانات المشترين: الاسم، رقم الهاتف، الموقع، والملاحظات التشغيلية.
           </p>
         </div>
-        <div className="flex-shrink-0 pt-1">
+        <div className="shrink-0 pt-1">
           <BuyerDialog />
         </div>
       </div>

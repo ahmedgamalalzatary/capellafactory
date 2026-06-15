@@ -50,7 +50,7 @@ export function InventorySearchInput({
       value={value}
       onChange={(event) => setValue(event.target.value)}
       placeholder={placeholder}
-      className="h-10 min-w-[220px] rounded-full border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
+      className="h-10 min-w-55 rounded-full border border-slate-200 bg-white px-4 text-sm outline-none transition focus:border-slate-400"
     />
   );
 }

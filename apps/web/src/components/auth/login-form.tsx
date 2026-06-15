@@ -18,11 +18,18 @@ export function LoginForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+
+    if (!username.trim() || !password.trim()) {
+      setError("يرجى إدخال اسم المستخدم وكلمة المرور");
+      return;
+    }
+
     setIsPending(true);
 
     try {
-      await login({ username, password });
-      router.push("/suppliers");
+      await login({ username: username.trim(), password: password.trim() });
+      router.replace("/suppliers");
+      router.refresh();
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : "فشل تسجيل الدخول",

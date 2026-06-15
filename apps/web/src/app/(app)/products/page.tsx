@@ -1,15 +1,12 @@
 import { ProductionBatchDialog } from "@/components/production/production-batch-dialog";
 import { ProductionBatchesTable } from "@/components/production/production-batches-table";
+import { MetricCard } from "@/components/shared/metric-card";
+import type { ProductsPageProps } from "@/app/_types/types.products";
+import { formatProductsAmount } from "@/app/_utils/utils.products";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getProducts } from "@/lib/api/products";
 import { getProductionBatches } from "@/lib/api/production-batches";
 import { getServerCookieHeader } from "@/lib/server-cookies";
-
-type ProductsPageProps = {
-  searchParams?: Promise<{
-    q?: string;
-  }>;
-};
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = (await searchParams) ?? {};
@@ -53,8 +50,8 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
 
           <div className="grid gap-3 sm:grid-cols-3">
             <MetricCard label="عدد التشغيلات" value={String(batches.length)} tone="paper" />
-            <MetricCard label="إجمالي المنتج" value={formatAmount(totalProduced)} tone="amber" />
-            <MetricCard label="إجمالي التكلفة" value={formatAmount(totalCost)} tone="slate" />
+            <MetricCard label="إجمالي المنتج" value={formatProductsAmount(totalProduced)} tone="amber" />
+            <MetricCard label="إجمالي التكلفة" value={formatProductsAmount(totalCost)} tone="slate" />
           </div>
         </div>
 
@@ -67,7 +64,7 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
           </div>
 
           <div
-            className="overflow-hidden rounded-[24px] border bg-white/80 backdrop-blur"
+            className="overflow-hidden rounded-3xl border bg-white/80 backdrop-blur"
             style={{
               borderColor: "color-mix(in srgb, var(--border) 88%, #d5c2a0 12%)",
             }}
@@ -78,57 +75,4 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
       </div>
     </div>
   );
-}
-
-function MetricCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "paper" | "slate" | "amber";
-}) {
-  const theme = {
-    paper: {
-      background: "rgba(255,255,255,0.74)",
-      borderColor: "rgba(148, 163, 184, 0.20)",
-      text: "text-slate-950",
-      subtext: "text-slate-500",
-    },
-    slate: {
-      background: "rgba(241, 245, 249, 0.86)",
-      borderColor: "rgba(148, 163, 184, 0.26)",
-      text: "text-slate-900",
-      subtext: "text-slate-500",
-    },
-    amber: {
-      background: "rgba(254, 243, 199, 0.62)",
-      borderColor: "rgba(217, 119, 6, 0.18)",
-      text: "text-amber-950",
-      subtext: "text-amber-800/70",
-    },
-  } as const;
-
-  return (
-    <div
-      className="rounded-[22px] border px-4 py-4 sm:px-5"
-      style={{
-        background: theme[tone].background,
-        borderColor: theme[tone].borderColor,
-      }}
-    >
-      <p className={`text-[11px] font-medium uppercase tracking-[0.18em] ${theme[tone].subtext}`}>
-        {label}
-      </p>
-      <p className={`mt-3 text-[28px] font-bold leading-none ${theme[tone].text}`}>{value}</p>
-    </div>
-  );
-}
-
-function formatAmount(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(value);
 }

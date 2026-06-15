@@ -58,3 +58,14 @@ test("ExpensesTable links each expense to its detail page", () => {
   expect(source).toContain("/purchases/expenses/${expense.id}");
   expect(source).toContain("عرض");
 });
+
+test("expense detail page falls back to notFound when the fetch fails", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/app/(app)/purchases/expenses/[id]/page.tsx"),
+    "utf8",
+  );
+
+  expect(source).toContain("getExpense(expenseId, { cookieHeader }).catch(() => null)");
+  expect(source).toContain("if (!expense) {");
+  expect(source).toContain("notFound();");
+});

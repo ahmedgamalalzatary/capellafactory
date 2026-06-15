@@ -47,19 +47,19 @@ export function SidebarView({
 
   const asideStyle = isDrawer
     ? {
-        background: "var(--sidebar)",
-      }
+      background: "var(--sidebar)",
+    }
     : {
-        insetInlineStart: 0,
-        width: "var(--sidebar-w)",
-        background: "var(--sidebar)",
-        borderInlineEnd: "1px solid var(--sidebar-border)",
-      };
+      insetInlineStart: 0,
+      width: "var(--sidebar-w)",
+      background: "var(--sidebar)",
+      borderInlineEnd: "1px solid var(--sidebar-border)",
+    };
 
   return (
     <aside className={asideClass} style={asideStyle}>
       <div
-        className="flex-shrink-0 px-6 py-6"
+        className="shrink-0 px-6 py-6"
         style={{ borderBottom: "1px solid var(--sidebar-border)" }}
       >
         <Link

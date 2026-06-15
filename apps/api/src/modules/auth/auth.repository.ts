@@ -1,4 +1,4 @@
-import { eq, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import { adminsTable, authSessionsTable } from "../../db/schema/auth.js";
 import type { AuthRepository } from "./auth.service.js";
@@ -34,18 +34,27 @@ export const authRepository: AuthRepository = {
   },
 
   async updateAdmin(id, input) {
-    await db
+    const [result] = await db
       .update(adminsTable)
       .set({ ...input, updatedAt: new Date() })
       .where(eq(adminsTable.id, id));
 
+    if (result.affectedRows === 0) {
+      throw new Error("Admin not found");
+    }
+
     return { id, ...input };
   },
 
-  async deleteSessionsNotMatchingFingerprint(fingerprint) {
+  async deleteSessionsNotMatchingFingerprint(adminId, fingerprint) {
     await db
       .delete(authSessionsTable)
-      .where(ne(authSessionsTable.credentialFingerprint, fingerprint));
+      .where(
+        and(
+          eq(authSessionsTable.adminId, adminId),
+          ne(authSessionsTable.credentialFingerprint, fingerprint),
+        ),
+      );
   },
 
   async createSession(input) {

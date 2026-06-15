@@ -28,7 +28,7 @@ export default async function SuppliersPage({ searchParams }: SuppliersPageProps
             إدارة بيانات الموردين: الاسم، رقم الهاتف، الموقع، والملاحظات التشغيلية.
           </p>
         </div>
-        <div className="flex-shrink-0 pt-1">
+        <div className="shrink-0 pt-1">
           <SupplierDialog />
         </div>
       </div>

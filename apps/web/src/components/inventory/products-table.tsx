@@ -192,7 +192,7 @@ function ProductCard({ product, idx }: { product: Product; idx: number }) {
             <StatusBadge archived={product.isArchived} />
           </div>
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <RowActions product={product} />
         </div>
       </div>

@@ -12,7 +12,7 @@ import {
 class FakeAuthRepository implements AuthRepository {
   admin: AdminRecord | null = null;
   sessions = new Map<string, SessionRecord>();
-  staleFingerprintDeletes: string[] = [];
+  staleFingerprintDeletes: Array<{ adminId: number; fingerprint: string }> = [];
 
   async findAdminByUsername(username: string) {
     return this.admin?.username === username ? this.admin : null;
@@ -36,10 +36,10 @@ class FakeAuthRepository implements AuthRepository {
     return this.admin;
   }
 
-  async deleteSessionsNotMatchingFingerprint(fingerprint: string) {
-    this.staleFingerprintDeletes.push(fingerprint);
+  async deleteSessionsNotMatchingFingerprint(adminId: number, fingerprint: string) {
+    this.staleFingerprintDeletes.push({ adminId, fingerprint });
     for (const [tokenHash, session] of this.sessions) {
-      if (session.credentialFingerprint !== fingerprint) {
+      if (session.adminId === adminId && session.credentialFingerprint !== fingerprint) {
         this.sessions.delete(tokenHash);
       }
     }
@@ -138,6 +138,47 @@ test("rejects sessions when env credentials changed", async () => {
   const session = await changedService.getSession(login.token);
 
   assert.equal(session, null);
+});
+
+test("removes stale sessions only for the current admin when credentials change", async () => {
+  const repository = new FakeAuthRepository();
+  const oldFingerprint = getCredentialFingerprint(env);
+  repository.admin = {
+    id: 1,
+    username: env.username,
+    credentialFingerprint: oldFingerprint,
+  };
+  repository.sessions.set("current-admin-stale", {
+    id: 1,
+    adminId: 1,
+    tokenHash: "current-admin-stale",
+    credentialFingerprint: oldFingerprint,
+    expiresAt: new Date("2026-06-22T10:00:00.000Z"),
+  });
+  repository.sessions.set("other-admin-stale", {
+    id: 2,
+    adminId: 2,
+    tokenHash: "other-admin-stale",
+    credentialFingerprint: oldFingerprint,
+    expiresAt: new Date("2026-06-22T10:00:00.000Z"),
+  });
+  const changedEnv = { ...env, password: "new-secret" };
+  const service = createAuthService(repository, changedEnv, {
+    createToken: () => "raw-session-token",
+    now: () => new Date("2026-06-15T10:00:00.000Z"),
+  });
+
+  const login = await service.login({
+    username: changedEnv.username,
+    password: changedEnv.password,
+  });
+
+  assert.equal(login.ok, true);
+  assert.deepEqual(repository.staleFingerprintDeletes, [
+    { adminId: 1, fingerprint: getCredentialFingerprint(changedEnv) },
+  ]);
+  assert.equal(repository.sessions.has("current-admin-stale"), false);
+  assert.equal(repository.sessions.has("other-admin-stale"), true);
 });
 
 test("deletes sessions during logout", async () => {

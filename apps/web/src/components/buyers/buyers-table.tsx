@@ -142,7 +142,7 @@ function BuyerCard({ buyer, idx }: { buyer: Buyer; idx: number }) {
             {buyer.phone}
           </p>
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <RowActions buyer={buyer} />
         </div>
       </div>

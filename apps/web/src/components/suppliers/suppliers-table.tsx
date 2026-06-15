@@ -153,7 +153,7 @@ function SupplierCard({ supplier, idx }: { supplier: Supplier; idx: number }) {
             {supplier.phone}
           </p>
         </div>
-        <div className="flex-shrink-0">
+        <div className="shrink-0">
           <RowActions supplier={supplier} />
         </div>
       </div>

@@ -3,18 +3,14 @@ import { IngredientPurchaseDialog } from "@/components/purchases/ingredient-purc
 import { IngredientPurchasesTable } from "@/components/purchases/ingredient-purchases-table";
 import { ExpensesTable } from "@/components/purchases/expenses-table";
 import { PurchasesSearchInput } from "@/components/purchases/purchases-search-input";
+import { MetricCard } from "@/components/shared/metric-card";
+import type { PurchasesPageProps } from "@/app/_types/types.purchases";
+import { buildPurchasesHref, formatPurchasesAmount } from "@/app/_utils/utils.purchases";
 import { getExpenses } from "@/lib/api/expenses";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredientPurchases } from "@/lib/api/ingredient-purchases";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getSuppliers } from "@/lib/api/suppliers";
-
-type PurchasesPageProps = {
-  searchParams?: Promise<{
-    q?: string;
-    tab?: string;
-  }>;
-};
 
 export default async function PurchasesPage({ searchParams }: PurchasesPageProps) {
   const params = (await searchParams) ?? {};
@@ -74,7 +70,7 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
             {activeTab === "expenses" ? (
               <>
                 <MetricCard label="عدد السجلات" value={String(expenses.length)} tone="paper" />
-                <MetricCard label="إجمالي المبالغ" value={formatAmount(totalAmount)} tone="amber" />
+                <MetricCard label="إجمالي المبالغ" value={formatPurchasesAmount(totalAmount)} tone="amber" />
                 <MetricCard
                   label="مرتبات / أخرى"
                   value={`${salaryCount} / ${otherCount}`}
@@ -88,7 +84,7 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
                   value={String(ingredientPurchases.length)}
                   tone="paper"
                 />
-                <MetricCard label="إجمالي الشراء" value={formatAmount(purchasesTotal)} tone="amber" />
+                <MetricCard label="إجمالي الشراء" value={formatPurchasesAmount(purchasesTotal)} tone="amber" />
                 <MetricCard label="الخامات المتاحة" value={String(ingredients.length)} tone="slate" />
               </>
             )}
@@ -149,69 +145,4 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
       </div>
     </div>
   );
-}
-
-function MetricCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "paper" | "slate" | "amber";
-}) {
-  const theme = {
-    paper: {
-      background: "rgba(255,255,255,0.74)",
-      borderColor: "rgba(148, 163, 184, 0.20)",
-      text: "text-slate-950",
-      subtext: "text-slate-500",
-    },
-    slate: {
-      background: "rgba(241, 245, 249, 0.86)",
-      borderColor: "rgba(148, 163, 184, 0.26)",
-      text: "text-slate-900",
-      subtext: "text-slate-500",
-    },
-    amber: {
-      background: "rgba(254, 243, 199, 0.62)",
-      borderColor: "rgba(217, 119, 6, 0.18)",
-      text: "text-amber-950",
-      subtext: "text-amber-800/70",
-    },
-  } as const;
-
-  return (
-    <div
-      className="rounded-[22px] border px-4 py-4 sm:px-5"
-      style={{
-        background: theme[tone].background,
-        borderColor: theme[tone].borderColor,
-      }}
-    >
-      <p className={`text-[11px] font-medium uppercase tracking-[0.18em] ${theme[tone].subtext}`}>
-        {label}
-      </p>
-      <p className={`mt-3 text-[28px] font-bold leading-none ${theme[tone].text}`}>{value}</p>
-    </div>
-  );
-}
-
-function formatAmount(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(value);
-}
-
-function buildPurchasesHref(tab: "expenses" | "ingredient-purchases", q?: string) {
-  const params = new URLSearchParams();
-  params.set("tab", tab);
-
-  if (q) {
-    params.set("q", q);
-  }
-
-  const query = params.toString();
-  return query ? `/purchases?${query}` : "/purchases";
 }

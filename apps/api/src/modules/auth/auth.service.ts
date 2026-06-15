@@ -32,7 +32,10 @@ export type AuthRepository = {
     id: number,
     input: { username: string; credentialFingerprint: string },
   ): Promise<AdminRecord>;
-  deleteSessionsNotMatchingFingerprint(fingerprint: string): Promise<void>;
+  deleteSessionsNotMatchingFingerprint(
+    adminId: number,
+    fingerprint: string,
+  ): Promise<void>;
   createSession(input: {
     adminId: number;
     tokenHash: string;
@@ -78,6 +81,7 @@ export function createAuthService(
         });
 
     await repository.deleteSessionsNotMatchingFingerprint(
+      admin.id,
       credentialFingerprint,
     );
     return admin;

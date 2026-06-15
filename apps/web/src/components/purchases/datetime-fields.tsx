@@ -167,7 +167,7 @@ function TimePicker({ inputId, displayValue, timeValue, onTimeChange }: TimePick
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
           className={cn(
-            "absolute end-1 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors sm:size-7",
+            "absolute inset-e-1 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors sm:size-7",
             "hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             open && "bg-accent text-foreground",
           )}
@@ -195,7 +195,7 @@ function TimePicker({ inputId, displayValue, timeValue, onTimeChange }: TimePick
 
           {/* Analog clock face — click a number to set the hour */}
           <div className="relative mx-auto mt-3 aspect-square w-52 max-w-full sm:w-44">
-            <div className="absolute inset-0 rounded-full border border-border bg-gradient-to-b from-muted/40 to-background shadow-inner" />
+            <div className="absolute inset-0 rounded-full border border-border bg-linear-to-b from-muted/40 to-background shadow-inner" />
             {/* hour hand */}
             <div
               className="absolute left-1/2 top-1/2 h-[34%] w-0.5 origin-bottom rounded-full bg-primary/80 transition-transform duration-200 ease-out"

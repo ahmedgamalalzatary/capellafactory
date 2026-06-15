@@ -3,6 +3,7 @@ import { InventorySearchInput } from "@/components/inventory/inventory-search-in
 import { IngredientsTable } from "@/components/inventory/ingredients-table";
 import { ProductDialog } from "@/components/inventory/product-dialog";
 import { ProductsTable } from "@/components/inventory/products-table";
+import { MetricCard } from "@/components/shared/metric-card";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,35 +11,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ingredientUnitFilters, inventoryTabs } from "@/app/_constants/constants.inventory";
+import type { InventoryPageProps } from "@/app/_types/types.inventory";
+import { buildInventoryHref } from "@/app/_utils/utils.inventory";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getProducts } from "@/lib/api/products";
 import {
   filterIngredientsByUnitFamily,
   normalizeIngredientUnitFilter,
-  type IngredientUnitFilter,
 } from "@/lib/inventory";
-
-type InventoryPageProps = {
-  searchParams?: Promise<{
-    tab?: string;
-    q?: string;
-    archived?: string;
-    unitFamily?: string;
-  }>;
-};
-
-const tabs = [
-  { key: "ingredients", label: "الخامات" },
-  { key: "products", label: "المنتجات النهائية" },
-] as const;
-
-const ingredientUnitFilters: { key: IngredientUnitFilter; label: string }[] = [
-  { key: "all", label: "الكل" },
-  { key: "weight", label: "وزن" },
-  { key: "volume", label: "حجم" },
-  { key: "count", label: "عدد" },
-];
 
 export default async function InventoryPage({ searchParams }: InventoryPageProps) {
   const params = (await searchParams) ?? {};
@@ -105,7 +87,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
         <div className="grid gap-4 px-5 py-5 sm:px-8">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
-              {tabs.map((tab) => {
+              {inventoryTabs.map((tab) => {
                 const isActive = tab.key === activeTab;
                 return (
                   <a
@@ -207,80 +189,4 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
       </div>
     </div>
   );
-}
-
-function MetricCard({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "paper" | "slate" | "amber";
-}) {
-  const theme = {
-    paper: {
-      background: "rgba(255,255,255,0.74)",
-      borderColor: "rgba(148, 163, 184, 0.20)",
-      text: "text-slate-950",
-      subtext: "text-slate-500",
-    },
-    slate: {
-      background: "rgba(241, 245, 249, 0.86)",
-      borderColor: "rgba(148, 163, 184, 0.26)",
-      text: "text-slate-900",
-      subtext: "text-slate-500",
-    },
-    amber: {
-      background: "rgba(254, 243, 199, 0.62)",
-      borderColor: "rgba(217, 119, 6, 0.18)",
-      text: "text-amber-950",
-      subtext: "text-amber-800/70",
-    },
-  } as const;
-
-  return (
-    <div
-      className="rounded-[22px] border px-4 py-4 sm:px-5"
-      style={{
-        background: theme[tone].background,
-        borderColor: theme[tone].borderColor,
-      }}
-    >
-      <p className={`text-[11px] font-medium uppercase tracking-[0.18em] ${theme[tone].subtext}`}>
-        {label}
-      </p>
-      <p className={`mt-3 text-[28px] font-bold leading-none ${theme[tone].text}`}>{value}</p>
-    </div>
-  );
-}
-
-function buildInventoryHref({
-  tab,
-  q,
-  archived,
-  unitFamily,
-}: {
-  tab: "ingredients" | "products";
-  q?: string;
-  archived: boolean;
-  unitFamily?: IngredientUnitFilter;
-}) {
-  const params = new URLSearchParams();
-  params.set("tab", tab);
-
-  if (q) {
-    params.set("q", q);
-  }
-
-  if (archived) {
-    params.set("archived", "true");
-  }
-
-  if (tab === "ingredients" && unitFamily && unitFamily !== "all") {
-    params.set("unitFamily", unitFamily);
-  }
-
-  const query = params.toString();
-  return query ? `/inventory?${query}` : "/inventory";
 }
