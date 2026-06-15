@@ -33,8 +33,7 @@ export function IngredientPurchaseDialog({
           <SheetHeader className="border-b px-6 py-5">
             <SheetTitle>إضافة فاتورة شراء خامات</SheetTitle>
             <SheetDescription>
-              احفظ الفاتورة كما حدثت فعليًا. الحفظ يرفع رصيد الخامات ويحدّث متوسط التكلفة
-              تلقائيًا.
+              احفظ الفاتورة كما حدثت فعليًا. الحفظ يرفع رصيد الخامات تلقائيًا.
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-6">

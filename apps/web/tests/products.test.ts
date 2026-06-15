@@ -1,4 +1,6 @@
 import { expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   buildProductsUrl,
   buildProductActionUrl,
@@ -33,4 +35,14 @@ test("mergeJsonHeaders preserves existing headers and content type", () => {
 
   expect(headers.get("Accept")).toBe("application/json");
   expect(headers.get("Content-Type")).toBe("application/json");
+});
+
+test("products table labels derived cost as current stock cost", () => {
+  const source = readFileSync(
+    path.resolve(import.meta.dirname, "../src/components/inventory/products-table.tsx"),
+    "utf8",
+  );
+
+  expect(source).toContain("تكلفة الرصيد الحالية");
+  expect(source).not.toContain("متوسط التكلفة");
 });

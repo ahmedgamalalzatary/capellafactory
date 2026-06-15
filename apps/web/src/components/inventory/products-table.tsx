@@ -199,7 +199,7 @@ function ProductCard({ product, idx }: { product: Product; idx: number }) {
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-[12px]">
         <dt className="text-muted-foreground">الرصيد</dt>
         <dd className="text-foreground">{product.stockQuantity.toFixed(3)}</dd>
-        <dt className="text-muted-foreground">متوسط التكلفة</dt>
+        <dt className="text-muted-foreground">تكلفة الرصيد الحالية</dt>
         <dd className="text-foreground">{product.averageUnitCost.toFixed(6)}</dd>
         <dt className="text-muted-foreground">التاريخ</dt>
         <dd className="text-foreground">{product.hasHistory ? "موجود" : "لا يوجد"}</dd>
@@ -218,7 +218,7 @@ export function ProductsTable({ products }: ProductsTableProps) {
               <TableHead className="w-10 text-center">#</TableHead>
               <TableHead className="text-center">المنتج</TableHead>
               <TableHead className="text-center">الرصيد</TableHead>
-              <TableHead className="text-center">متوسط التكلفة</TableHead>
+              <TableHead className="text-center">تكلفة الرصيد الحالية</TableHead>
               <TableHead className="text-center">الحالة</TableHead>
               <TableHead className="text-center">تاريخ الحركات</TableHead>
               <TableHead className="w-12" />

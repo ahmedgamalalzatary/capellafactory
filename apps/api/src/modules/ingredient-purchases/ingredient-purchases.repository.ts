@@ -11,6 +11,7 @@ import {
   ingredientPurchaseLinesTable,
   ingredientPurchasesTable,
   ingredientsTable,
+  stockLayersTable,
   suppliersTable,
 } from "../../db/schema/index.js";
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
@@ -110,6 +111,34 @@ export function resolveIngredientPurchaseLineCost(
   };
 }
 
+export function buildIngredientPurchaseStockLayer(input: {
+  purchaseId: number;
+  purchaseLineId: number;
+  ingredientId: number;
+  normalizedQuantity: number;
+  lineTotal: number;
+  occurredAt: Date;
+}) {
+  if (input.normalizedQuantity <= 0) {
+    throw new IngredientPurchaseValidationError(
+      "Ingredient purchase line quantity must be greater than zero",
+    );
+  }
+
+  return {
+    domain: "ingredient" as const,
+    itemId: input.ingredientId,
+    sourceDocumentType: "ingredient-purchase",
+    sourceDocumentId: input.purchaseId,
+    sourceLineId: input.purchaseLineId,
+    originalQuantity: input.normalizedQuantity.toFixed(3),
+    remainingQuantity: input.normalizedQuantity.toFixed(3),
+    unitCost: (input.lineTotal / input.normalizedQuantity).toFixed(6),
+    totalCost: input.lineTotal.toFixed(3),
+    occurredAt: input.occurredAt,
+  };
+}
+
 export async function listIngredientPurchases(query?: string) {
   const normalizedQuery = normalizeIngredientPurchaseSearchQuery(query);
   const rows = await db
@@ -206,6 +235,25 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
           normalizedQuantity: normalizedQuantity.toFixed(3),
         };
       }),
+    );
+
+    const insertedLines = await tx
+      .select()
+      .from(ingredientPurchaseLinesTable)
+      .where(eq(ingredientPurchaseLinesTable.purchaseId, purchaseId))
+      .orderBy(asc(ingredientPurchaseLinesTable.id));
+
+    await tx.insert(stockLayersTable).values(
+      insertedLines.map((line) =>
+        buildIngredientPurchaseStockLayer({
+          purchaseId,
+          purchaseLineId: line.id,
+          ingredientId: line.ingredientId,
+          normalizedQuantity: Number(line.normalizedQuantity),
+          lineTotal: Number(line.lineTotal),
+          occurredAt,
+        }),
+      ),
     );
 
     // Recalculate inside the same transaction so the purchase and the derived

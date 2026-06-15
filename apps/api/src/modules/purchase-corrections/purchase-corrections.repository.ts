@@ -10,6 +10,8 @@ import {
   ingredientPurchasesTable,
   purchaseCorrectionLinesTable,
   purchaseCorrectionsTable,
+  stockLayerAllocationsTable,
+  stockLayersTable,
 } from "../../db/schema/index.js";
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
 import { recalculateIngredientBalances } from "../../services/stock-costing.service.js";
@@ -91,6 +93,55 @@ export function resolvePurchaseCorrectionLineAmounts(input: {
   return {
     unitPrice,
     lineTotal: unitPrice * input.correctionQuantity,
+  };
+}
+
+export function buildPurchaseCorrectionAllocationRequest(input: {
+  ingredientId: number;
+  correctionId: number;
+  correctionLineId: number;
+  sourcePurchaseLineId: number;
+  normalizedQuantity: number;
+  occurredAt: Date;
+}) {
+  return {
+    domain: "ingredient" as const,
+    itemId: input.ingredientId,
+    outboundDocumentType: "purchase-correction",
+    outboundDocumentId: input.correctionId,
+    outboundLineId: input.correctionLineId,
+    sourceLineId: input.sourcePurchaseLineId,
+    quantity: input.normalizedQuantity,
+    occurredAt: input.occurredAt,
+  };
+}
+
+export function buildPurchaseCorrectionAllocationRow(input: {
+  correctionId: number;
+  lineId: number;
+  layerId: number;
+  ingredientId: number;
+  normalizedQuantity: number;
+  lineTotal: number;
+  occurredAt: Date;
+}) {
+  if (input.normalizedQuantity <= 0) {
+    throw new PurchaseCorrectionValidationError(
+      "Purchase correction line quantity must be greater than zero",
+    );
+  }
+
+  return {
+    domain: "ingredient" as const,
+    itemId: input.ingredientId,
+    outboundDocumentType: "purchase-correction",
+    outboundDocumentId: input.correctionId,
+    outboundLineId: input.lineId,
+    stockLayerId: input.layerId,
+    allocatedQuantity: input.normalizedQuantity.toFixed(3),
+    unitCost: (input.lineTotal / input.normalizedQuantity).toFixed(6),
+    allocatedCost: input.lineTotal.toFixed(3),
+    occurredAt: input.occurredAt,
   };
 }
 
@@ -318,6 +369,43 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
           lineTotal: line.lineTotal.toFixed(3),
           normalizedQuantity: line.normalizedQuantity.toFixed(3),
         })),
+      );
+
+      const insertedCorrectionLines = await tx
+        .select()
+        .from(purchaseCorrectionLinesTable)
+        .where(eq(purchaseCorrectionLinesTable.correctionId, createdId))
+        .orderBy(asc(purchaseCorrectionLinesTable.id));
+
+      const sourceLayerIdsByLineId = new Map<number, number>();
+      for (const line of insertedCorrectionLines) {
+        const sourceLayer = await tx.query.stockLayersTable.findFirst({
+          where: and(
+            eq(stockLayersTable.domain, "ingredient"),
+            eq(stockLayersTable.sourceDocumentType, "ingredient-purchase"),
+            eq(stockLayersTable.sourceLineId, line.sourcePurchaseLineId),
+          ),
+        });
+
+        if (!sourceLayer) {
+          throw new Error(`Missing stock layer for purchase line ${line.sourcePurchaseLineId}`);
+        }
+
+        sourceLayerIdsByLineId.set(line.id, sourceLayer.id);
+      }
+
+      await tx.insert(stockLayerAllocationsTable).values(
+        insertedCorrectionLines.map((line) =>
+          buildPurchaseCorrectionAllocationRow({
+            correctionId: createdId,
+            lineId: line.id,
+            layerId: sourceLayerIdsByLineId.get(line.id) as number,
+            ingredientId: line.ingredientId,
+            normalizedQuantity: Number(line.normalizedQuantity),
+            lineTotal: Number(line.lineTotal),
+            occurredAt: new Date(),
+          }),
+        ),
       );
 
       await recalculateIngredientBalances(tx);

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildIngredientPurchaseStockLayer,
   IngredientPurchaseValidationError,
   mapIngredientPurchaseRowToIngredientPurchase,
   mapIngredientPurchaseLineRow,
@@ -99,6 +100,48 @@ test("derives ingredient purchase unit price from entered line total", () => {
     unitPrice: 40,
     lineTotal: 100,
   });
+});
+
+test("builds one inbound fifo stock layer per ingredient purchase line", () => {
+  assert.deepEqual(
+    buildIngredientPurchaseStockLayer({
+      purchaseId: 9,
+      purchaseLineId: 11,
+      ingredientId: 3,
+      normalizedQuantity: 2500,
+      lineTotal: 113.125,
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    }),
+    {
+      domain: "ingredient",
+      itemId: 3,
+      sourceDocumentType: "ingredient-purchase",
+      sourceDocumentId: 9,
+      sourceLineId: 11,
+      originalQuantity: "2500.000",
+      remainingQuantity: "2500.000",
+      unitCost: "0.045250",
+      totalCost: "113.125",
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    },
+  );
+});
+
+test("rejects ingredient purchase stock layers with zero normalized quantity", () => {
+  assert.throws(
+    () =>
+      buildIngredientPurchaseStockLayer({
+        purchaseId: 9,
+        purchaseLineId: 11,
+        ingredientId: 3,
+        normalizedQuantity: 0,
+        lineTotal: 113.125,
+        occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+      }),
+    (error: unknown) =>
+      error instanceof IngredientPurchaseValidationError &&
+      error.message === "Ingredient purchase line quantity must be greater than zero",
+  );
 });
 
 test("accepts unit when it matches ingredient family", () => {

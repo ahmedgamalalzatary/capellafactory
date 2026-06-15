@@ -11,6 +11,8 @@ import {
   productionBatchLinesTable,
   productionBatchesTable,
   productsTable,
+  stockLayerAllocationsTable,
+  stockLayersTable,
 } from "../../db/schema/index.js";
 import { buildProductionBatchCode } from "../../services/invoice-code.service.js";
 import { recalculateStockBalances } from "../../services/stock-costing.service.js";
@@ -85,6 +87,133 @@ export function normalizeProductionBatchSearchQuery(query?: string) {
 
 function formatStockQuantity(value: number) {
   return parseFloat(value.toFixed(3)).toString();
+}
+
+export function calculateProductionBatchLineCostFromAllocations(
+  allocations: Array<{ allocatedQuantity: number; allocatedCost: number }>,
+) {
+  const quantity = Number(
+    allocations.reduce((sum, allocation) => sum + allocation.allocatedQuantity, 0).toFixed(3),
+  );
+  const lineCost = Number(
+    allocations.reduce((sum, allocation) => sum + allocation.allocatedCost, 0).toFixed(3),
+  );
+
+  return {
+    quantity,
+    lineCost,
+    unitCost: quantity > 0 ? Number((lineCost / quantity).toFixed(6)) : 0,
+  };
+}
+
+export function buildProductionBatchIngredientAllocationRequest(input: {
+  ingredientId: number;
+  batchId: number;
+  batchLineId: number;
+  normalizedQuantity: number;
+  occurredAt: Date;
+}) {
+  return {
+    domain: "ingredient" as const,
+    itemId: input.ingredientId,
+    outboundDocumentType: "production-consumption",
+    outboundDocumentId: input.batchId,
+    outboundLineId: input.batchLineId,
+    quantity: input.normalizedQuantity,
+    occurredAt: input.occurredAt,
+  };
+}
+
+export function buildProductionBatchOutputLayer(input: {
+  batchId: number;
+  productId: number;
+  producedQuantity: number;
+  totalCost: number;
+  occurredAt: Date;
+}) {
+  return {
+    domain: "product" as const,
+    itemId: input.productId,
+    sourceDocumentType: "production-output",
+    sourceDocumentId: input.batchId,
+    sourceLineId: null,
+    originalQuantity: input.producedQuantity.toFixed(3),
+    remainingQuantity: input.producedQuantity.toFixed(3),
+    unitCost: (input.totalCost / input.producedQuantity).toFixed(6),
+    totalCost: input.totalCost.toFixed(3),
+    occurredAt: input.occurredAt,
+  };
+}
+
+export function allocateProductionBatchLineFromLayers(
+  request: {
+    ingredientId: number;
+    batchId: number;
+    batchLineId: number;
+    normalizedQuantity: number;
+    occurredAt: Date;
+  },
+  layers: Array<{
+    id: number;
+    sourceLineId?: number | null;
+    remainingQuantity: number;
+    unitCost: number;
+  }>,
+) {
+  const allocations: Array<{
+    domain: "ingredient";
+    itemId: number;
+    outboundDocumentType: "production-consumption";
+    outboundDocumentId: number;
+    outboundLineId: number;
+    stockLayerId: number;
+    allocatedQuantity: string;
+    unitCost: string;
+    allocatedCost: string;
+    occurredAt: Date;
+  }> = [];
+
+  let remaining = request.normalizedQuantity;
+
+  for (const layer of layers) {
+    if (remaining <= 0) {
+      break;
+    }
+
+    const allocatedQuantity = Math.min(layer.remainingQuantity, remaining);
+    if (allocatedQuantity <= 0) {
+      continue;
+    }
+
+    const allocatedCost = allocatedQuantity * layer.unitCost;
+    allocations.push({
+      domain: "ingredient",
+      itemId: request.ingredientId,
+      outboundDocumentType: "production-consumption",
+      outboundDocumentId: request.batchId,
+      outboundLineId: request.batchLineId,
+      stockLayerId: layer.id,
+      allocatedQuantity: allocatedQuantity.toFixed(3),
+      unitCost: layer.unitCost.toFixed(6),
+      allocatedCost: allocatedCost.toFixed(3),
+      occurredAt: request.occurredAt,
+    });
+
+    remaining = Number((remaining - allocatedQuantity).toFixed(3));
+  }
+
+  const costSummary = calculateProductionBatchLineCostFromAllocations(
+    allocations.map((allocation) => ({
+      allocatedQuantity: Number(allocation.allocatedQuantity),
+      allocatedCost: Number(allocation.allocatedCost),
+    })),
+  );
+
+  return {
+    allocations,
+    lineCost: costSummary.lineCost,
+    unitCost: costSummary.unitCost,
+  };
 }
 
 export function validateProductionBatchStock(checks: ProductionBatchStockCheck[]) {
@@ -174,14 +303,10 @@ export async function createProductionBatch(input: ProductionBatchInput) {
       line.quantity,
       line.unit,
     );
-    const unitCost = Number(ingredient.averageUnitCost);
-    const lineCost = normalizedQuantity * unitCost;
 
     return {
       ...line,
       normalizedQuantity,
-      unitCost,
-      lineCost,
       availableQuantity: Number(ingredient.stockQuantity),
       ingredientName: ingredient.name,
     };
@@ -200,10 +325,7 @@ export async function createProductionBatch(input: ProductionBatchInput) {
     throw new ProductionBatchValidationError("producedQuantity must be > 0");
   }
 
-  const totalCost = preparedLines.reduce((sum, line) => sum + line.lineCost, 0);
-  const unitCost = totalCost / input.producedQuantity;
-
-  const insertedId = await createProductionBatchTransaction(input, preparedLines, totalCost, unitCost);
+  const insertedId = await createProductionBatchTransaction(input, preparedLines);
 
   const batch = await getProductionBatchById(insertedId);
 
@@ -216,8 +338,6 @@ export async function createProductionBatch(input: ProductionBatchInput) {
 
 type PreparedProductionLine = ProductionBatchInput["lines"][number] & {
   normalizedQuantity: number;
-  unitCost: number;
-  lineCost: number;
   availableQuantity: number;
   ingredientName: string;
 };
@@ -225,8 +345,6 @@ type PreparedProductionLine = ProductionBatchInput["lines"][number] & {
 async function createProductionBatchTransaction(
   input: ProductionBatchInput,
   preparedLines: PreparedProductionLine[],
-  totalCost: number,
-  unitCost: number,
 ) {
   try {
     return await db.transaction(async (tx) => {
@@ -238,8 +356,8 @@ async function createProductionBatchTransaction(
           occurredAt,
           productId: input.productId,
           producedQuantity: input.producedQuantity.toFixed(3),
-          totalCost: totalCost.toFixed(3),
-          unitCost: unitCost.toFixed(6),
+          totalCost: "0.000",
+          unitCost: "0.000000",
           notes: input.notes,
         })
         .$returningId();
@@ -262,9 +380,98 @@ async function createProductionBatchTransaction(
           quantity: line.quantity.toFixed(3),
           unit: line.unit,
           normalizedQuantity: line.normalizedQuantity.toFixed(3),
-          unitCost: line.unitCost.toFixed(6),
-          lineCost: line.lineCost.toFixed(3),
+          unitCost: "0.000000",
+          lineCost: "0.000",
         })),
+      );
+
+      const insertedLines = await tx
+        .select()
+        .from(productionBatchLinesTable)
+        .where(eq(productionBatchLinesTable.batchId, batchId))
+        .orderBy(asc(productionBatchLinesTable.id));
+
+      let totalCost = 0;
+
+      for (const line of insertedLines) {
+        const openLayers = await tx
+          .select()
+          .from(stockLayersTable)
+          .where(and(eq(stockLayersTable.domain, "ingredient"), eq(stockLayersTable.itemId, line.ingredientId)))
+          .orderBy(asc(stockLayersTable.occurredAt), asc(stockLayersTable.id));
+
+        const allocationResult = allocateProductionBatchLineFromLayers(
+          {
+            ingredientId: line.ingredientId,
+            batchId,
+            batchLineId: line.id,
+            normalizedQuantity: Number(line.normalizedQuantity),
+            occurredAt,
+          },
+          openLayers.map((layer) => ({
+            id: layer.id,
+            sourceLineId: layer.sourceLineId,
+            remainingQuantity: Number(layer.remainingQuantity),
+            unitCost: Number(layer.unitCost),
+          })),
+        );
+
+        const allocatedQuantity = allocationResult.allocations.reduce(
+          (sum, allocation) => sum + Number(allocation.allocatedQuantity),
+          0,
+        );
+
+        if (allocatedQuantity < Number(line.normalizedQuantity)) {
+          throw new StockLedgerConflictError(
+            line.ingredientId,
+            `Insufficient ingredient stock in chronological history for ingredient ${line.ingredientId}`,
+          );
+        }
+
+        await tx.insert(stockLayerAllocationsTable).values(allocationResult.allocations);
+
+        for (const allocation of allocationResult.allocations) {
+          const layer = openLayers.find((candidate) => candidate.id === allocation.stockLayerId);
+          if (!layer) {
+            continue;
+          }
+
+          const nextRemaining = Number(layer.remainingQuantity) - Number(allocation.allocatedQuantity);
+          await tx
+            .update(stockLayersTable)
+            .set({ remainingQuantity: nextRemaining.toFixed(3) })
+            .where(eq(stockLayersTable.id, layer.id));
+        }
+
+        await tx
+          .update(productionBatchLinesTable)
+          .set({
+            unitCost: allocationResult.unitCost.toFixed(6),
+            lineCost: allocationResult.lineCost.toFixed(3),
+          })
+          .where(eq(productionBatchLinesTable.id, line.id));
+
+        totalCost += allocationResult.lineCost;
+      }
+
+      const batchUnitCost = totalCost / input.producedQuantity;
+
+      await tx
+        .update(productionBatchesTable)
+        .set({
+          totalCost: totalCost.toFixed(3),
+          unitCost: batchUnitCost.toFixed(6),
+        })
+        .where(eq(productionBatchesTable.id, batchId));
+
+      await tx.insert(stockLayersTable).values(
+        buildProductionBatchOutputLayer({
+          batchId,
+          productId: input.productId,
+          producedQuantity: input.producedQuantity,
+          totalCost,
+          occurredAt,
+        }),
       );
 
       // Recalculate inside the same transaction so the batch and the derived

@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   assemblePurchaseCorrections,
+  buildPurchaseCorrectionAllocationRequest,
+  buildPurchaseCorrectionAllocationRow,
   mapPurchaseCorrectionLineRow,
   mapPurchaseCorrectionRowToPurchaseCorrection,
   normalizePurchaseCorrectionSearchQuery,
@@ -22,6 +24,47 @@ test("derives correction line amounts proportionally from the source purchase li
       unitPrice: 25,
       lineTotal: 50,
     },
+  );
+});
+
+test("builds a source-linked outbound allocation request for purchase correction lines", () => {
+  assert.deepEqual(
+    buildPurchaseCorrectionAllocationRequest({
+      ingredientId: 3,
+      correctionId: 9,
+      correctionLineId: 4,
+      sourcePurchaseLineId: 11,
+      normalizedQuantity: 2000,
+      occurredAt: new Date("2026-05-24T12:05:00.000Z"),
+    }),
+    {
+      domain: "ingredient",
+      itemId: 3,
+      outboundDocumentType: "purchase-correction",
+      outboundDocumentId: 9,
+      outboundLineId: 4,
+      sourceLineId: 11,
+      quantity: 2000,
+      occurredAt: new Date("2026-05-24T12:05:00.000Z"),
+    },
+  );
+});
+
+test("rejects purchase correction allocation rows with zero normalized quantity", () => {
+  assert.throws(
+    () =>
+      buildPurchaseCorrectionAllocationRow({
+        correctionId: 9,
+        lineId: 4,
+        layerId: 21,
+        ingredientId: 3,
+        normalizedQuantity: 0,
+        lineTotal: 50,
+        occurredAt: new Date("2026-05-24T12:05:00.000Z"),
+      }),
+    (error: unknown) =>
+      error instanceof PurchaseCorrectionValidationError &&
+      error.message === "Purchase correction line quantity must be greater than zero",
   );
 });
 

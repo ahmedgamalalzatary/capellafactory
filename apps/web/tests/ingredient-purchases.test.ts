@@ -106,3 +106,16 @@ test("ingredient purchase form requires choosing a saved supplier", () => {
   expect(source).not.toContain('name="supplierName"');
   expect(source).not.toContain("اسم يدوي");
 });
+
+test("ingredient purchase dialog copy no longer mentions average costing", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredient-purchase-dialog.tsx",
+    ),
+    "utf8",
+  );
+
+  expect(source).toContain("الحفظ يرفع رصيد الخامات");
+  expect(source).not.toContain("يحدّث متوسط التكلفة");
+});

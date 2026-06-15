@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  allocateProductionBatchLineFromLayers,
+  buildProductionBatchIngredientAllocationRequest,
+  buildProductionBatchOutputLayer,
+  calculateProductionBatchLineCostFromAllocations,
   ProductionBatchValidationError,
   mapProductionBatchLineRow,
   mapProductionBatchRowToProductionBatch,
@@ -28,6 +32,113 @@ test("maps production batch lines into shared line shape", () => {
     unitCost: 0.04525,
     lineCost: 113.125,
   });
+});
+
+test("calculates production batch line cost from fifo allocations", () => {
+  assert.deepEqual(
+    calculateProductionBatchLineCostFromAllocations([
+      { allocatedQuantity: 1000, allocatedCost: 50 },
+      { allocatedQuantity: 200, allocatedCost: 14 },
+    ]),
+    {
+      quantity: 1200,
+      lineCost: 64,
+      unitCost: 0.053333,
+    },
+  );
+});
+
+test("builds fifo allocation request for a production ingredient line", () => {
+  assert.deepEqual(
+    buildProductionBatchIngredientAllocationRequest({
+      ingredientId: 3,
+      batchId: 9,
+      batchLineId: 11,
+      normalizedQuantity: 2500,
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    }),
+    {
+      domain: "ingredient",
+      itemId: 3,
+      outboundDocumentType: "production-consumption",
+      outboundDocumentId: 9,
+      outboundLineId: 11,
+      quantity: 2500,
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    },
+  );
+});
+
+test("builds one finished-product fifo output layer per production batch", () => {
+  assert.deepEqual(
+    buildProductionBatchOutputLayer({
+      batchId: 9,
+      productId: 4,
+      producedQuantity: 24,
+      totalCost: 113.125,
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    }),
+    {
+      domain: "product",
+      itemId: 4,
+      sourceDocumentType: "production-output",
+      sourceDocumentId: 9,
+      sourceLineId: null,
+      originalQuantity: "24.000",
+      remainingQuantity: "24.000",
+      unitCost: "4.713542",
+      totalCost: "113.125",
+      occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+    },
+  );
+});
+
+test("allocates a production ingredient line across multiple fifo layers", () => {
+  assert.deepEqual(
+    allocateProductionBatchLineFromLayers(
+      {
+        ingredientId: 3,
+        batchId: 9,
+        batchLineId: 11,
+        normalizedQuantity: 1200,
+        occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+      },
+      [
+        { id: 101, sourceLineId: 1, remainingQuantity: 1000, unitCost: 0.05 },
+        { id: 102, sourceLineId: 2, remainingQuantity: 500, unitCost: 0.07 },
+      ],
+    ),
+    {
+      allocations: [
+        {
+          domain: "ingredient",
+          itemId: 3,
+          outboundDocumentType: "production-consumption",
+          outboundDocumentId: 9,
+          outboundLineId: 11,
+          stockLayerId: 101,
+          allocatedQuantity: "1000.000",
+          unitCost: "0.050000",
+          allocatedCost: "50.000",
+          occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+        },
+        {
+          domain: "ingredient",
+          itemId: 3,
+          outboundDocumentType: "production-consumption",
+          outboundDocumentId: 9,
+          outboundLineId: 11,
+          stockLayerId: 102,
+          allocatedQuantity: "200.000",
+          unitCost: "0.070000",
+          allocatedCost: "14.000",
+          occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+        },
+      ],
+      lineCost: 64,
+      unitCost: 0.053333,
+    },
+  );
 });
 
 test("maps production batch headers with nested lines", () => {

@@ -1,20 +1,13 @@
-import { asc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "../db/index.js";
 import {
-  ingredientPurchaseLinesTable,
-  ingredientPurchasesTable,
   ingredientsTable,
-  purchaseCorrectionLinesTable,
-  purchaseCorrectionsTable,
-  productionBatchLinesTable,
-  productionBatchesTable,
   productsTable,
+  stockLayersTable,
 } from "../db/schema/index.js";
 import {
-  getStockLedgerSnapshot,
-  replayStockEvents,
-  type StockLedgerBalances,
-  type StockReplayEvent,
+  buildFifoStatesFromLayers,
+  getFifoStockSnapshot,
 } from "../utils/stock-ledger.js";
 
 type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -31,107 +24,61 @@ export async function recalculateStockBalances(executor?: StockExecutor) {
   }
 
   const tx = executor;
-  const purchases = await tx
+  const allLayers = await tx
     .select({
-      purchaseId: ingredientPurchasesTable.id,
-      occurredAt: ingredientPurchasesTable.occurredAt,
-      ingredientId: ingredientPurchaseLinesTable.ingredientId,
-      lineTotal: ingredientPurchaseLinesTable.lineTotal,
-      normalizedQuantity: ingredientPurchaseLinesTable.normalizedQuantity,
+      id: stockLayersTable.id,
+      domain: stockLayersTable.domain,
+      itemId: stockLayersTable.itemId,
+      sourceDocumentType: stockLayersTable.sourceDocumentType,
+      sourceDocumentId: stockLayersTable.sourceDocumentId,
+      sourceLineId: stockLayersTable.sourceLineId,
+      originalQuantity: stockLayersTable.originalQuantity,
+      remainingQuantity: stockLayersTable.remainingQuantity,
+      unitCost: stockLayersTable.unitCost,
+      totalCost: stockLayersTable.totalCost,
+      occurredAt: stockLayersTable.occurredAt,
     })
-    .from(ingredientPurchasesTable)
-    .innerJoin(
-      ingredientPurchaseLinesTable,
-      eq(ingredientPurchasesTable.id, ingredientPurchaseLinesTable.purchaseId),
-    )
-    .orderBy(asc(ingredientPurchasesTable.occurredAt), asc(ingredientPurchasesTable.id));
+    .from(stockLayersTable);
 
-  const productionLines = await tx
-    .select({
-      batchId: productionBatchesTable.id,
-      occurredAt: productionBatchesTable.occurredAt,
-      productId: productionBatchesTable.productId,
-      producedQuantity: productionBatchesTable.producedQuantity,
-      totalCost: productionBatchesTable.totalCost,
-      ingredientId: productionBatchLinesTable.ingredientId,
-      normalizedQuantity: productionBatchLinesTable.normalizedQuantity,
-      lineCost: productionBatchLinesTable.lineCost,
-    })
-    .from(productionBatchesTable)
-    .innerJoin(
-      productionBatchLinesTable,
-      eq(productionBatchesTable.id, productionBatchLinesTable.batchId),
-    )
-    .orderBy(asc(productionBatchesTable.occurredAt), asc(productionBatchesTable.id));
+  const ingredientStates = buildFifoStatesFromLayers(
+    allLayers
+      .filter((layer) => layer.domain === "ingredient")
+      .map((layer) => ({
+        ...layer,
+        originalQuantity: Number(layer.originalQuantity),
+        remainingQuantity: Number(layer.remainingQuantity),
+        unitCost: Number(layer.unitCost),
+        totalCost: Number(layer.totalCost),
+      })),
+  );
+  const productStates = buildFifoStatesFromLayers(
+    allLayers
+      .filter((layer) => layer.domain === "product")
+      .map((layer) => ({
+        ...layer,
+        originalQuantity: Number(layer.originalQuantity),
+        remainingQuantity: Number(layer.remainingQuantity),
+        unitCost: Number(layer.unitCost),
+        totalCost: Number(layer.totalCost),
+      })),
+  );
 
-  const correctionLines = await tx
-    .select({
-      correctionId: purchaseCorrectionsTable.id,
-      occurredAt: purchaseCorrectionsTable.createdAt,
-      ingredientId: purchaseCorrectionLinesTable.ingredientId,
-      normalizedQuantity: purchaseCorrectionLinesTable.normalizedQuantity,
-      lineTotal: purchaseCorrectionLinesTable.lineTotal,
-    })
-    .from(purchaseCorrectionsTable)
-    .innerJoin(
-      purchaseCorrectionLinesTable,
-      eq(purchaseCorrectionsTable.id, purchaseCorrectionLinesTable.correctionId),
-    )
-    .orderBy(asc(purchaseCorrectionsTable.createdAt), asc(purchaseCorrectionsTable.id));
-
-  const events: StockReplayEvent[] = [
-    ...purchases.map((purchase) => ({
-      id: purchase.purchaseId,
-      occurredAt: purchase.occurredAt,
-      kind: "ingredient-purchase" as const,
-      ingredientId: purchase.ingredientId,
-      quantity: Number(purchase.normalizedQuantity),
-      cost: Number(purchase.lineTotal),
-    })),
-    ...correctionLines.map((line) => ({
-      id: line.correctionId,
-      occurredAt: line.occurredAt,
-      kind: "purchase-correction" as const,
-      ingredientId: line.ingredientId,
-      quantity: Number(line.normalizedQuantity),
-      cost: Number(line.lineTotal),
-    })),
-    ...productionLines.map((line) => ({
-      id: line.batchId,
-      occurredAt: line.occurredAt,
-      kind: "production-consumption" as const,
-      ingredientId: line.ingredientId,
-      quantity: Number(line.normalizedQuantity),
-      cost: Number(line.lineCost),
-    })),
-    ...dedupeProductionOutputs(productionLines).map((line) => ({
-      id: line.batchId,
-      occurredAt: line.occurredAt,
-      kind: "production-output" as const,
-      productId: line.productId,
-      quantity: Number(line.producedQuantity),
-      cost: Number(line.totalCost),
-    })),
-  ];
-
-  // Chronological replay. Throws StockLedgerConflictError if any event (e.g. a
-  // backdated batch) drives an ingredient balance negative, which rolls back
-  // the surrounding transaction.
-  const { ingredientBalances, productBalances } = replayStockEvents(events);
-
-  await persistIngredientBalances(tx, ingredientBalances);
-  await persistProductBalances(tx, productBalances);
+  await persistIngredientBalances(tx, ingredientStates);
+  await persistProductBalances(tx, productStates);
 }
 
 export async function recalculateIngredientBalances(executor?: StockExecutor) {
   await recalculateStockBalances(executor);
 }
 
-async function persistIngredientBalances(tx: StockExecutor, balances: StockLedgerBalances) {
+async function persistIngredientBalances(
+  tx: StockExecutor,
+  states: ReturnType<typeof buildFifoStatesFromLayers>,
+) {
   const ingredients = await tx.select().from(ingredientsTable);
 
   for (const ingredient of ingredients) {
-    const snapshot = getStockLedgerSnapshot(balances, ingredient.id);
+    const snapshot = getFifoStockSnapshot(states, ingredient.id);
 
     await tx
       .update(ingredientsTable)
@@ -145,11 +92,14 @@ async function persistIngredientBalances(tx: StockExecutor, balances: StockLedge
   }
 }
 
-async function persistProductBalances(tx: StockExecutor, balances: StockLedgerBalances) {
+async function persistProductBalances(
+  tx: StockExecutor,
+  states: ReturnType<typeof buildFifoStatesFromLayers>,
+) {
   const products = await tx.select().from(productsTable);
 
   for (const product of products) {
-    const snapshot = getStockLedgerSnapshot(balances, product.id);
+    const snapshot = getFifoStockSnapshot(states, product.id);
 
     await tx
       .update(productsTable)
@@ -161,16 +111,4 @@ async function persistProductBalances(tx: StockExecutor, balances: StockLedgerBa
       })
       .where(eq(productsTable.id, product.id));
   }
-}
-
-function dedupeProductionOutputs<T extends { batchId: number }>(lines: T[]) {
-  const seenBatchIds = new Set<number>();
-  return lines.filter((line) => {
-    if (seenBatchIds.has(line.batchId)) {
-      return false;
-    }
-
-    seenBatchIds.add(line.batchId);
-    return true;
-  });
 }

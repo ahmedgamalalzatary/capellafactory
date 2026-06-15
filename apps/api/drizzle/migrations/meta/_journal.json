@@ -78,6 +78,13 @@
       "when": 1781558762151,
       "tag": "0010_minus_purchases",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1781562371654,
+      "tag": "0011_goofy_silverclaw",
+      "breakpoints": true
     }
   ]
 }
