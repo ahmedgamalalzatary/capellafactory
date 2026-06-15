@@ -1,5 +1,5 @@
 CREATE TABLE `suppliers` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`phone` varchar(50) NOT NULL,
 	`where` varchar(255),
@@ -9,3 +9,4 @@ CREATE TABLE `suppliers` (
 	CONSTRAINT `suppliers_id` PRIMARY KEY(`id`),
 	CONSTRAINT `suppliers_phone_unique` UNIQUE(`phone`)
 );
+

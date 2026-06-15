@@ -4,7 +4,6 @@ import {
   int,
   mysqlEnum,
   mysqlTable,
-  serial,
   text,
   timestamp,
   uniqueIndex,
@@ -14,7 +13,7 @@ import {
 export const productionBatchesTable = mysqlTable(
   "production_batches",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     batchCode: varchar("batch_code", { length: 32 }).notNull(),
     occurredAt: timestamp("occurred_at").notNull(),
     productId: int("product_id").notNull(),
@@ -36,7 +35,7 @@ export const productionBatchesTable = mysqlTable(
 export const productionBatchLinesTable = mysqlTable(
   "production_batch_lines",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     batchId: int("batch_id").notNull(),
     ingredientId: int("ingredient_id").notNull(),
     quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),

@@ -1,5 +1,5 @@
 CREATE TABLE `expenses` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`type` enum('rent','food','water','gas','electricity','internet','salary','other') NOT NULL,
 	`amount` decimal(14,3) NOT NULL,
 	`occurred_at` timestamp NOT NULL,

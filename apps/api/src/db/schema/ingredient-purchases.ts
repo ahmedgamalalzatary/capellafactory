@@ -4,7 +4,6 @@ import {
   int,
   mysqlEnum,
   mysqlTable,
-  serial,
   text,
   timestamp,
   uniqueIndex,
@@ -14,7 +13,7 @@ import {
 export const ingredientPurchasesTable = mysqlTable(
   "ingredient_purchases",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     invoiceCode: varchar("invoice_code", { length: 32 }).notNull(),
     occurredAt: timestamp("occurred_at").notNull(),
     supplierId: int("supplier_id"),
@@ -34,7 +33,7 @@ export const ingredientPurchasesTable = mysqlTable(
 export const ingredientPurchaseLinesTable = mysqlTable(
   "ingredient_purchase_lines",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     purchaseId: int("purchase_id").notNull(),
     ingredientId: int("ingredient_id").notNull(),
     quantity: decimal("quantity", { precision: 14, scale: 3 }).notNull(),

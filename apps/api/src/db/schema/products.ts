@@ -1,9 +1,9 @@
 import {
   boolean,
   decimal,
+  int,
   index,
   mysqlTable,
-  serial,
   timestamp,
   uniqueIndex,
   varchar,
@@ -12,7 +12,7 @@ import {
 export const productsTable = mysqlTable(
   "products",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     stockQuantity: decimal("stock_quantity", { precision: 14, scale: 3 })
       .default("0.000")

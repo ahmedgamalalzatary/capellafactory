@@ -1,5 +1,5 @@
 CREATE TABLE `buyers` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`phone` varchar(50) NOT NULL,
 	`where` varchar(255),

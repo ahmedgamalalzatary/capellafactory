@@ -1,5 +1,5 @@
 CREATE TABLE `ingredients` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`unit_family` enum('weight','volume') NOT NULL,
 	`base_unit` enum('g','ml') NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE `ingredients` (
 );
 --> statement-breakpoint
 CREATE TABLE `products` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`name` varchar(255) NOT NULL,
 	`stock_quantity` decimal(14,3) NOT NULL DEFAULT '0.000',
 	`has_history` boolean NOT NULL DEFAULT false,

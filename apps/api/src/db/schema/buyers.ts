@@ -1,7 +1,7 @@
 import {
+  int,
   index,
   mysqlTable,
-  serial,
   text,
   timestamp,
   uniqueIndex,
@@ -11,7 +11,7 @@ import {
 export const buyersTable = mysqlTable(
   "buyers",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 50 }).notNull(),
     where: varchar("where", { length: 255 }),

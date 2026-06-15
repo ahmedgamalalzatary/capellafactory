@@ -1,9 +1,9 @@
 import {
   decimal,
   index,
+  int,
   mysqlEnum,
   mysqlTable,
-  serial,
   timestamp,
   uniqueIndex,
   varchar,
@@ -13,7 +13,7 @@ import {
 export const ingredientsTable = mysqlTable(
   "ingredients",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
     unitFamily: mysqlEnum("unit_family", ["weight", "volume", "count"]).notNull(),
     baseUnit: mysqlEnum("base_unit", ["g", "ml", "piece"]).notNull(),

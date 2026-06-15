@@ -1,9 +1,9 @@
 import {
   decimal,
+  int,
   index,
   mysqlEnum,
   mysqlTable,
-  serial,
   text,
   timestamp,
   varchar,
@@ -12,7 +12,7 @@ import {
 export const expensesTable = mysqlTable(
   "expenses",
   {
-    id: serial("id").primaryKey(),
+    id: int("id").autoincrement().primaryKey(),
     type: mysqlEnum("type", [
       "rent",
       "food",
