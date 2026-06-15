@@ -6,9 +6,12 @@ import {
   buildExpensesUrl,
   mergeJsonHeaders,
 } from "../src/lib/api/expenses.js";
+import { handleApiResponse } from "../src/lib/api/request.js";
 
 test("buildExpensesUrl omits empty query by default", () => {
-  expect(buildExpensesUrl("http://localhost:4000")).toBe("http://localhost:4000/expenses");
+  expect(buildExpensesUrl("http://localhost:4000")).toBe(
+    "http://localhost:4000/expenses",
+  );
   expect(buildExpensesUrl("http://localhost:4000", "   ")).toBe(
     "http://localhost:4000/expenses",
   );
@@ -33,6 +36,17 @@ test("mergeJsonHeaders preserves existing headers and content type", () => {
 
   expect(headers.get("Accept")).toBe("application/json");
   expect(headers.get("Content-Type")).toBe("application/json");
+});
+
+test("handleApiResponse reports the first validation issue", async () => {
+  const response = new Response(
+    JSON.stringify({ issues: [{ message: "Amount is required" }] }),
+    { status: 400 },
+  );
+
+  await expect(
+    handleApiResponse(response, "Expense request failed"),
+  ).rejects.toThrow("Amount is required");
 });
 
 test("ExpensesTable links each expense to its detail page", () => {

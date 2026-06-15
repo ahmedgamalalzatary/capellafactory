@@ -3,9 +3,12 @@ import type {
   SupplierInput,
 } from "@capella/shared/suppliers/supplier.types";
 
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import {
+  API_URL,
+  CLIENT_API_URL,
+  handleApiResponse,
+  withApiCredentials,
+} from "./request";
 
 export function buildSuppliersUrl(baseUrl: string, query?: string) {
   const url = new URL("/suppliers", baseUrl);
@@ -18,14 +21,21 @@ export function buildSuppliersUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
-export async function getSuppliers(query?: string): Promise<Supplier[]> {
-  const response = await fetch(buildSuppliersUrl(API_URL, query), {
-    cache: "no-store",
-  });
+export async function getSuppliers(
+  query?: string,
+  options?: { cookieHeader?: string },
+): Promise<Supplier[]> {
+  const response = await fetch(
+    buildSuppliersUrl(API_URL, query),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch suppliers");
-  }
+  await handleApiResponse(response, "Failed to fetch suppliers");
 
   return (await response.json()) as Supplier[];
 }
@@ -37,7 +47,10 @@ export async function createSupplier(input: SupplierInput) {
   });
 }
 
-export async function updateSupplier(id: number, input: Partial<SupplierInput>) {
+export async function updateSupplier(
+  id: number,
+  input: Partial<SupplierInput>,
+) {
   return mutateSupplier(`${CLIENT_API_URL}/suppliers/${id}`, {
     method: "PATCH",
     body: JSON.stringify(input),
@@ -45,34 +58,27 @@ export async function updateSupplier(id: number, input: Partial<SupplierInput>) 
 }
 
 export async function deleteSupplier(id: number) {
-  const response = await fetch(`${CLIENT_API_URL}/suppliers/${id}`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `${CLIENT_API_URL}/suppliers/${id}`,
+    withApiCredentials({
+      method: "DELETE",
+    }),
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Failed to delete supplier");
-  }
+  await handleApiResponse(response, "Failed to delete supplier");
 }
 
 async function mutateSupplier(url: string, init: RequestInit) {
   const response = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-    ...init,
+    ...withApiCredentials({
+      headers: {
+        "Content-Type": "application/json",
+      },
+      ...init,
+    }),
   });
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Supplier request failed");
-  }
+  await handleApiResponse(response, "Supplier request failed");
 
   return (await response.json()) as Supplier;
 }

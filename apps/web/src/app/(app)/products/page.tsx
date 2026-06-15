@@ -3,6 +3,7 @@ import { ProductionBatchesTable } from "@/components/production/production-batch
 import { getIngredients } from "@/lib/api/ingredients";
 import { getProducts } from "@/lib/api/products";
 import { getProductionBatches } from "@/lib/api/production-batches";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 
 type ProductsPageProps = {
   searchParams?: Promise<{
@@ -13,10 +14,11 @@ type ProductsPageProps = {
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
+  const cookieHeader = await getServerCookieHeader();
   const [batches, products, ingredients] = await Promise.all([
-    getProductionBatches(query),
-    getProducts(undefined, false),
-    getIngredients(undefined, false),
+    getProductionBatches(query, { cookieHeader }),
+    getProducts(undefined, false, { cookieHeader }),
+    getIngredients(undefined, false, { cookieHeader }),
   ]);
   const totalProduced = batches.reduce((sum, batch) => sum + batch.producedQuantity, 0);
   const totalCost = batches.reduce((sum, batch) => sum + batch.totalCost, 0);

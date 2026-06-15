@@ -10,7 +10,8 @@ services:
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
+      test:
+        ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -27,6 +28,9 @@ services:
       API_URL: ${API_URL:?set API_URL in env file}
       CORS_ORIGIN: ${CORS_ORIGIN:?set CORS_ORIGIN in env file}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
+      AUTH_USERNAME: ${AUTH_USERNAME:?set AUTH_USERNAME in env file}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?set AUTH_PASSWORD in env file}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in env file}
     depends_on:
       db:
         condition: service_healthy
@@ -54,6 +58,9 @@ services:
       API_URL: ${API_URL:?set API_URL in env file}
       CORS_ORIGIN: ${CORS_ORIGIN:?set CORS_ORIGIN in env file}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?set NEXT_PUBLIC_API_URL in env file}
+      AUTH_USERNAME: ${AUTH_USERNAME:?set AUTH_USERNAME in env file}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?set AUTH_PASSWORD in env file}
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET in env file}
     depends_on:
       db:
         condition: service_healthy

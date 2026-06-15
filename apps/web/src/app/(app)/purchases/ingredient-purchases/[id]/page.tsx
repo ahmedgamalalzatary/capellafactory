@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { getIngredientPurchase } from "@/lib/api/ingredient-purchases";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredients } from "@/lib/api/ingredients";
 
 type IngredientPurchaseDetailPageProps = {
@@ -27,9 +28,10 @@ export default async function IngredientPurchaseDetailPage({
     notFound();
   }
 
+  const cookieHeader = await getServerCookieHeader();
   const [purchase, ingredients] = await Promise.all([
-    getIngredientPurchase(purchaseId).catch(() => null),
-    getIngredients().catch(() => []),
+    getIngredientPurchase(purchaseId, { cookieHeader }).catch(() => null),
+    getIngredients(undefined, false, { cookieHeader }).catch(() => []),
   ]);
 
   if (!purchase) {

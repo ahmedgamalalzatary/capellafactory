@@ -2,7 +2,12 @@
 
 import Link from "next/link";
 
-export default function SuppliersError() {
+type SuppliersErrorProps = {
+  error: Error & { digest?: string };
+  reset: () => void;
+};
+
+export default function SuppliersError({ error, reset }: SuppliersErrorProps) {
   return (
     <div className="px-8 py-16 max-w-6xl mx-auto">
       <div
@@ -21,13 +26,13 @@ export default function SuppliersError() {
           تعذّر تحميل بيانات الموردين
         </h1>
         <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
-          لم تستجب الواجهة البرمجية. تأكد من تشغيل خدمة الواجهة الخلفية وأن
-          قاعدة البيانات قابلة للوصول.
+          {error.message ||
+            "لم تستجب الواجهة البرمجية. تأكد من تشغيل خدمة الواجهة الخلفية وأن قاعدة البيانات قابلة للوصول."}
         </p>
         <div className="mt-5 flex items-center gap-2">
           <button
             type="button"
-            onClick={() => window.location.reload()}
+            onClick={reset}
             className="h-9 px-4 bg-primary text-primary-foreground text-[13px] font-medium transition-colors hover:opacity-90"
             style={{ borderRadius: "var(--radius)" }}
           >

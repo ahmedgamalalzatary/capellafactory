@@ -2,6 +2,7 @@ import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getExpense } from "@/lib/api/expenses";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 
 type ExpenseDetailPageProps = {
   params: Promise<{
@@ -17,7 +18,8 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
     notFound();
   }
 
-  const expense = await getExpense(expenseId).catch(() => null);
+  const cookieHeader = await getServerCookieHeader();
+  const expense = await getExpense(expenseId, { cookieHeader }).catch(() => null);
 
   if (!expense) {
     notFound();

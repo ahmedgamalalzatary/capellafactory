@@ -17,9 +17,9 @@ test("buildIngredientPurchasesUrl omits empty query by default", () => {
 });
 
 test("buildIngredientPurchasesUrl appends trimmed search query", () => {
-  expect(buildIngredientPurchasesUrl("http://localhost:4000", "  sugar  ")).toBe(
-    "http://localhost:4000/ingredient-purchases?q=sugar",
-  );
+  expect(
+    buildIngredientPurchasesUrl("http://localhost:4000", "  sugar  "),
+  ).toBe("http://localhost:4000/ingredient-purchases?q=sugar");
 });
 
 test("buildIngredientPurchaseDetailUrl targets one purchase by id", () => {
@@ -39,7 +39,10 @@ test("mergeJsonHeaders preserves existing headers and content type", () => {
 
 test("IngredientPurchasesTable links each purchase to its detail page", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/purchases/ingredient-purchases-table.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredient-purchases-table.tsx",
+    ),
     "utf8",
   );
 
@@ -49,7 +52,10 @@ test("IngredientPurchasesTable links each purchase to its detail page", () => {
 
 test("IngredientPurchasesTable has a mobile card layout", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/purchases/ingredient-purchases-table.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredient-purchases-table.tsx",
+    ),
     "utf8",
   );
 
@@ -60,7 +66,10 @@ test("IngredientPurchasesTable has a mobile card layout", () => {
 
 test("ingredient purchase detail page has mobile line cards", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/app/purchases/ingredient-purchases/[id]/page.tsx"),
+    resolve(
+      process.cwd(),
+      "src/app/(app)/purchases/ingredient-purchases/[id]/page.tsx",
+    ),
     "utf8",
   );
 
@@ -71,7 +80,10 @@ test("ingredient purchase detail page has mobile line cards", () => {
 
 test("ingredient purchase form submits line total instead of unit price", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/purchases/ingredient-purchase-form.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredient-purchase-form.tsx",
+    ),
     "utf8",
   );
 

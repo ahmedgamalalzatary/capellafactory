@@ -11,6 +11,7 @@ import {
 import { getIngredients } from "@/lib/api/ingredients";
 import { getProducts } from "@/lib/api/products";
 import { getProductionBatch } from "@/lib/api/production-batches";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 
 type ProductionBatchDetailPageProps = {
   params: Promise<{
@@ -28,10 +29,11 @@ export default async function ProductionBatchDetailPage({
     notFound();
   }
 
+  const cookieHeader = await getServerCookieHeader();
   const [batch, products, ingredients] = await Promise.all([
-    getProductionBatch(batchId).catch(() => null),
-    getProducts(undefined, false).catch(() => []),
-    getIngredients(undefined, false).catch(() => []),
+    getProductionBatch(batchId, { cookieHeader }).catch(() => null),
+    getProducts(undefined, false, { cookieHeader }).catch(() => []),
+    getIngredients(undefined, false, { cookieHeader }).catch(() => []),
   ]);
 
   if (!batch) {

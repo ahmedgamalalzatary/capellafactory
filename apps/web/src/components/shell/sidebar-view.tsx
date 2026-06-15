@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+import { logout } from "@/lib/api/auth";
+import { Button } from "@/components/ui/button";
 import { isSidebarItemActive, sidebarItems } from "./sidebar-nav";
 
 type SidebarViewProps = {
@@ -9,9 +13,33 @@ type SidebarViewProps = {
   onNavigate?: () => void;
 };
 
-export function SidebarView({ variant = "desktop", onNavigate }: SidebarViewProps) {
+export function SidebarView({
+  variant = "desktop",
+  onNavigate,
+}: SidebarViewProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isDrawer = variant === "drawer";
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await logout();
+      onNavigate?.();
+      router.replace("/login");
+      router.refresh();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "فشل تسجيل الخروج. حاول مجددًا.",
+      );
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
 
   const asideClass = isDrawer
     ? "flex h-full w-full flex-col"
@@ -70,7 +98,9 @@ export function SidebarView({ variant = "desktop", onNavigate }: SidebarViewProp
                 className="flex h-10 items-center rounded-sm px-3 text-[13px] font-semibold transition-colors"
                 style={{
                   color: "var(--sidebar-foreground)",
-                  background: isActive ? "var(--sidebar-accent)" : "transparent",
+                  background: isActive
+                    ? "var(--sidebar-accent)"
+                    : "transparent",
                   borderInlineEnd: isActive
                     ? "2px solid var(--sidebar-foreground)"
                     : "2px solid transparent",
@@ -83,6 +113,21 @@ export function SidebarView({ variant = "desktop", onNavigate }: SidebarViewProp
           })}
         </div>
       </nav>
+
+      <div
+        className="border-t px-3 py-4"
+        style={{ borderColor: "var(--sidebar-border)" }}
+      >
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full justify-center"
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+        >
+          {isLoggingOut ? "جاري الخروج..." : "تسجيل الخروج"}
+        </Button>
+      </div>
     </aside>
   );
 }

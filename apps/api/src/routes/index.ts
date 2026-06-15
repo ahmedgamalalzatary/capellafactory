@@ -1,4 +1,6 @@
 import type { Express } from "express";
+import { authRouter } from "../modules/auth/auth.routes.js";
+import { requireAuth } from "../modules/auth/auth.middleware.js";
 import { buyersRouter } from "../modules/buyers/buyers.routes.js";
 import { expensesRouter } from "../modules/expenses/expenses.routes.js";
 import { ingredientPurchasesRouter } from "../modules/ingredient-purchases/ingredient-purchases.routes.js";
@@ -11,6 +13,9 @@ export function registerRoutes(app: Express) {
   app.get("/health", (_request, response) => {
     response.json({ status: "ok" });
   });
+
+  app.use("/auth", authRouter);
+  app.use(requireAuth);
 
   app.use("/buyers", buyersRouter);
   app.use("/expenses", expensesRouter);

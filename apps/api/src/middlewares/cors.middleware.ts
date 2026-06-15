@@ -13,13 +13,15 @@ export function corsMiddleware(
 
   if (requestOrigin === allowedOrigin) {
     response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+    response.setHeader("Access-Control-Allow-Credentials", "true");
     response.setHeader("Vary", "Origin");
   }
 
   response.setHeader("Access-Control-Allow-Methods", DEFAULT_ALLOWED_METHODS);
   response.setHeader(
     "Access-Control-Allow-Headers",
-    request.headers["access-control-request-headers"] ?? DEFAULT_ALLOWED_HEADERS,
+    request.headers["access-control-request-headers"] ??
+      DEFAULT_ALLOWED_HEADERS,
   );
 
   if (request.method === "OPTIONS") {

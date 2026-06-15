@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { getIngredients } from "@/lib/api/ingredients";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getProducts } from "@/lib/api/products";
 import {
   filterIngredientsByUnitFamily,
@@ -46,9 +47,10 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
   const showArchived = params.archived === "true";
   const ingredientUnitFilter = normalizeIngredientUnitFilter(params.unitFamily);
 
+  const cookieHeader = await getServerCookieHeader();
   const [ingredients, products] = await Promise.all([
-    getIngredients(query, showArchived),
-    getProducts(query, showArchived),
+    getIngredients(query, showArchived, { cookieHeader }),
+    getProducts(query, showArchived, { cookieHeader }),
   ]);
   const visibleIngredients = filterIngredientsByUnitFamily(ingredients, ingredientUnitFilter);
 

@@ -3,9 +3,7 @@ import type {
   IngredientInput,
 } from "@capella/shared/ingredients/ingredient.types";
 
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import { API_URL, CLIENT_API_URL, handleApiResponse, withApiCredentials } from "./request";
 
 export function buildIngredientsUrl(baseUrl: string, query?: string, archived = false) {
   const url = new URL("/ingredients", baseUrl);
@@ -30,14 +28,12 @@ export function buildIngredientActionUrl(
   return new URL(`/ingredients/${id}/${action}`, baseUrl).toString();
 }
 
-export async function getIngredients(query?: string, archived = false): Promise<Ingredient[]> {
-  const response = await fetch(buildIngredientsUrl(API_URL, query, archived), {
+export async function getIngredients(query?: string, archived = false, options?: { cookieHeader?: string }): Promise<Ingredient[]> {
+  const response = await fetch(buildIngredientsUrl(API_URL, query, archived), withApiCredentials({
     cache: "no-store",
-  });
+  }, options?.cookieHeader));
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch ingredients");
-  }
+  await handleApiResponse(response, "Failed to fetch ingredients");
 
   return (await response.json()) as Ingredient[];
 }
@@ -69,9 +65,9 @@ export async function reactivateIngredient(id: number) {
 }
 
 export async function deleteIngredient(id: number) {
-  const response = await fetch(`${CLIENT_API_URL}/ingredients/${id}`, {
+  const response = await fetch(`${CLIENT_API_URL}/ingredients/${id}`, withApiCredentials({
     method: "DELETE",
-  });
+  }));
 
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as
@@ -94,8 +90,10 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
 
 async function mutateIngredient(url: string, init: RequestInit) {
   const response = await fetch(url, {
-    headers: mergeJsonHeaders(init.headers),
-    ...init,
+    ...withApiCredentials({
+      headers: mergeJsonHeaders(init.headers),
+      ...init,
+    }),
   });
 
   if (!response.ok) {

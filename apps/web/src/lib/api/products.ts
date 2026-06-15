@@ -1,10 +1,20 @@
-import type { Product, ProductInput } from "@capella/shared/products/product.types";
+import type {
+  Product,
+  ProductInput,
+} from "@capella/shared/products/product.types";
 
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import {
+  API_URL,
+  CLIENT_API_URL,
+  handleApiResponse,
+  withApiCredentials,
+} from "./request";
 
-export function buildProductsUrl(baseUrl: string, query?: string, archived = false) {
+export function buildProductsUrl(
+  baseUrl: string,
+  query?: string,
+  archived = false,
+) {
   const url = new URL("/products", baseUrl);
   const normalizedQuery = query?.trim();
 
@@ -27,14 +37,22 @@ export function buildProductActionUrl(
   return new URL(`/products/${id}/${action}`, baseUrl).toString();
 }
 
-export async function getProducts(query?: string, archived = false): Promise<Product[]> {
-  const response = await fetch(buildProductsUrl(API_URL, query, archived), {
-    cache: "no-store",
-  });
+export async function getProducts(
+  query?: string,
+  archived = false,
+  options?: { cookieHeader?: string },
+): Promise<Product[]> {
+  const response = await fetch(
+    buildProductsUrl(API_URL, query, archived),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch products");
-  }
+  await handleApiResponse(response, "Failed to fetch products");
 
   return (await response.json()) as Product[];
 }
@@ -60,23 +78,23 @@ export async function archiveProduct(id: number) {
 }
 
 export async function reactivateProduct(id: number) {
-  return mutateProduct(buildProductActionUrl(CLIENT_API_URL, id, "reactivate"), {
-    method: "PATCH",
-  });
+  return mutateProduct(
+    buildProductActionUrl(CLIENT_API_URL, id, "reactivate"),
+    {
+      method: "PATCH",
+    },
+  );
 }
 
 export async function deleteProduct(id: number) {
-  const response = await fetch(`${CLIENT_API_URL}/products/${id}`, {
-    method: "DELETE",
-  });
+  const response = await fetch(
+    `${CLIENT_API_URL}/products/${id}`,
+    withApiCredentials({
+      method: "DELETE",
+    }),
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Failed to delete product");
-  }
+  await handleApiResponse(response, "Failed to delete product");
 }
 
 export function mergeJsonHeaders(initHeaders?: HeadersInit) {
@@ -91,17 +109,13 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
 
 async function mutateProduct(url: string, init: RequestInit) {
   const response = await fetch(url, {
-    headers: mergeJsonHeaders(init.headers),
-    ...init,
+    ...withApiCredentials({
+      headers: mergeJsonHeaders(init.headers),
+      ...init,
+    }),
   });
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Product request failed");
-  }
+  await handleApiResponse(response, "Product request failed");
 
   return (await response.json()) as Product;
 }

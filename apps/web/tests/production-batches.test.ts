@@ -39,7 +39,10 @@ test("mergeJsonHeaders preserves existing headers and content type", () => {
 
 test("ProductionBatchesTable links each batch to its detail page", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/production/production-batches-table.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/production/production-batches-table.tsx",
+    ),
     "utf8",
   );
 
@@ -49,7 +52,10 @@ test("ProductionBatchesTable links each batch to its detail page", () => {
 
 test("ProductionBatchesTable has a mobile card layout", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/production/production-batches-table.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/production/production-batches-table.tsx",
+    ),
     "utf8",
   );
 
@@ -60,7 +66,10 @@ test("ProductionBatchesTable has a mobile card layout", () => {
 
 test("production batch form keeps entered values when a submit is rejected", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/production/production-batch-form.tsx"),
+    resolve(
+      process.cwd(),
+      "src/components/production/production-batch-form.tsx",
+    ),
     "utf8",
   );
 
@@ -77,7 +86,10 @@ test("production batch form keeps entered values when a submit is rejected", () 
 
 test("production batch detail page has mobile line cards", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/app/products/production-batches/[id]/page.tsx"),
+    resolve(
+      process.cwd(),
+      "src/app/(app)/products/production-batches/[id]/page.tsx",
+    ),
     "utf8",
   );
 

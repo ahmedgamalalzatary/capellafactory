@@ -1,4 +1,5 @@
 import { getSuppliers } from "@/lib/api/suppliers";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 import { SuppliersSearchInput } from "@/components/suppliers/suppliers-search-input";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { SuppliersTable } from "@/components/suppliers/suppliers-table";
@@ -12,7 +13,8 @@ type SuppliersPageProps = {
 export default async function SuppliersPage({ searchParams }: SuppliersPageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
-  const suppliers = await getSuppliers(query);
+  const cookieHeader = await getServerCookieHeader();
+  const suppliers = await getSuppliers(query, { cookieHeader });
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 mx-auto">

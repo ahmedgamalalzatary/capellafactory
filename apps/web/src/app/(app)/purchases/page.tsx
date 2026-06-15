@@ -4,6 +4,7 @@ import { IngredientPurchasesTable } from "@/components/purchases/ingredient-purc
 import { ExpensesTable } from "@/components/purchases/expenses-table";
 import { PurchasesSearchInput } from "@/components/purchases/purchases-search-input";
 import { getExpenses } from "@/lib/api/expenses";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredientPurchases } from "@/lib/api/ingredient-purchases";
 import { getIngredients } from "@/lib/api/ingredients";
 import { getSuppliers } from "@/lib/api/suppliers";
@@ -19,11 +20,12 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
   const activeTab = params.tab === "ingredient-purchases" ? "ingredient-purchases" : "expenses";
+  const cookieHeader = await getServerCookieHeader();
   const [expenses, ingredientPurchases, suppliers, ingredients] = await Promise.all([
-    getExpenses(query),
-    getIngredientPurchases(query),
-    getSuppliers(),
-    getIngredients(),
+    getExpenses(query, { cookieHeader }),
+    getIngredientPurchases(query, { cookieHeader }),
+    getSuppliers(undefined, { cookieHeader }),
+    getIngredients(undefined, false, { cookieHeader }),
   ]);
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
   const salaryCount = expenses.filter((expense) => expense.type === "salary").length;

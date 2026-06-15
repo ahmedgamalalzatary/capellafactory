@@ -1,6 +1,9 @@
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import {
+  API_URL,
+  CLIENT_API_URL,
+  handleApiResponse,
+  withApiCredentials,
+} from "./request";
 import type {
   IngredientPurchase,
   IngredientPurchaseInput,
@@ -31,44 +34,55 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
   return headers;
 }
 
-export async function getIngredientPurchases(query?: string) {
-  const response = await fetch(buildIngredientPurchasesUrl(API_URL, query), {
-    cache: "no-store",
-  });
+export async function getIngredientPurchases(
+  query?: string,
+  options?: { cookieHeader?: string },
+) {
+  const response = await fetch(
+    buildIngredientPurchasesUrl(API_URL, query),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch ingredient purchases");
-  }
+  await handleApiResponse(response, "Failed to fetch ingredient purchases");
 
   return (await response.json()) as IngredientPurchase[];
 }
 
-export async function getIngredientPurchase(id: number) {
-  const response = await fetch(buildIngredientPurchaseDetailUrl(API_URL, id), {
-    cache: "no-store",
-  });
+export async function getIngredientPurchase(
+  id: number,
+  options?: { cookieHeader?: string },
+) {
+  const response = await fetch(
+    buildIngredientPurchaseDetailUrl(API_URL, id),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch ingredient purchase");
-  }
+  await handleApiResponse(response, "Failed to fetch ingredient purchase");
 
   return (await response.json()) as IngredientPurchase;
 }
 
 export async function createIngredientPurchase(input: IngredientPurchaseInput) {
-  const response = await fetch(`${CLIENT_API_URL}/ingredient-purchases`, {
-    method: "POST",
-    headers: mergeJsonHeaders(),
-    body: JSON.stringify(input),
-  });
+  const response = await fetch(
+    `${CLIENT_API_URL}/ingredient-purchases`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Ingredient purchase request failed");
-  }
+  await handleApiResponse(response, "Ingredient purchase request failed");
 
   return (await response.json()) as IngredientPurchase;
 }

@@ -1,8 +1,14 @@
-import type { Expense, ExpenseInput } from "@capella/shared/expenses/expense.types";
+import type {
+  Expense,
+  ExpenseInput,
+} from "@capella/shared/expenses/expense.types";
 
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import {
+  API_URL,
+  CLIENT_API_URL,
+  handleApiResponse,
+  withApiCredentials,
+} from "./request";
 
 export function buildExpensesUrl(baseUrl: string, query?: string) {
   const url = new URL("/expenses", baseUrl);
@@ -19,44 +25,55 @@ export function buildExpenseDetailUrl(baseUrl: string, id: number) {
   return new URL(`/expenses/${id}`, baseUrl).toString();
 }
 
-export async function getExpenses(query?: string): Promise<Expense[]> {
-  const response = await fetch(buildExpensesUrl(API_URL, query), {
-    cache: "no-store",
-  });
+export async function getExpenses(
+  query?: string,
+  options?: { cookieHeader?: string },
+): Promise<Expense[]> {
+  const response = await fetch(
+    buildExpensesUrl(API_URL, query),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch expenses");
-  }
+  await handleApiResponse(response, "Failed to fetch expenses");
 
   return (await response.json()) as Expense[];
 }
 
-export async function getExpense(id: number): Promise<Expense> {
-  const response = await fetch(buildExpenseDetailUrl(API_URL, id), {
-    cache: "no-store",
-  });
+export async function getExpense(
+  id: number,
+  options?: { cookieHeader?: string },
+): Promise<Expense> {
+  const response = await fetch(
+    buildExpenseDetailUrl(API_URL, id),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch expense");
-  }
+  await handleApiResponse(response, "Failed to fetch expense");
 
   return (await response.json()) as Expense;
 }
 
 export async function createExpense(input: ExpenseInput) {
-  const response = await fetch(`${CLIENT_API_URL}/expenses`, {
-    method: "POST",
-    headers: mergeJsonHeaders(),
-    body: JSON.stringify(input),
-  });
+  const response = await fetch(
+    `${CLIENT_API_URL}/expenses`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string; issues?: Array<{ message?: string }> }
-      | null;
-    const issueMessage = payload?.issues?.[0]?.message;
-    throw new Error(issueMessage ?? payload?.message ?? "Expense request failed");
-  }
+  await handleApiResponse(response, "Expense request failed");
 
   return (await response.json()) as Expense;
 }

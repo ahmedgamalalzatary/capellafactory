@@ -3,9 +3,12 @@ import type {
   ProductionBatchInput,
 } from "@capella/shared/production-batches/production-batch.types";
 
-const API_URL = process.env.API_URL ?? "http://localhost:4000";
-const CLIENT_API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? process.env.API_URL ?? "http://localhost:4000";
+import {
+  API_URL,
+  CLIENT_API_URL,
+  handleApiResponse,
+  withApiCredentials,
+} from "./request";
 
 export function buildProductionBatchesUrl(baseUrl: string, query?: string) {
   const url = new URL("/production-batches", baseUrl);
@@ -32,44 +35,55 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
   return headers;
 }
 
-export async function getProductionBatches(query?: string) {
-  const response = await fetch(buildProductionBatchesUrl(API_URL, query), {
-    cache: "no-store",
-  });
+export async function getProductionBatches(
+  query?: string,
+  options?: { cookieHeader?: string },
+) {
+  const response = await fetch(
+    buildProductionBatchesUrl(API_URL, query),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch production batches");
-  }
+  await handleApiResponse(response, "Failed to fetch production batches");
 
   return (await response.json()) as ProductionBatch[];
 }
 
-export async function getProductionBatch(id: number) {
-  const response = await fetch(buildProductionBatchDetailUrl(API_URL, id), {
-    cache: "no-store",
-  });
+export async function getProductionBatch(
+  id: number,
+  options?: { cookieHeader?: string },
+) {
+  const response = await fetch(
+    buildProductionBatchDetailUrl(API_URL, id),
+    withApiCredentials(
+      {
+        cache: "no-store",
+      },
+      options?.cookieHeader,
+    ),
+  );
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch production batch");
-  }
+  await handleApiResponse(response, "Failed to fetch production batch");
 
   return (await response.json()) as ProductionBatch;
 }
 
 export async function createProductionBatch(input: ProductionBatchInput) {
-  const response = await fetch(`${CLIENT_API_URL}/production-batches`, {
-    method: "POST",
-    headers: mergeJsonHeaders(),
-    body: JSON.stringify(input),
-  });
+  const response = await fetch(
+    `${CLIENT_API_URL}/production-batches`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Production batch request failed");
-  }
+  await handleApiResponse(response, "Production batch request failed");
 
   return (await response.json()) as ProductionBatch;
 }

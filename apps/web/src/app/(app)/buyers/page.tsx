@@ -1,4 +1,5 @@
 import { getBuyers } from "@/lib/api/buyers";
+import { getServerCookieHeader } from "@/lib/server-cookies";
 import { BuyersSearchInput } from "@/components/buyers/buyers-search-input";
 import { BuyerDialog } from "@/components/buyers/buyer-dialog";
 import { BuyersTable } from "@/components/buyers/buyers-table";
@@ -12,7 +13,8 @@ type BuyersPageProps = {
 export default async function BuyersPage({ searchParams }: BuyersPageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
-  const buyers = await getBuyers(query);
+  const cookieHeader = await getServerCookieHeader();
+  const buyers = await getBuyers(query, { cookieHeader });
 
   return (
     <div className="px-4 py-6 sm:px-8 sm:py-8 mx-auto">
