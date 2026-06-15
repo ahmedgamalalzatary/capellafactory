@@ -4,6 +4,8 @@ import {
   ingredientPurchaseLinesTable,
   ingredientPurchasesTable,
   ingredientsTable,
+  purchaseCorrectionLinesTable,
+  purchaseCorrectionsTable,
   productionBatchLinesTable,
   productionBatchesTable,
   productsTable,
@@ -62,6 +64,21 @@ export async function recalculateStockBalances(executor?: StockExecutor) {
     )
     .orderBy(asc(productionBatchesTable.occurredAt), asc(productionBatchesTable.id));
 
+  const correctionLines = await tx
+    .select({
+      correctionId: purchaseCorrectionsTable.id,
+      occurredAt: purchaseCorrectionsTable.createdAt,
+      ingredientId: purchaseCorrectionLinesTable.ingredientId,
+      normalizedQuantity: purchaseCorrectionLinesTable.normalizedQuantity,
+      lineTotal: purchaseCorrectionLinesTable.lineTotal,
+    })
+    .from(purchaseCorrectionsTable)
+    .innerJoin(
+      purchaseCorrectionLinesTable,
+      eq(purchaseCorrectionsTable.id, purchaseCorrectionLinesTable.correctionId),
+    )
+    .orderBy(asc(purchaseCorrectionsTable.createdAt), asc(purchaseCorrectionsTable.id));
+
   const events: StockReplayEvent[] = [
     ...purchases.map((purchase) => ({
       id: purchase.purchaseId,
@@ -70,6 +87,14 @@ export async function recalculateStockBalances(executor?: StockExecutor) {
       ingredientId: purchase.ingredientId,
       quantity: Number(purchase.normalizedQuantity),
       cost: Number(purchase.lineTotal),
+    })),
+    ...correctionLines.map((line) => ({
+      id: line.correctionId,
+      occurredAt: line.occurredAt,
+      kind: "purchase-correction" as const,
+      ingredientId: line.ingredientId,
+      quantity: Number(line.normalizedQuantity),
+      cost: Number(line.lineTotal),
     })),
     ...productionLines.map((line) => ({
       id: line.batchId,

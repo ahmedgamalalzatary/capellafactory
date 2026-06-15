@@ -65,6 +65,14 @@
       "types": "./dist/production-batches/production-batch.schema.d.ts",
       "default": "./dist/production-batches/production-batch.schema.js"
     },
+    "./purchase-corrections/purchase-correction.types": {
+      "types": "./dist/purchase-corrections/purchase-correction.types.d.ts",
+      "default": "./dist/purchase-corrections/purchase-correction.types.js"
+    },
+    "./purchase-corrections/purchase-correction.schema": {
+      "types": "./dist/purchase-corrections/purchase-correction.schema.d.ts",
+      "default": "./dist/purchase-corrections/purchase-correction.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

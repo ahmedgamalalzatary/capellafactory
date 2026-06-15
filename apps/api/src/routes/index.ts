@@ -7,6 +7,7 @@ import { ingredientPurchasesRouter } from "../modules/ingredient-purchases/ingre
 import { ingredientsRouter } from "../modules/ingredients/ingredients.routes.js";
 import { productionBatchesRouter } from "../modules/production-batches/production-batches.routes.js";
 import { productsRouter } from "../modules/products/products.routes.js";
+import { purchaseCorrectionsRouter } from "../modules/purchase-corrections/purchase-corrections.routes.js";
 import { suppliersRouter } from "../modules/suppliers/suppliers.routes.js";
 
 export function registerRoutes(app: Express) {
@@ -21,6 +22,7 @@ export function registerRoutes(app: Express) {
   app.use("/expenses", expensesRouter);
   app.use("/ingredient-purchases", ingredientPurchasesRouter);
   app.use("/ingredients", ingredientsRouter);
+  app.use("/purchase-corrections", purchaseCorrectionsRouter);
   app.use("/production-batches", productionBatchesRouter);
   app.use("/products", productsRouter);
   app.use("/suppliers", suppliersRouter);

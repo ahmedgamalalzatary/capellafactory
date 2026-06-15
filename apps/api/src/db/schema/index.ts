@@ -9,6 +9,10 @@ export {
   ingredientPurchaseLinesTable,
 } from "./ingredient-purchases.js";
 export {
+  purchaseCorrectionsTable,
+  purchaseCorrectionLinesTable,
+} from "./purchase-corrections.js";
+export {
   productionBatchesTable,
   productionBatchLinesTable,
 } from "./production-batches.js";

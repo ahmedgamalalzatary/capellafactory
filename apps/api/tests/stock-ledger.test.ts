@@ -140,3 +140,34 @@ test("blocks consumption with no prior ingredient stock", () => {
     (error: unknown) => error instanceof StockLedgerConflictError,
   );
 });
+
+test("replays purchase corrections as negative ingredient stock events", () => {
+  const events: StockReplayEvent[] = [
+    {
+      id: 1,
+      occurredAt: "2026-05-01T00:00:00.000Z",
+      kind: "ingredient-purchase",
+      ingredientId: 7,
+      quantity: 1000,
+      cost: 50,
+    },
+    {
+      id: 2,
+      occurredAt: "2026-05-02T00:00:00.000Z",
+      kind: "purchase-correction",
+      ingredientId: 7,
+      quantity: 200,
+      cost: 10,
+    },
+  ];
+
+  const { ingredientBalances } = replayStockEvents(events);
+
+  assert.deepEqual(getStockLedgerSnapshot(ingredientBalances, 7), {
+    quantity: 800,
+    totalCost: 40,
+    averageUnitCost: 0.05,
+    hasHistory: true,
+    residualCost: 0,
+  });
+});

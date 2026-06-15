@@ -54,6 +54,14 @@ export type StockReplayEvent =
   | {
       id: number;
       occurredAt: Date | string;
+      kind: "purchase-correction";
+      ingredientId: number;
+      quantity: number;
+      cost: number;
+    }
+  | {
+      id: number;
+      occurredAt: Date | string;
       kind: "production-output";
       productId: number;
       quantity: number;
@@ -89,7 +97,10 @@ export function replayStockEvents(events: StockReplayEvent[]): {
         quantityDelta: event.quantity,
         costDelta: event.cost,
       });
-    } else if (event.kind === "production-consumption") {
+    } else if (
+      event.kind === "production-consumption" ||
+      event.kind === "purchase-correction"
+    ) {
       applyStockLedgerEntry(ingredientBalances, {
         itemId: event.ingredientId,
         quantityDelta: -event.quantity,
@@ -141,10 +152,12 @@ function stockEventKindWeight(kind: StockReplayEvent["kind"]) {
   switch (kind) {
     case "ingredient-purchase":
       return 0;
-    case "production-consumption":
+    case "purchase-correction":
       return 1;
-    case "production-output":
+    case "production-consumption":
       return 2;
+    case "production-output":
+      return 3;
   }
 }
 

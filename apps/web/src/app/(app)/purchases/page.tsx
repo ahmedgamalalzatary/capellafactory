@@ -1,6 +1,8 @@
 import { ExpenseDialog } from "@/components/purchases/expense-dialog";
 import { IngredientPurchaseDialog } from "@/components/purchases/ingredient-purchase-dialog";
 import { IngredientPurchasesTable } from "@/components/purchases/ingredient-purchases-table";
+import { PurchaseCorrectionDialog } from "@/components/purchases/purchase-correction-dialog";
+import { PurchaseCorrectionsTable } from "@/components/purchases/purchase-corrections-table";
 import { ExpensesTable } from "@/components/purchases/expenses-table";
 import { PurchasesSearchInput } from "@/components/purchases/purchases-search-input";
 import { MetricCard } from "@/components/shared/metric-card";
@@ -10,16 +12,23 @@ import { getExpenses } from "@/lib/api/expenses";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredientPurchases } from "@/lib/api/ingredient-purchases";
 import { getIngredients } from "@/lib/api/ingredients";
+import { getPurchaseCorrections } from "@/lib/api/purchase-corrections";
 import { getSuppliers } from "@/lib/api/suppliers";
+import type { IngredientPurchaseLine } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type { PurchaseCorrectionLine } from "@capella/shared/purchase-corrections/purchase-correction.types";
 
 export default async function PurchasesPage({ searchParams }: PurchasesPageProps) {
   const params = (await searchParams) ?? {};
   const query = params.q?.trim() || undefined;
-  const activeTab = params.tab === "ingredient-purchases" ? "ingredient-purchases" : "expenses";
+  const activeTab =
+    params.tab === "ingredient-purchases" || params.tab === "purchase-corrections"
+      ? params.tab
+      : "expenses";
   const cookieHeader = await getServerCookieHeader();
-  const [expenses, ingredientPurchases, suppliers, ingredients] = await Promise.all([
+  const [expenses, ingredientPurchases, purchaseCorrections, suppliers, ingredients] = await Promise.all([
     getExpenses(query, { cookieHeader }),
     getIngredientPurchases(query, { cookieHeader }),
+    getPurchaseCorrections(query, { cookieHeader }),
     getSuppliers(undefined, { cookieHeader }),
     getIngredients(undefined, false, { cookieHeader }),
   ]);
@@ -27,7 +36,21 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
   const salaryCount = expenses.filter((expense) => expense.type === "salary").length;
   const otherCount = expenses.filter((expense) => expense.type === "other").length;
   const purchasesTotal = ingredientPurchases.reduce(
-    (sum, purchase) => sum + purchase.lines.reduce((lineSum, line) => lineSum + line.lineTotal, 0),
+    (sum, purchase) =>
+      sum +
+      purchase.lines.reduce(
+        (lineSum: number, line: IngredientPurchaseLine) => lineSum + line.lineTotal,
+        0,
+      ),
+    0,
+  );
+  const correctionsTotal = purchaseCorrections.reduce(
+    (sum, correction) =>
+      sum +
+      correction.lines.reduce(
+        (lineSum: number, line: PurchaseCorrectionLine) => lineSum + line.lineTotal,
+        0,
+      ),
     0,
   );
 
@@ -60,8 +83,10 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
             <div className="flex flex-wrap items-center gap-3">
               {activeTab === "expenses" ? (
                 <ExpenseDialog />
-              ) : (
+              ) : activeTab === "ingredient-purchases" ? (
                 <IngredientPurchaseDialog suppliers={suppliers} ingredients={ingredients} />
+              ) : (
+                <PurchaseCorrectionDialog purchases={ingredientPurchases} ingredients={ingredients} />
               )}
             </div>
           </div>
@@ -77,7 +102,7 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
                   tone="slate"
                 />
               </>
-            ) : (
+            ) : activeTab === "ingredient-purchases" ? (
               <>
                 <MetricCard
                   label="عدد الفواتير"
@@ -86,6 +111,16 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
                 />
                 <MetricCard label="إجمالي الشراء" value={formatPurchasesAmount(purchasesTotal)} tone="amber" />
                 <MetricCard label="الخامات المتاحة" value={String(ingredients.length)} tone="slate" />
+              </>
+            ) : (
+              <>
+                <MetricCard label="عدد عمليات العكس" value={String(purchaseCorrections.length)} tone="paper" />
+                <MetricCard label="إجمالي العكس" value={formatPurchasesAmount(correctionsTotal)} tone="amber" />
+                <MetricCard
+                  label="الفواتير المرجعية"
+                  value={String(new Set(purchaseCorrections.map(c => c.sourcePurchaseId)).size)}
+                  tone="slate"
+                />
               </>
             )}
           </div>
@@ -113,14 +148,29 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
                 >
                   فواتير شراء الخامات
                 </a>
+                <a
+                  href={buildPurchasesHref("purchase-corrections", query)}
+                  className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition ${activeTab === "purchase-corrections"
+                    ? "bg-slate-950 text-white shadow-sm"
+                    : "bg-white/75 text-slate-700 ring-1 ring-slate-200 hover:bg-white"
+                    }`}
+                >
+                  عكس الشراء
+                </a>
               </div>
               <h2 className="text-[16px] font-semibold text-slate-900">
-                {activeTab === "expenses" ? "سجل المصروفات" : "سجل فواتير شراء الخامات"}
+                {activeTab === "expenses"
+                  ? "سجل المصروفات"
+                  : activeTab === "ingredient-purchases"
+                    ? "سجل فواتير شراء الخامات"
+                    : "سجل عكس الشراء"}
               </h2>
               <p className="mt-1 text-[12px] leading-relaxed text-slate-600">
                 {activeTab === "expenses"
                   ? "ابحث داخل الأنواع، أسماء الموظفين، وصف الأنواع الحرة، أو الملاحظات."
-                  : "ابحث داخل كود الفاتورة، اسم المورد المكتوب، أو ملاحظات الفاتورة."}
+                  : activeTab === "ingredient-purchases"
+                    ? "ابحث داخل كود الفاتورة، اسم المورد المكتوب، أو ملاحظات الفاتورة."
+                    : "ابحث داخل سبب العكس أو كود الفاتورة الأصلية."}
               </p>
             </div>
 
@@ -135,8 +185,10 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
           >
             {activeTab === "expenses" ? (
               <ExpensesTable expenses={expenses} />
-            ) : (
+            ) : activeTab === "ingredient-purchases" ? (
               <IngredientPurchasesTable purchases={ingredientPurchases} />
+            ) : (
+              <PurchaseCorrectionsTable corrections={purchaseCorrections} />
             )}
           </div>
         </div>
