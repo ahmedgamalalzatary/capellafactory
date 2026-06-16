@@ -73,6 +73,14 @@
       "types": "./dist/purchase-corrections/purchase-correction.schema.d.ts",
       "default": "./dist/purchase-corrections/purchase-correction.schema.js"
     },
+    "./sales-invoices/sales-invoice.types": {
+      "types": "./dist/sales-invoices/sales-invoice.types.d.ts",
+      "default": "./dist/sales-invoices/sales-invoice.types.js"
+    },
+    "./sales-invoices/sales-invoice.schema": {
+      "types": "./dist/sales-invoices/sales-invoice.schema.d.ts",
+      "default": "./dist/sales-invoices/sales-invoice.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  BuyerLockedError,
   DuplicateBuyerPhoneError,
   mapBuyerRowToBuyer,
   normalizeBuyerSearchQuery,
@@ -79,4 +80,10 @@ test("normalizes buyer search query", () => {
   assert.equal(normalizeBuyerSearchQuery(""), undefined);
   assert.equal(normalizeBuyerSearchQuery("   "), undefined);
   assert.equal(normalizeBuyerSearchQuery("  Nile  "), "Nile");
+});
+
+test("buyer locked error explains sales invoice history lock", () => {
+  const error = new BuyerLockedError();
+
+  assert.equal(error.message, "Buyer cannot be edited after it has sales invoice history");
 });

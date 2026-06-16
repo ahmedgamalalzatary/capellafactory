@@ -68,6 +68,13 @@ import {
   getPurchaseCorrection,
   getPurchaseCorrections,
 } from "@/lib/api/purchase-corrections";
+import {
+  buildSalesInvoiceDetailUrl,
+  buildSalesInvoicesUrl,
+  createSalesInvoice,
+  getSalesInvoice,
+  getSalesInvoices,
+} from "@/lib/api/sales-invoices";
 import { login, logout } from "@/lib/api/auth";
 
 // ---- fetch mock helpers ----------------------------------------------------
@@ -186,6 +193,9 @@ describe("URL builders", () => {
     expect(buildPurchaseCorrectionsUrl("http://x", "c")).toBe(
       "http://x/purchase-corrections?q=c",
     );
+    expect(buildSalesInvoicesUrl("http://x", "s")).toBe(
+      "http://x/sales-invoices?q=s",
+    );
   });
 
   test("products/ingredients builders add archived=true only when requested", () => {
@@ -214,6 +224,9 @@ describe("URL builders", () => {
     );
     expect(buildPurchaseCorrectionDetailUrl("http://x", 8)).toBe(
       "http://x/purchase-corrections/8",
+    );
+    expect(buildSalesInvoiceDetailUrl("http://x", 9)).toBe(
+      "http://x/sales-invoices/9",
     );
   });
 });
@@ -253,6 +266,8 @@ describe("list/detail fetchers", () => {
     expect(lastUrl()).toContain("/production-batches");
     await getPurchaseCorrections();
     expect(lastUrl()).toContain("/purchase-corrections");
+    await getSalesInvoices();
+    expect(lastUrl()).toContain("/sales-invoices");
   });
 
   test("detail fetchers request the id path", async () => {
@@ -265,6 +280,8 @@ describe("list/detail fetchers", () => {
     expect(lastUrl()).toContain("/production-batches/42");
     await getPurchaseCorrection(42);
     expect(lastUrl()).toContain("/purchase-corrections/42");
+    await getSalesInvoice(42);
+    expect(lastUrl()).toContain("/sales-invoices/42");
   });
 
   test("a fetcher surfaces the api error message", async () => {
@@ -358,6 +375,8 @@ describe("mutations", () => {
     expect(lastUrl()).toContain("/production-batches");
     await createPurchaseCorrection({ sourcePurchaseId: 1 } as never);
     expect(lastUrl()).toContain("/purchase-corrections");
+    await createSalesInvoice({ buyerId: 1 } as never);
+    expect(lastUrl()).toContain("/sales-invoices");
     expect(lastInit().method).toBe("POST");
   });
 });

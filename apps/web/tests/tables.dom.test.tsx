@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import type { Product } from "@capella/shared/products/product.types";
@@ -8,6 +8,7 @@ import type { Expense } from "@capella/shared/expenses/expense.types";
 import type { ProductionBatch } from "@capella/shared/production-batches/production-batch.types";
 import type { IngredientPurchase } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { PurchaseCorrection } from "@capella/shared/purchase-corrections/purchase-correction.types";
+import type { SalesInvoice } from "@capella/shared/sales-invoices/sales-invoice.types";
 
 // Tables that own row actions use the router; their child forms hit the api.
 // Neither runs on a plain render, but the modules import at load time.
@@ -26,6 +27,7 @@ import { ExpensesTable } from "@/components/purchases/expenses/expenses-table";
 import { ProductionBatchesTable } from "@/components/production/production-batches-table";
 import { IngredientPurchasesTable } from "@/components/purchases/ingredients/ingredient-purchases-table";
 import { PurchaseCorrectionsTable } from "@/components/purchases/purchase-correction/purchase-corrections-table";
+import { SalesInvoicesTable } from "@/components/sales/sales-invoices-table";
 
 describe("BuyersTable", () => {
   const buyers: Buyer[] = [
@@ -295,5 +297,47 @@ describe("PurchaseCorrectionsTable", () => {
   test("shows the empty state", () => {
     render(<PurchaseCorrectionsTable corrections={[]} />);
     expect(screen.getAllByText("لا توجد عمليات عكس شراء بعد").length).toBeGreaterThan(0);
+  });
+});
+
+describe("SalesInvoicesTable", () => {
+  const buyers: Buyer[] = [{ id: 7, name: "شركة النيل", phone: "0100" } as Buyer];
+  const products: Product[] = [{ id: 5, name: "كيك" } as Product];
+  const invoices: SalesInvoice[] = [
+    {
+      id: 1,
+      invoiceCode: "SAL-001",
+      buyerId: 7,
+      subtotal: 150,
+      totalCost: 90,
+      grossProfit: 60,
+      lines: [{ productId: 5 } as never],
+    } as unknown as SalesInvoice,
+    {
+      id: 2,
+      invoiceCode: "SAL-002",
+      buyerId: 99,
+      subtotal: 80,
+      totalCost: 50,
+      grossProfit: 30,
+      lines: [{ productId: 88 } as never],
+    } as unknown as SalesInvoice,
+  ];
+
+  test("renders buyer/product labels, totals, profit, and detail links", () => {
+    render(<SalesInvoicesTable invoices={invoices} buyers={buyers} products={products} />);
+
+    expect(screen.getAllByText("SAL-001").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("شركة النيل").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("كيك").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("#99").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("150.000").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("60.000").length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "عرض" }).some((link) => link.getAttribute("href") === "/sales/1")).toBe(true);
+  });
+
+  test("shows the empty state", () => {
+    render(<SalesInvoicesTable invoices={[]} buyers={buyers} products={products} />);
+    expect(screen.getAllByText("لا توجد فواتير مبيعات بعد").length).toBeGreaterThan(0);
   });
 });

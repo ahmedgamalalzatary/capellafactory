@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildIngredientPurchaseInvoiceCode } from "../src/services/invoice-code.service.js";
+import {
+  buildIngredientPurchaseInvoiceCode,
+  buildSalesInvoiceCode,
+} from "../src/services/invoice-code.service.js";
 
 test("builds ingredient purchase invoice codes from date and sequence", () => {
   const code = buildIngredientPurchaseInvoiceCode(
@@ -18,4 +21,13 @@ test("builds ingredient purchase invoice codes from inserted id values", () => {
   );
 
   assert.equal(code, "PUR-20240101-0052");
+});
+
+test("builds sales invoice codes from date and inserted id values", () => {
+  const code = buildSalesInvoiceCode(
+    new Date("2026-05-24T12:00:00.000Z"),
+    9,
+  );
+
+  assert.equal(code, "SAL-20260524-0009");
 });

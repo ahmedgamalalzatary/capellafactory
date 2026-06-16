@@ -11,6 +11,8 @@ import {
   productionBatchLinesTable,
   productionBatchesTable,
   productsTable,
+  salesInvoiceLinesTable,
+  salesInvoicesTable,
   stockLayerAllocationsTable,
   stockLayersTable,
   suppliersTable,
@@ -38,6 +40,11 @@ test("all primary and related id columns use int in the mysql schema", () => {
     productionBatchLinesTable.batchId,
     productionBatchLinesTable.ingredientId,
     productsTable.id,
+    salesInvoicesTable.id,
+    salesInvoicesTable.buyerId,
+    salesInvoiceLinesTable.id,
+    salesInvoiceLinesTable.invoiceId,
+    salesInvoiceLinesTable.productId,
     stockLayersTable.id,
     stockLayersTable.itemId,
     stockLayersTable.sourceDocumentId,
@@ -63,4 +70,15 @@ test("fifo layer tables expose the expected quantity and costing columns", () =>
   assert.equal(stockLayerAllocationsTable.allocatedQuantity.getSQLType(), "decimal(14,3)");
   assert.equal(stockLayerAllocationsTable.unitCost.getSQLType(), "decimal(14,6)");
   assert.equal(stockLayerAllocationsTable.allocatedCost.getSQLType(), "decimal(14,3)");
+});
+
+test("sales invoice tables expose expected money and FIFO cost columns", () => {
+  assert.equal(salesInvoicesTable.subtotal.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoicesTable.totalCost.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoicesTable.grossProfit.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoiceLinesTable.quantity.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoiceLinesTable.sellingUnitPrice.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoiceLinesTable.lineTotal.getSQLType(), "decimal(14,3)");
+  assert.equal(salesInvoiceLinesTable.unitCost.getSQLType(), "decimal(14,6)");
+  assert.equal(salesInvoiceLinesTable.lineCost.getSQLType(), "decimal(14,3)");
 });

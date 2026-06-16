@@ -16,4 +16,8 @@ export {
   productionBatchesTable,
   productionBatchLinesTable,
 } from "./production-batches.js";
+export {
+  salesInvoicesTable,
+  salesInvoiceLinesTable,
+} from "./sales-invoices.js";
 export { stockLayersTable, stockLayerAllocationsTable } from "./stock-layers.js";

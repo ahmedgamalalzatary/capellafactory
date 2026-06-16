@@ -6,7 +6,7 @@ import {
   getBuyers,
   removeBuyer,
 } from "./buyers.service.js";
-import { DuplicateBuyerPhoneError } from "./buyers.repository.js";
+import { BuyerLockedError, DuplicateBuyerPhoneError } from "./buyers.repository.js";
 
 export async function listBuyersHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;
@@ -37,6 +37,11 @@ export async function createBuyerHandler(request: Request, response: Response) {
     response.status(201).json(buyer);
   } catch (error) {
     if (error instanceof DuplicateBuyerPhoneError) {
+      response.status(409).json({ message: error.message });
+      return;
+    }
+
+    if (error instanceof BuyerLockedError) {
       response.status(409).json({ message: error.message });
       return;
     }
@@ -80,12 +85,21 @@ export async function deleteBuyerHandler(request: Request, response: Response) {
     return;
   }
 
-  const deleted = await removeBuyer(id);
+  try {
+    const deleted = await removeBuyer(id);
 
-  if (!deleted) {
-    response.status(404).json({ message: "Buyer not found" });
-    return;
+    if (!deleted) {
+      response.status(404).json({ message: "Buyer not found" });
+      return;
+    }
+
+    response.status(204).send();
+  } catch (error) {
+    if (error instanceof BuyerLockedError) {
+      response.status(409).json({ message: error.message });
+      return;
+    }
+
+    throw error;
   }
-
-  response.status(204).send();
 }

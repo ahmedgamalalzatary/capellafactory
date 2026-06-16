@@ -2,6 +2,7 @@ import { asc, eq, like } from "drizzle-orm";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import { db } from "../../db/index.js";
 import { buyersTable } from "../../db/schema/buyers.js";
+import { buyerHasSalesInvoiceHistory } from "../sales-invoices/sales-invoices.repository.js";
 
 type BuyerRow = typeof buyersTable.$inferSelect;
 type BuyerInsert = typeof buyersTable.$inferInsert;
@@ -9,6 +10,12 @@ type BuyerInsert = typeof buyersTable.$inferInsert;
 export class DuplicateBuyerPhoneError extends Error {
   constructor() {
     super("Buyer phone must be unique");
+  }
+}
+
+export class BuyerLockedError extends Error {
+  constructor() {
+    super("Buyer cannot be edited after it has sales invoice history");
   }
 }
 
@@ -90,6 +97,10 @@ export async function updateBuyer(
     return null;
   }
 
+  if (await buyerHasSalesInvoiceHistory(id)) {
+    throw new BuyerLockedError();
+  }
+
   try {
     await db
       .update(buyersTable)
@@ -106,6 +117,10 @@ export async function updateBuyer(
 }
 
 export async function deleteBuyer(id: number) {
+  if (await buyerHasSalesInvoiceHistory(id)) {
+    throw new BuyerLockedError();
+  }
+
   const result = await db.delete(buyersTable).where(eq(buyersTable.id, id));
   return result[0].affectedRows > 0;
 }

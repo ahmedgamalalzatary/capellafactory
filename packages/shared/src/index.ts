@@ -15,3 +15,5 @@ export * from "./production-batches/production-batch.types.js";
 export * from "./production-batches/production-batch.schema.js";
 export * from "./purchase-corrections/purchase-correction.types.js";
 export * from "./purchase-corrections/purchase-correction.schema.js";
+export * from "./sales-invoices/sales-invoice.types.js";
+export * from "./sales-invoices/sales-invoice.schema.js";
