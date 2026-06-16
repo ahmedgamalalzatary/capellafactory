@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildFifoStatesFromLayers,
+  compareChronologicalStockEvents,
   getFifoStockSnapshot,
   replayFifoStockEvents,
   StockLedgerConflictError,
@@ -260,4 +261,46 @@ test("builds fifo summary state from persisted layers including consumed history
     hasHistory: true,
     layerCount: 1,
   });
+});
+
+test("chronological ordering breaks same-timestamp ties by event kind, not id", () => {
+  // All four events share the exact same occurredAt. Replay must still be
+  // deterministic: stock must arrive (purchase) before a correction adjusts it,
+  // before it is consumed, before the produced output is added. The ids are
+  // arranged to disagree with that order so the kind tie-break is what's tested.
+  const sameInstant = "2026-05-10T00:00:00.000Z";
+  const event = (id: number, kind: string) => ({ id, occurredAt: sameInstant, kind });
+
+  const purchase = event(90, "ingredient-purchase");
+  const correction = event(70, "purchase-correction");
+  const consumption = event(50, "production-consumption");
+  const output = event(30, "production-output");
+
+  const shuffled = [output, consumption, correction, purchase];
+  const ordered = [...shuffled].sort(compareChronologicalStockEvents);
+
+  assert.deepEqual(
+    ordered.map((e) => e.kind),
+    [
+      "ingredient-purchase",
+      "purchase-correction",
+      "production-consumption",
+      "production-output",
+    ],
+  );
+
+  // Same kind + same timestamp falls back to id order.
+  assert.equal(
+    compareChronologicalStockEvents(event(2, "ingredient-purchase"), event(5, "ingredient-purchase")) < 0,
+    true,
+  );
+
+  // Different timestamps always win over kind weight.
+  assert.equal(
+    compareChronologicalStockEvents(
+      { id: 1, occurredAt: "2026-05-11T00:00:00.000Z", kind: "ingredient-purchase" },
+      { id: 2, occurredAt: "2026-05-10T00:00:00.000Z", kind: "production-output" },
+    ) > 0,
+    true,
+  );
 });

@@ -9,6 +9,7 @@
     "db:studio": "drizzle-kit studio",
     "lint": "echo \"No lint for api yet\"",
     "test": "tsx --test tests/**/*.test.ts",
+    "test:coverage": "tsx --test --experimental-test-coverage tests/**/*.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
