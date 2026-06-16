@@ -75,7 +75,7 @@ Each sales invoice should:
 
 - have an auto-generated internal invoice code
 - store one real-world invoice datetime
-- link to a saved buyer or store a typed buyer name
+- link to one saved buyer
 - contain one or more finished-product lines
 - allow each finished product only once per invoice
 - require user-entered selling unit price on each line
@@ -90,7 +90,7 @@ Sales invoices must not:
 - support returns at all
 - support backdated creation in this phase
 
-Typed buyer names should stay invoice-only and must not auto-create buyer master records.
+Typed buyer names are not supported for sales invoices in this scope.
 
 ### Purchase Expenses
 
@@ -143,7 +143,7 @@ Each purchase line should:
 Ingredient purchase invoices must:
 
 - increase ingredient stock
-- update ingredient weighted-average cost
+- update FIFO ingredient stock layers and derived average cost
 - block duplicate ingredient lines in the same invoice
 - allow backdated entry only if full recalculation keeps later history valid
 - allow exact duplicate invoices if the user saves them intentionally
@@ -180,7 +180,7 @@ Each finished product should:
 
 - exist in a separate product catalog
 - have current stock quantity
-- have current weighted-average cost
+- have current derived average cost from open FIFO stock layers
 - be selectable in production batches and sales invoices
 
 Finished product rules:
@@ -232,7 +232,7 @@ The system should normalize ingredient quantities internally:
 
 Rules:
 
-- weighted-average cost must use normalized base quantity
+- FIFO stock-layer costing must use normalized base quantity
 - decimals are allowed
 - UI formatting should round consistently for display
 - no arbitrary unit-conversion system is needed beyond same-family normalization
@@ -240,7 +240,7 @@ Rules:
 
 ## Costing Rules
 
-The system should use weighted-average costing in this phase.
+The system should use FIFO stock-layer costing.
 
 ### Ingredient Costing
 
@@ -248,8 +248,10 @@ When the same ingredient is bought multiple times:
 
 - stock is pooled by ingredient
 - supplier does not split stock buckets
-- new purchases update one moving weighted-average cost
-- the average is always based on normalized base quantity
+- new purchases create FIFO stock layers
+- stock decreases allocate from the oldest available matching ingredient layers first
+- the displayed average cost is derived from the currently open FIFO layers
+- all layer costs are based on normalized base quantity
 
 If the same real material is purchased from different suppliers, brands, or package sizes, it should still be the same ingredient record if it is operationally interchangeable.
 
@@ -257,7 +259,7 @@ If the same real material is purchased from different suppliers, brands, or pack
 
 When a production batch is created:
 
-- ingredient consumption uses the ingredient current weighted-average cost at batch time
+- ingredient consumption allocates from FIFO ingredient stock layers at batch time
 - the consumed cost is snapshotted on the batch
 - later reads should not manually override that batch cost
 
@@ -266,13 +268,14 @@ When a production batch is created:
 When the same finished product is produced in multiple batches with different costs:
 
 - finished-product stock is pooled by product
-- finished-product valuation uses weighted-average cost
+- each production batch creates a FIFO product output layer
+- the displayed average cost is derived from the currently open FIFO product layers
 
 ### Sales Costing
 
 Sales prices are manual user input.
 
-Sales cost-of-stock should use finished-product weighted-average cost at sale time.
+Sales cost-of-stock should allocate from FIFO finished-product stock layers at sale time.
 
 ## Stock Adjustments
 
@@ -283,7 +286,7 @@ Ingredient adjustment rules:
 - must target an existing ingredient
 - must require a reason
 - may increase or decrease stock
-- must use current ingredient weighted-average cost at adjustment time
+- stock decreases must allocate from FIFO ingredient stock layers at adjustment time
 - must be immutable after creation
 - must not allow backdating
 - must not allow stock to go negative
@@ -580,7 +583,7 @@ Important validation scenarios for this phase:
 - duplicate ingredient lines in one production batch are blocked
 - duplicate finished-product lines in one sales invoice are blocked
 - supplier selection is either saved supplier or typed name
-- buyer selection is either saved buyer or typed name
+- sales invoice buyer selection requires a saved buyer
 - ingredient purchase total price is derived from quantity and unit price
 - ingredient quantities normalize correctly across `kg/g` and `L/ml`
 - production is blocked on insufficient ingredient stock
@@ -596,7 +599,7 @@ Important validation scenarios for this phase:
 The documented folder structure should be brought to life as working scaffolds in this order:
 
 1. master data for ingredients and finished products
-2. ingredient stock model and weighted-average costing
+2. ingredient stock model and FIFO stock-layer costing
 3. purchase expenses
 4. ingredient purchase invoices
 5. production batches

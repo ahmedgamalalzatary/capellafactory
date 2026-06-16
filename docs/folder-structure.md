@@ -331,7 +331,7 @@ The API uses a module-first backend structure. Feature-specific code lives insid
 
 - `middlewares/`: Express middleware reused across modules (CORS, error, not-found, validate).
 - `routes/`: Global route registration, `routes/index.ts`.
-- `services/`: Cross-feature services only, such as logging, invoice-code generation, and weighted-average stock costing.
+- `services/`: Cross-feature services only, such as logging, invoice-code generation, and FIFO stock costing.
 - `repositories/`: Shared/base repository helpers only.
 - `types/`: Backend-only TypeScript types and Express type extensions.
 - `utils/`: Small reusable backend utilities (async handler, HTTP error, pagination, quantity normalization).

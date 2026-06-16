@@ -15,7 +15,7 @@ Deliver ingredient adjustments end to end and finish the remaining stock-correct
 - existing ingredient only
 - increase and decrease directions
 - required reason
-- current weighted-average cost used for valuation
+- FIFO stock-layer allocation/valuation used for stock decreases
 - no backdating
 - no negative stock allowed
 - immutable after create

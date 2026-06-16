@@ -18,7 +18,7 @@ Deliver ingredient purchase invoices end to end, including the first real ingred
 - each ingredient can appear only once per invoice
 - quantity plus unit price input, total derived automatically
 - normalized base quantities for `kg/g` and `L/ml`
-- weighted-average ingredient costing updates on save
+- FIFO ingredient stock-layer creation on save
 - backdated invoice entry with chronological recalculation support
 - groundwork only for later-history conflict detection once later stock-affecting phases exist
 - stock movement history starts existing for ingredients
@@ -58,7 +58,7 @@ Deliver ingredient purchase invoices end to end, including the first real ingred
 
 ## Exit Criteria
 
-- saving an ingredient purchase invoice updates ingredient stock and ingredient average cost
+- saving an ingredient purchase invoice creates ingredient FIFO stock layers and updates derived stock balances
 - purchase invoice validation and unit normalization are covered by tests
 - inventory screens can show current ingredient stock after purchases
 - the codebase is ready for later shared ledger conflict checks, but later-history invalidation is not considered complete until stock-consuming phases exist

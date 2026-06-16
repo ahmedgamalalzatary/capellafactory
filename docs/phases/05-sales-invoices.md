@@ -15,11 +15,11 @@ Deliver sales invoices end to end so finished-product stock can be sold through 
 - finished products only, no ingredient sales
 - one line per finished product
 - user-entered selling unit price
-- one saved buyer or one typed buyer name
-- typed buyer names remain invoice-only
+- one saved buyer only
+- no typed buyer names in sales invoices
 - stock availability validation before save
 - finished-product stock reduction on save
-- finished-product cost usage based on current weighted average
+- finished-product cost usage based on FIFO product stock-layer allocations
 - no edit/delete and no backdating
 - buyer lock rules once linked to invoice history
 
