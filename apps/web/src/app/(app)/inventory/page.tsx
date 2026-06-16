@@ -161,7 +161,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
           </div>
 
           <div
-            className="overflow-hidden rounded-[24px] border bg-white/80 backdrop-blur"
+            className="overflow-hidden rounded-3xl border bg-white/80 backdrop-blur"
             style={{
               borderColor: "color-mix(in srgb, var(--border) 88%, #d5c2a0 12%)",
             }}

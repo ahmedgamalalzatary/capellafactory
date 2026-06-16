@@ -51,7 +51,7 @@ export default async function ProductionBatchDetailPage({
           href="/products"
           className="inline-flex h-9 items-center rounded-md border px-3 text-[13px] font-semibold transition hover:bg-accent"
         >
-          رجوع للمنتجات المنتجة
+          رجوع للتصنيع
         </Link>
       </div>
 
