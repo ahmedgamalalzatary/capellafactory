@@ -15,7 +15,7 @@ export class DuplicateBuyerPhoneError extends Error {
 
 export class BuyerLockedError extends Error {
   constructor() {
-    super("Buyer cannot be edited after it has sales invoice history");
+    super("Buyer cannot be modified or deleted after it has sales invoice history");
   }
 }
 

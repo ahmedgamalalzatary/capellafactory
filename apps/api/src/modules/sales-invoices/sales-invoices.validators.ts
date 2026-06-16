@@ -1,4 +1,7 @@
-import type { SalesInvoiceStockCheck } from "./sales-invoices.types.js";
+import type {
+  SalesInvoiceMinimumPriceCheck,
+  SalesInvoiceStockCheck,
+} from "./sales-invoices.types.js";
 
 export class SalesInvoiceValidationError extends Error {
   constructor(message: string) {
@@ -7,6 +10,10 @@ export class SalesInvoiceValidationError extends Error {
 }
 
 function formatStockQuantity(value: number) {
+  return parseFloat(value.toFixed(3)).toString();
+}
+
+function formatMoney(value: number) {
   return parseFloat(value.toFixed(3)).toString();
 }
 
@@ -27,9 +34,27 @@ export function validateSalesInvoiceStock(checks: SalesInvoiceStockCheck[]) {
   throw new SalesInvoiceValidationError(`المخزون غير كافٍ من: ${details}`);
 }
 
+export function validateSalesInvoiceMinimumPrices(checks: SalesInvoiceMinimumPriceCheck[]) {
+  const belowMinimum = checks.filter((check) => check.sellingUnitPrice < check.minimumUnitPrice);
+
+  if (belowMinimum.length === 0) {
+    return;
+  }
+
+  const details = belowMinimum
+    .map(
+      (check) =>
+        `${check.productName} أقل من سعر الوحدة: السعر ${formatMoney(check.sellingUnitPrice)}، الحد الأدنى ${formatMoney(check.minimumUnitPrice)}`,
+    )
+    .join("؛ ");
+
+  throw new SalesInvoiceValidationError(`سعر بيع المنتج ${details}`);
+}
+
 export function validateSalesInvoiceNotBackdated(occurredAt: string | Date, now = new Date()) {
   const occurred = new Date(occurredAt);
 
+  // Allow a small client/server clock-skew and submission-delay window for "now" invoices.
   if (occurred.getTime() < now.getTime() - 60_000) {
     throw new SalesInvoiceValidationError("Sales invoices cannot be backdated");
   }

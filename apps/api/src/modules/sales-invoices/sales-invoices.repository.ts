@@ -1,5 +1,5 @@
 import type { SalesInvoice, SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
-import { and, asc, eq, like, or } from "drizzle-orm";
+import { and, asc, eq, inArray, like, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
   buyersTable,
@@ -18,10 +18,12 @@ import {
 } from "./sales-invoices.allocation.js";
 import {
   mapSalesInvoiceRowToSalesInvoice,
+  mapSalesInvoiceRowsToSalesInvoices,
   normalizeSalesInvoiceSearchQuery,
 } from "./sales-invoices.mappers.js";
 import {
   SalesInvoiceValidationError,
+  validateSalesInvoiceMinimumPrices,
   validateSalesInvoiceNotBackdated,
   validateSalesInvoiceStock,
 } from "./sales-invoices.validators.js";
@@ -55,7 +57,17 @@ export async function listSalesInvoices(query?: string) {
     )
     .orderBy(asc(salesInvoicesTable.occurredAt), asc(salesInvoicesTable.id));
 
-  return Promise.all(rows.map((row) => getSalesInvoiceById(row.id))) as Promise<SalesInvoice[]>;
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const lines = await db
+    .select()
+    .from(salesInvoiceLinesTable)
+    .where(inArray(salesInvoiceLinesTable.invoiceId, rows.map((row) => row.id)))
+    .orderBy(asc(salesInvoiceLinesTable.invoiceId), asc(salesInvoiceLinesTable.id));
+
+  return mapSalesInvoiceRowsToSalesInvoices(rows, lines);
 }
 
 export async function getSalesInvoiceById(id: number) {
@@ -92,9 +104,19 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
       ...line,
       ...revenue,
       availableQuantity: Number(product.stockQuantity),
+      minimumUnitPrice: Number(product.averageUnitCost),
       productName: product.name,
     };
   });
+
+  validateSalesInvoiceMinimumPrices(
+    preparedLines.map((line) => ({
+      productId: line.productId,
+      productName: line.productName,
+      sellingUnitPrice: line.sellingUnitPrice,
+      minimumUnitPrice: line.minimumUnitPrice,
+    })),
+  );
 
   validateSalesInvoiceStock(
     preparedLines.map((line) => ({
@@ -241,7 +263,7 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
       const conflicting = preparedLines.find((line) => line.productId === error.ingredientId);
       const productLabel = conflicting ? conflicting.productName : `#${error.ingredientId}`;
       throw new SalesInvoiceValidationError(
-        `حفظ هذه الفاتورة سيجعل مخزون المنتج (${productLabel}) بالسالب`,
+        `Saving this invoice would make product stock negative for ${productLabel}`,
       );
     }
 

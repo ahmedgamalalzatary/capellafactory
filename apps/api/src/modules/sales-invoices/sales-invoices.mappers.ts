@@ -25,6 +25,10 @@ export type SalesInvoiceLineRow = {
   lineCost: string | number;
 };
 
+export type ListedSalesInvoiceLineRow = SalesInvoiceLineRow & {
+  invoiceId: number;
+};
+
 export function mapSalesInvoiceLineRow(row: SalesInvoiceLineRow): SalesInvoiceLine {
   return {
     id: row.id,
@@ -53,6 +57,21 @@ export function mapSalesInvoiceRowToSalesInvoice(
     createdAt: toIsoString(row.createdAt),
     lines: lines.map(mapSalesInvoiceLineRow),
   };
+}
+
+export function mapSalesInvoiceRowsToSalesInvoices(
+  rows: SalesInvoiceRow[],
+  lines: ListedSalesInvoiceLineRow[],
+): SalesInvoice[] {
+  const linesByInvoiceId = new Map<number, SalesInvoiceLineRow[]>();
+
+  for (const line of lines) {
+    const existingLines = linesByInvoiceId.get(line.invoiceId) ?? [];
+    existingLines.push(line);
+    linesByInvoiceId.set(line.invoiceId, existingLines);
+  }
+
+  return rows.map((row) => mapSalesInvoiceRowToSalesInvoice(row, linesByInvoiceId.get(row.id) ?? []));
 }
 
 export function normalizeSalesInvoiceSearchQuery(query?: string) {

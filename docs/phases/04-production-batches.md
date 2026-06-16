@@ -1,66 +1,35 @@
 # Phase 4: Production Batches
 
-## Source Of Truth
+## Status
 
-- [../erp-specs.md](../erp-specs.md)
-- [../folder-structure.md](../folder-structure.md)
+Implemented in the current codebase.
 
-## Goal
+## What Landed
 
-Deliver production batches end to end so ingredients can be consumed and finished-product stock can be created.
+- shared `production-batches` contracts
+- backend production batches module
+- production-related frontend components
+- product-side production batch detail route
+- API and web tests
+- downstream use of stock and costing helpers
 
-## Deliverables
+## Current Files
 
-- create/list/view production batches
-- one finished product output per batch
-- multiple ingredient consumption lines
-- each ingredient can appear only once per batch
-- no predefined recipe system in the current scope yet
-- ingredient stock validation before save
-- batch cost snapshot based on FIFO ingredient stock-layer allocations
-- finished-product FIFO output layer creation on batch save
-- backdated production with recalculation guard
-- real later-history invalidation guard begins here because backdated records can now break future stock-consuming history
-- stock movement history for ingredient consumption and finished-product output
+Key files that now exist for this phase:
 
-## Files To Create
-
-- `packages/shared/src/production-batches/production-batch.types.ts`
-- `packages/shared/src/production-batches/production-batch.schema.ts`
-- `apps/api/src/db/schema/production-batches.ts`
-- `apps/api/src/modules/production-batches/production-batches.routes.ts`
-- `apps/api/src/modules/production-batches/production-batches.controller.ts`
-- `apps/api/src/modules/production-batches/production-batches.service.ts`
-- `apps/api/src/modules/production-batches/production-batches.repository.ts`
-- `apps/api/src/modules/production-batches/production-batches.validation.ts`
-- `apps/api/src/modules/production-batches/production-batches.types.ts`
-- `apps/api/tests/production-batches.validation.test.ts`
+- `packages/shared/src/production-batches/*`
+- `apps/api/src/modules/production-batches/*`
 - `apps/api/tests/production-batches.repository.test.ts`
-- `apps/web/src/lib/api/production-batches.ts`
-- `apps/web/src/components/production/production-batches-table.tsx`
-- `apps/web/src/components/production/production-batch-form.tsx`
-- `apps/web/src/components/production/production-batch-dialog.tsx`
+- `apps/api/tests/production-batches.validation.test.ts`
+- `apps/web/src/components/production/*`
+- `apps/web/src/app/(app)/products/production-batches/[id]/page.tsx`
 - `apps/web/tests/production-batches.test.ts`
+- `apps/web/tests/production-batch-form.dom.test.tsx`
 
-## Files To Edit
+## What This Phase Means In Today’s Repo
 
-- `packages/shared/src/index.ts`
-- `apps/api/src/db/schema/index.ts`
-- `apps/api/src/routes/index.ts`
-- `apps/api/src/services/stock-costing.service.ts`
-- `apps/api/src/utils/stock-ledger.ts`
-- `apps/web/src/app/inventory/page.tsx`
-- `apps/web/src/app/purchases/page.tsx`
-- `apps/web/src/app/sales/page.tsx`
+Production is no longer just a planned stock transformation. The module, routes, frontend coverage, and tests are already present in the codebase.
 
-## Exit Criteria
+## Notes
 
-- saving a batch consumes ingredient stock and creates finished-product stock
-- batch cost is snapshotted from FIFO allocations and finished-product stock layers update correctly
-- inventory screens can show produced-product balances
-- backdated saves are blocked when shared ledger replay shows that a later stock-affecting record would become invalid
-
-## Out Of Scope
-
-- sales invoices
-- ingredient adjustments
+This phase sits between ingredient purchase inflows and sales outflows in the shipped system shape. The current file tree confirms that positioning.

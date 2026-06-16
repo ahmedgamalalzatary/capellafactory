@@ -41,11 +41,6 @@ export async function createBuyerHandler(request: Request, response: Response) {
       return;
     }
 
-    if (error instanceof BuyerLockedError) {
-      response.status(409).json({ message: error.message });
-      return;
-    }
-
     throw error;
   }
 }

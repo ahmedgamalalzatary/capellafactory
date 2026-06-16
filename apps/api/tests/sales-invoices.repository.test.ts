@@ -8,10 +8,12 @@ import {
 import {
   mapSalesInvoiceLineRow,
   mapSalesInvoiceRowToSalesInvoice,
+  mapSalesInvoiceRowsToSalesInvoices,
   normalizeSalesInvoiceSearchQuery,
 } from "../src/modules/sales-invoices/sales-invoices.mappers.js";
 import {
   SalesInvoiceValidationError,
+  validateSalesInvoiceMinimumPrices,
   validateSalesInvoiceNotBackdated,
   validateSalesInvoiceStock,
 } from "../src/modules/sales-invoices/sales-invoices.validators.js";
@@ -86,6 +88,69 @@ test("maps sales invoice headers with nested lines", () => {
       },
     ],
   });
+});
+
+test("maps listed sales invoice headers with batched lines by invoice id", () => {
+  const invoices = mapSalesInvoiceRowsToSalesInvoices(
+    [
+      {
+        id: 9,
+        invoiceCode: "SAL-20260524-0009",
+        occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+        buyerId: 4,
+        subtotal: "90.500",
+        totalCost: "60.250",
+        grossProfit: "30.250",
+        notes: "urgent",
+        createdAt: new Date("2026-05-24T12:05:00.000Z"),
+      },
+      {
+        id: 10,
+        invoiceCode: "SAL-20260524-0010",
+        occurredAt: new Date("2026-05-24T12:10:00.000Z"),
+        buyerId: 5,
+        subtotal: "30.000",
+        totalCost: "20.000",
+        grossProfit: "10.000",
+        notes: null,
+        createdAt: new Date("2026-05-24T12:15:00.000Z"),
+      },
+    ],
+    [
+      {
+        invoiceId: 10,
+        id: 13,
+        productId: 7,
+        quantity: "1.000",
+        sellingUnitPrice: "30.000",
+        lineTotal: "30.000",
+        unitCost: "20.000000",
+        lineCost: "20.000",
+      },
+      {
+        invoiceId: 9,
+        id: 11,
+        productId: 3,
+        quantity: "2.000",
+        sellingUnitPrice: "45.250",
+        lineTotal: "90.500",
+        unitCost: "30.125000",
+        lineCost: "60.250",
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    invoices.map((invoice) => ({
+      id: invoice.id,
+      notes: invoice.notes,
+      lineIds: invoice.lines.map((line) => line.id),
+    })),
+    [
+      { id: 9, notes: "urgent", lineIds: [11] },
+      { id: 10, notes: undefined, lineIds: [13] },
+    ],
+  );
 });
 
 test("derives sales invoice line total from quantity and selling unit price", () => {
@@ -200,6 +265,23 @@ test("stock validation lists every insufficient product and skips sufficient one
     (error: unknown) =>
       error instanceof SalesInvoiceValidationError &&
       error.message === "المخزون غير كافٍ من: بسكويت (متاح 8، مطلوب 12)؛ معمول (متاح 1، مطلوب 7)",
+  );
+});
+
+test("sales invoice minimum price validation rejects selling below product unit cost", () => {
+  assert.throws(
+    () =>
+      validateSalesInvoiceMinimumPrices([
+        {
+          productId: 2,
+          productName: "بسكويت",
+          sellingUnitPrice: 39,
+          minimumUnitPrice: 40,
+        },
+      ]),
+    (error: unknown) =>
+      error instanceof SalesInvoiceValidationError &&
+      error.message === "سعر بيع المنتج بسكويت أقل من سعر الوحدة: السعر 39، الحد الأدنى 40",
   );
 });
 

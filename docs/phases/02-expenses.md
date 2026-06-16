@@ -1,60 +1,33 @@
 # Phase 2: Expenses
 
-## Source Of Truth
+## Status
 
-- [../erp-specs.md](../erp-specs.md)
-- [../folder-structure.md](../folder-structure.md)
+Implemented in the current codebase.
 
-## Goal
+## What Landed
 
-Deliver purchase expenses as a fully working end-to-end slice.
+- shared `expenses` types and validation
+- backend expenses module
+- purchases-area expense UI
+- expense detail route
+- API and web tests
 
-## Deliverables
+## Current Files
 
-- create/list/view expense records
-- expense types: rent, food, water, gas, electricity, internet, salary, other
-- `salary` requires employee name
-- `other` requires custom label
-- backdated expense entry allowed
-- no edit/delete flow
-- expenses stay independent from stock logic
-- purchases page upgraded from placeholder to working expense UI
+Key files that now exist for this phase:
 
-## Files To Create
-
-- `packages/shared/src/expenses/expense.types.ts`
-- `packages/shared/src/expenses/expense.schema.ts`
-- `apps/api/src/db/schema/expenses.ts`
-- `apps/api/src/modules/expenses/expenses.routes.ts`
-- `apps/api/src/modules/expenses/expenses.controller.ts`
-- `apps/api/src/modules/expenses/expenses.service.ts`
-- `apps/api/src/modules/expenses/expenses.repository.ts`
-- `apps/api/src/modules/expenses/expenses.validation.ts`
-- `apps/api/src/modules/expenses/expenses.types.ts`
-- `apps/api/tests/expenses.validation.test.ts`
+- `packages/shared/src/expenses/*`
+- `apps/api/src/modules/expenses/*`
 - `apps/api/tests/expenses.repository.test.ts`
-- `apps/web/src/lib/api/expenses.ts`
-- `apps/web/src/components/purchases/expenses-table.tsx`
-- `apps/web/src/components/purchases/expense-form.tsx`
-- `apps/web/src/components/purchases/expense-dialog.tsx`
+- `apps/api/tests/expenses.validation.test.ts`
+- `apps/web/src/components/purchases/*expense*`
+- `apps/web/src/app/(app)/purchases/expenses/[id]/page.tsx`
 - `apps/web/tests/expenses.test.ts`
 
-## Files To Edit
+## Current Behavior Summary
 
-- `packages/shared/src/index.ts`
-- `apps/api/src/db/schema/index.ts`
-- `apps/api/src/routes/index.ts`
-- `apps/web/src/app/purchases/page.tsx`
+Expenses are a separate transactional area under purchases. The repo structure and tests show this phase is no longer a placeholder and is already integrated with the authenticated shell.
 
-## Exit Criteria
+## Notes
 
-- expenses work end to end from database to UI
-- the purchases area is no longer placeholder-only
-- expense validation rules are enforced in backend and frontend contracts
-
-## Out Of Scope
-
-- ingredient purchase invoices
-- stock effects
-- production
-- sales
+This phase remains separate from stock-consuming and stock-producing flows, even though it now lives beside those flows in the broader purchases area.

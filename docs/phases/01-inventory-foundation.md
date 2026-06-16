@@ -1,84 +1,52 @@
 # Phase 1: Inventory Foundation
 
-## Source Of Truth
+## Status
 
-- [../erp-specs.md](../erp-specs.md)
-- [../folder-structure.md](../folder-structure.md)
+Implemented in the current codebase.
 
-## Goal
+This phase established the master-data base that later stock and transaction flows now build on.
 
-Create the inventory master-data foundation for:
+## What Landed
 
-- ingredients
-- finished products
+- shared contracts for `ingredients` and `products`
+- backend schema and modules for both catalogs
+- frontend inventory/product pages and components
+- API and web tests covering both areas
 
-This phase should deliver working create/list/update flows plus the base rules needed by later stock phases.
+## Current Files
 
-## Deliverables
+Key files that now exist for this phase:
 
-- ingredient master records with unique names
-- finished-product master records with unique names
-- archive/reactivate support on both master types
-- archive allowed only when stock is `0`
-- delete allowed only when stock is `0` and there is no history
-- archived items hidden from new transaction forms later
-- inventory page upgraded from placeholder to working catalog screens
-- shared unit-family model for ingredients
-- ingredient unit-family model supports `weight`, `volume`, and `count`
-
-## Files To Create
-
-- `packages/shared/src/ingredients/ingredient.types.ts`
-- `packages/shared/src/ingredients/ingredient.schema.ts`
-- `packages/shared/src/products/product.types.ts`
-- `packages/shared/src/products/product.schema.ts`
-- `apps/api/src/db/schema/ingredients.ts`
-- `apps/api/src/db/schema/products.ts`
-- `apps/api/src/modules/ingredients/ingredients.routes.ts`
-- `apps/api/src/modules/ingredients/ingredients.controller.ts`
-- `apps/api/src/modules/ingredients/ingredients.service.ts`
-- `apps/api/src/modules/ingredients/ingredients.repository.ts`
-- `apps/api/src/modules/ingredients/ingredients.validation.ts`
-- `apps/api/src/modules/ingredients/ingredients.types.ts`
-- `apps/api/src/modules/products/products.routes.ts`
-- `apps/api/src/modules/products/products.controller.ts`
-- `apps/api/src/modules/products/products.service.ts`
-- `apps/api/src/modules/products/products.repository.ts`
-- `apps/api/src/modules/products/products.validation.ts`
-- `apps/api/src/modules/products/products.types.ts`
-- `apps/api/tests/ingredients.validation.test.ts`
-- `apps/api/tests/ingredients.repository.test.ts`
-- `apps/api/tests/products.validation.test.ts`
-- `apps/api/tests/products.repository.test.ts`
-- `apps/web/src/lib/api/ingredients.ts`
-- `apps/web/src/lib/api/products.ts`
-- `apps/web/src/components/inventory/ingredients-table.tsx`
-- `apps/web/src/components/inventory/ingredient-form.tsx`
-- `apps/web/src/components/inventory/ingredient-dialog.tsx`
-- `apps/web/src/components/inventory/products-table.tsx`
-- `apps/web/src/components/inventory/product-form.tsx`
-- `apps/web/src/components/inventory/product-dialog.tsx`
+- `packages/shared/src/ingredients/*`
+- `packages/shared/src/products/*`
+- `apps/api/src/modules/ingredients/*`
+- `apps/api/src/modules/products/*`
+- `apps/api/tests/ingredients.*`
+- `apps/api/tests/products.*`
+- `apps/web/src/components/inventory/*`
+- `apps/web/src/app/(app)/inventory/page.tsx`
+- `apps/web/src/app/(app)/products/page.tsx`
 - `apps/web/tests/ingredients.test.ts`
 - `apps/web/tests/products.test.ts`
 
-## Files To Edit
+## What This Phase Means In Today’s Repo
 
-- `packages/shared/src/index.ts`
-- `apps/api/src/db/schema/index.ts`
-- `apps/api/src/routes/index.ts`
-- `apps/web/src/app/inventory/page.tsx`
-- `apps/web/tests/app-shell.test.ts`
+This is no longer placeholder groundwork. It is the live catalog layer used by:
 
-## Exit Criteria
+- ingredient purchases
+- production batches
+- sales invoices
+- purchase corrections
 
-- inventory master records work end to end
-- placeholder inventory page is replaced with working ingredient/product management
-- later phases can safely reference ingredient IDs and product IDs
+## Follow-On Dependencies Now Present
 
-## Out Of Scope
+The current codebase confirms that this foundation is already consumed by later phases:
 
-- stock movement history
-- purchases
-- production
-- sales
-- ingredient adjustments
+- stock normalization utilities
+- stock ledger logic
+- production batch workflows
+- sales workflows
+
+## Notes
+
+The original planning language about a future inventory foundation is obsolete. In the live repo, this phase is complete and under active downstream use.

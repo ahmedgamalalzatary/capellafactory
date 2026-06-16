@@ -85,5 +85,8 @@ test("normalizes buyer search query", () => {
 test("buyer locked error explains sales invoice history lock", () => {
   const error = new BuyerLockedError();
 
-  assert.equal(error.message, "Buyer cannot be edited after it has sales invoice history");
+  assert.equal(
+    error.message,
+    "Buyer cannot be modified or deleted after it has sales invoice history",
+  );
 });

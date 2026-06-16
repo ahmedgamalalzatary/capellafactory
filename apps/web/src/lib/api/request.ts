@@ -4,11 +4,6 @@ export const CLIENT_API_URL =
   process.env.API_URL ??
   "http://localhost:4000";
 
-export type ApiRequestOptions = {
-  cookieHeader?: string;
-  init?: RequestInit;
-};
-
 export function withApiCredentials(
   init: RequestInit = {},
   cookieHeader?: string,

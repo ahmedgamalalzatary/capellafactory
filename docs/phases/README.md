@@ -1,41 +1,40 @@
 # Delivery Phases
 
-These phase documents break the ERP work into smaller end-to-end slices.
+These documents describe the ERP rollout by vertical slice.
 
-Each phase should be implemented from:
+They are no longer just future plans. As of the current codebase:
 
-- database schema and migrations
-- shared contracts and validation
-- API module and route registration
-- tests
-- frontend API client
-- frontend page/components
+- phases `01` through `05` are implemented in code
+- phase `06` still exists as a planning document, but the shipped code uses the name `purchase-corrections`
+
+## How To Read This Folder
+
+- `01-inventory-foundation.md` through `05-sales-invoices.md` should be read as implemented slices with current-state notes
+- `06-ingredient-adjustments.md` is excluded from this doc refresh and may not match the current naming used by the codebase
 
 ## Source Of Truth
 
-Before implementing any phase, use these docs as the primary source of truth:
+For the live repository shape, use:
 
 - [../erp-specs.md](../erp-specs.md)
 - [../folder-structure.md](../folder-structure.md)
 
-If a phase doc is unclear, the two docs above win.
+If a phase document disagrees with those two files, the two top-level docs win.
 
-## Recommended Order
+## Implemented Order
+
+The current repository contains code for this progression:
 
 1. [01-inventory-foundation.md](./01-inventory-foundation.md)
 2. [02-expenses.md](./02-expenses.md)
 3. [03-ingredient-purchases.md](./03-ingredient-purchases.md)
 4. [04-production-batches.md](./04-production-batches.md)
 5. [05-sales-invoices.md](./05-sales-invoices.md)
-6. [06-ingredient-adjustments.md](./06-ingredient-adjustments.md)
 
-## Phase Rule
+## Current Gap
 
-Each phase is expected to land as a usable vertical slice. Do not start a later phase until the current one works end to end.
+The repo has a shipped `purchase-corrections` module and UI, but the matching historical phase doc still lives under:
 
-## Explicit Scope Boundary
+- `06-ingredient-adjustments.md`
 
-- Reports: not yet
-- Recipe management: not yet
-- Returns: never
-- Authentication/authorization: never
+That file was intentionally left untouched in this update.

@@ -36,7 +36,7 @@ export type FifoStockAllocation = {
   occurredAt: Date | string;
 };
 
-export type FifoStockState = {
+type FifoStockState = {
   hasHistory: boolean;
   openLayers: FifoStockLayer[];
 };

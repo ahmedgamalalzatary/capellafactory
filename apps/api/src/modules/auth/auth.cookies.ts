@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 
-export const SESSION_COOKIE_NAME = "capella_session";
+const SESSION_COOKIE_NAME = "capella_session";
 
 export function getSessionToken(request: Request) {
   const cookieHeader = request.headers.cookie;
