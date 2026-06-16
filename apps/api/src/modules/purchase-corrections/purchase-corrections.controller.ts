@@ -4,7 +4,7 @@ import {
   getPurchaseCorrection,
   getPurchaseCorrections,
 } from "./purchase-corrections.service.js";
-import { PurchaseCorrectionValidationError } from "./purchase-corrections.repository.js";
+import { PurchaseCorrectionValidationError } from "./purchase-corrections.validators.js";
 
 export async function listPurchaseCorrectionsHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;

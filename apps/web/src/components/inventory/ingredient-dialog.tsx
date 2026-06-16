@@ -39,7 +39,7 @@ export function IngredientDialog({ ingredient, triggerLabel }: IngredientDialogP
             <SheetDescription>
               {isEdit
                 ? "حدّث اسم المادة أو عائلة الوحدة قبل بدء استخدامها في الحركات."
-                : "أنشئ سجل خام موحدًا يمكن الاعتماد عليه في المشتريات والإنتاج لاحقًا."}
+                : "أنشئ سجل خام موحدًا يمكن الاعتماد عليه في المدفوعات والإنتاج لاحقًا."}
             </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto px-6 py-6">

@@ -41,7 +41,7 @@ test("IngredientPurchasesTable links each purchase to its detail page", () => {
   const source = readFileSync(
     resolve(
       process.cwd(),
-      "src/components/purchases/ingredient-purchases-table.tsx",
+      "src/components/purchases/ingredients/ingredient-purchases-table.tsx",
     ),
     "utf8",
   );
@@ -54,7 +54,7 @@ test("IngredientPurchasesTable has a mobile card layout", () => {
   const source = readFileSync(
     resolve(
       process.cwd(),
-      "src/components/purchases/ingredient-purchases-table.tsx",
+      "src/components/purchases/ingredients/ingredient-purchases-table.tsx",
     ),
     "utf8",
   );
@@ -82,7 +82,7 @@ test("ingredient purchase form submits line total instead of unit price", () => 
   const source = readFileSync(
     resolve(
       process.cwd(),
-      "src/components/purchases/ingredient-purchase-form.tsx",
+      "src/components/purchases/ingredients/ingredient-purchase-form.tsx",
     ),
     "utf8",
   );
@@ -96,7 +96,7 @@ test("ingredient purchase form requires choosing a saved supplier", () => {
   const source = readFileSync(
     resolve(
       process.cwd(),
-      "src/components/purchases/ingredient-purchase-form.tsx",
+      "src/components/purchases/ingredients/ingredient-purchase-form.tsx",
     ),
     "utf8",
   );
@@ -111,7 +111,7 @@ test("ingredient purchase dialog copy no longer mentions average costing", () =>
   const source = readFileSync(
     resolve(
       process.cwd(),
-      "src/components/purchases/ingredient-purchase-dialog.tsx",
+      "src/components/purchases/ingredients/ingredient-purchase-dialog.tsx",
     ),
     "utf8",
   );

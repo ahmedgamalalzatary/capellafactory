@@ -5,12 +5,16 @@ import {
   buildProductionBatchIngredientAllocationRequest,
   buildProductionBatchOutputLayer,
   calculateProductionBatchLineCostFromAllocations,
-  ProductionBatchValidationError,
+} from "../src/modules/production-batches/production-batches.allocation.js";
+import {
   mapProductionBatchLineRow,
   mapProductionBatchRowToProductionBatch,
   normalizeProductionBatchSearchQuery,
+} from "../src/modules/production-batches/production-batches.mappers.js";
+import {
+  ProductionBatchValidationError,
   validateProductionBatchStock,
-} from "../src/modules/production-batches/production-batches.repository.js";
+} from "../src/modules/production-batches/production-batches.validators.js";
 
 test("maps production batch lines into shared line shape", () => {
   const line = mapProductionBatchLineRow({

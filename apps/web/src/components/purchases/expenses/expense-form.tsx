@@ -15,7 +15,7 @@ import {
   getLocalDateInputValue,
   getLocalTimeInputValue,
   PurchaseDateTimeFields,
-} from "./datetime-fields";
+} from "../datetime-fields";
 
 type ExpenseFormProps = {
   onCancel?: () => void;

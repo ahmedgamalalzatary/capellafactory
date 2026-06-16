@@ -2,14 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   buildIngredientPurchaseStockLayer,
-  IngredientPurchaseValidationError,
+  resolveIngredientPurchaseLineCost,
+  resolveIngredientPurchaseSupplierFields,
+} from "../src/modules/ingredient-purchases/ingredient-purchases.allocation.js";
+import {
   mapIngredientPurchaseRowToIngredientPurchase,
   mapIngredientPurchaseLineRow,
   normalizeIngredientPurchaseSearchQuery,
-  resolveIngredientPurchaseLineCost,
-  resolveIngredientPurchaseSupplierFields,
+} from "../src/modules/ingredient-purchases/ingredient-purchases.mappers.js";
+import {
+  IngredientPurchaseValidationError,
   validateIngredientPurchaseLineUnit,
-} from "../src/modules/ingredient-purchases/ingredient-purchases.repository.js";
+} from "../src/modules/ingredient-purchases/ingredient-purchases.validators.js";
 
 test("maps ingredient purchase lines into shared line shape", () => {
   const line = mapIngredientPurchaseLineRow({

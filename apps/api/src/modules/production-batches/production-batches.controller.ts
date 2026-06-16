@@ -4,7 +4,7 @@ import {
   getProductionBatch,
   getProductionBatches,
 } from "./production-batches.service.js";
-import { ProductionBatchValidationError } from "./production-batches.repository.js";
+import { ProductionBatchValidationError } from "./production-batches.validators.js";
 
 export async function listProductionBatchesHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;

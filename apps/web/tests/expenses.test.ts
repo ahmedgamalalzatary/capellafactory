@@ -51,7 +51,7 @@ test("handleApiResponse reports the first validation issue", async () => {
 
 test("ExpensesTable links each expense to its detail page", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/purchases/expenses-table.tsx"),
+    resolve(process.cwd(), "src/components/purchases/expenses/expenses-table.tsx"),
     "utf8",
   );
 

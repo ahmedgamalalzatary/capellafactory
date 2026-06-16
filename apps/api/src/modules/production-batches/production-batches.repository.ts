@@ -1,9 +1,4 @@
-import type {
-  ProductionBatch,
-  ProductionBatchIngredientLine,
-  ProductionBatchInput,
-} from "@capella/shared/production-batches/production-batch.types";
-import type { IngredientUnitFamily } from "@capella/shared/ingredients/ingredient.types";
+import type { ProductionBatch, ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
 import { and, asc, eq, like, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
@@ -18,235 +13,19 @@ import { buildProductionBatchCode } from "../../services/invoice-code.service.js
 import { recalculateStockBalances } from "../../services/stock-costing.service.js";
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
 import { StockLedgerConflictError } from "../../utils/stock-ledger.js";
-import type { ProductionBatchStockCheck } from "./production-batches.types.js";
-
-export class ProductionBatchValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-type ProductionBatchRow = {
-  id: number;
-  batchCode: string;
-  occurredAt: Date | string;
-  productId: number;
-  producedQuantity: string | number;
-  totalCost: string | number;
-  unitCost: string | number;
-  notes: string | null;
-  createdAt: Date | string;
-};
-
-type ProductionBatchLineRow = {
-  id: number;
-  ingredientId: number;
-  quantity: string | number;
-  unit: ProductionBatchIngredientLine["unit"];
-  normalizedQuantity: string | number;
-  unitCost: string | number;
-  lineCost: string | number;
-};
-
-export function mapProductionBatchLineRow(
-  row: ProductionBatchLineRow,
-): ProductionBatchIngredientLine {
-  return {
-    id: row.id,
-    ingredientId: row.ingredientId,
-    quantity: Number(row.quantity),
-    unit: row.unit,
-    normalizedQuantity: Number(row.normalizedQuantity),
-    unitCost: Number(row.unitCost),
-    lineCost: Number(row.lineCost),
-  };
-}
-
-export function mapProductionBatchRowToProductionBatch(
-  row: ProductionBatchRow,
-  lines: ProductionBatchLineRow[],
-): ProductionBatch {
-  return {
-    id: row.id,
-    batchCode: row.batchCode,
-    occurredAt: toIsoString(row.occurredAt),
-    productId: row.productId,
-    producedQuantity: Number(row.producedQuantity),
-    totalCost: Number(row.totalCost),
-    unitCost: Number(row.unitCost),
-    ...(row.notes ? { notes: row.notes } : {}),
-    createdAt: toIsoString(row.createdAt),
-    lines: lines.map(mapProductionBatchLineRow),
-  };
-}
-
-export function normalizeProductionBatchSearchQuery(query?: string) {
-  const normalized = query?.trim();
-  return normalized ? normalized : undefined;
-}
-
-function formatStockQuantity(value: number) {
-  return parseFloat(value.toFixed(3)).toString();
-}
-
-export function calculateProductionBatchLineCostFromAllocations(
-  allocations: Array<{ allocatedQuantity: number; allocatedCost: number }>,
-) {
-  const quantity = Number(
-    allocations.reduce((sum, allocation) => sum + allocation.allocatedQuantity, 0).toFixed(3),
-  );
-  const lineCost = Number(
-    allocations.reduce((sum, allocation) => sum + allocation.allocatedCost, 0).toFixed(3),
-  );
-
-  return {
-    quantity,
-    lineCost,
-    unitCost: quantity > 0 ? Number((lineCost / quantity).toFixed(6)) : 0,
-  };
-}
-
-export function buildProductionBatchIngredientAllocationRequest(input: {
-  ingredientId: number;
-  batchId: number;
-  batchLineId: number;
-  normalizedQuantity: number;
-  occurredAt: Date;
-}) {
-  return {
-    domain: "ingredient" as const,
-    itemId: input.ingredientId,
-    outboundDocumentType: "production-consumption",
-    outboundDocumentId: input.batchId,
-    outboundLineId: input.batchLineId,
-    quantity: input.normalizedQuantity,
-    occurredAt: input.occurredAt,
-  };
-}
-
-export function buildProductionBatchOutputLayer(input: {
-  batchId: number;
-  productId: number;
-  producedQuantity: number;
-  totalCost: number;
-  occurredAt: Date;
-}) {
-  return {
-    domain: "product" as const,
-    itemId: input.productId,
-    sourceDocumentType: "production-output",
-    sourceDocumentId: input.batchId,
-    sourceLineId: null,
-    originalQuantity: input.producedQuantity.toFixed(3),
-    remainingQuantity: input.producedQuantity.toFixed(3),
-    unitCost: (input.totalCost / input.producedQuantity).toFixed(6),
-    totalCost: input.totalCost.toFixed(3),
-    occurredAt: input.occurredAt,
-  };
-}
-
-export function allocateProductionBatchLineFromLayers(
-  request: {
-    ingredientId: number;
-    batchId: number;
-    batchLineId: number;
-    normalizedQuantity: number;
-    occurredAt: Date;
-  },
-  layers: Array<{
-    id: number;
-    sourceLineId?: number | null;
-    remainingQuantity: number;
-    unitCost: number;
-  }>,
-) {
-  const allocations: Array<{
-    domain: "ingredient";
-    itemId: number;
-    outboundDocumentType: "production-consumption";
-    outboundDocumentId: number;
-    outboundLineId: number;
-    stockLayerId: number;
-    allocatedQuantity: string;
-    unitCost: string;
-    allocatedCost: string;
-    occurredAt: Date;
-  }> = [];
-
-  let remaining = request.normalizedQuantity;
-
-  for (const layer of layers) {
-    if (remaining <= 0) {
-      break;
-    }
-
-    const allocatedQuantity = Math.min(layer.remainingQuantity, remaining);
-    if (allocatedQuantity <= 0) {
-      continue;
-    }
-
-    const allocatedCost = allocatedQuantity * layer.unitCost;
-    allocations.push({
-      domain: "ingredient",
-      itemId: request.ingredientId,
-      outboundDocumentType: "production-consumption",
-      outboundDocumentId: request.batchId,
-      outboundLineId: request.batchLineId,
-      stockLayerId: layer.id,
-      allocatedQuantity: allocatedQuantity.toFixed(3),
-      unitCost: layer.unitCost.toFixed(6),
-      allocatedCost: allocatedCost.toFixed(3),
-      occurredAt: request.occurredAt,
-    });
-
-    remaining = Number((remaining - allocatedQuantity).toFixed(3));
-  }
-
-  const costSummary = calculateProductionBatchLineCostFromAllocations(
-    allocations.map((allocation) => ({
-      allocatedQuantity: Number(allocation.allocatedQuantity),
-      allocatedCost: Number(allocation.allocatedCost),
-    })),
-  );
-
-  return {
-    allocations,
-    lineCost: costSummary.lineCost,
-    unitCost: costSummary.unitCost,
-  };
-}
-
-export function validateProductionBatchStock(checks: ProductionBatchStockCheck[]) {
-  const shortages = checks.filter((check) => check.requestedQuantity > check.availableQuantity);
-
-  if (shortages.length === 0) {
-    return;
-  }
-
-  const details = shortages
-    .map(
-      (check) =>
-        `${check.ingredientName} (متاح ${formatStockQuantity(check.availableQuantity)}، مطلوب ${formatStockQuantity(check.requestedQuantity)})`,
-    )
-    .join("؛ ");
-
-  throw new ProductionBatchValidationError(`المخزون غير كافٍ من: ${details}`);
-}
-
-export function validateProductionBatchLineUnit(
-  unitFamily: IngredientUnitFamily,
-  unit: ProductionBatchIngredientLine["unit"],
-) {
-  try {
-    normalizeIngredientQuantity(unitFamily, 1, unit);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new ProductionBatchValidationError(error.message);
-    }
-
-    throw error;
-  }
-}
+import {
+  allocateProductionBatchLineFromLayers,
+  buildProductionBatchOutputLayer,
+} from "./production-batches.allocation.js";
+import {
+  mapProductionBatchRowToProductionBatch,
+  normalizeProductionBatchSearchQuery,
+} from "./production-batches.mappers.js";
+import {
+  ProductionBatchValidationError,
+  validateProductionBatchLineUnit,
+  validateProductionBatchStock,
+} from "./production-batches.validators.js";
 
 export async function listProductionBatches(query?: string) {
   const normalizedQuery = normalizeProductionBatchSearchQuery(query);
@@ -257,9 +36,9 @@ export async function listProductionBatches(query?: string) {
       and(
         normalizedQuery
           ? or(
-              like(productionBatchesTable.batchCode, `%${normalizedQuery}%`),
-              like(productionBatchesTable.notes, `%${normalizedQuery}%`),
-            )
+            like(productionBatchesTable.batchCode, `%${normalizedQuery}%`),
+            like(productionBatchesTable.notes, `%${normalizedQuery}%`),
+          )
           : undefined,
       ),
     )
@@ -433,7 +212,9 @@ async function createProductionBatchTransaction(
         for (const allocation of allocationResult.allocations) {
           const layer = openLayers.find((candidate) => candidate.id === allocation.stockLayerId);
           if (!layer) {
-            continue;
+            throw new Error(
+              `Allocation references unknown layer ${allocation.stockLayerId} for ingredient ${line.ingredientId}`,
+            );
           }
 
           const nextRemaining = Number(layer.remainingQuantity) - Number(allocation.allocatedQuantity);
@@ -519,8 +300,4 @@ async function validateProductionBatchRelations(input: ProductionBatchInput) {
   return {
     ingredientsById: new Map(ingredients.map((ingredient) => [ingredient.id, ingredient])),
   };
-}
-
-function toIsoString(value: Date | string) {
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }

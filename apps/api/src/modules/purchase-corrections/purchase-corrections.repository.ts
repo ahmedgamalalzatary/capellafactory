@@ -1,7 +1,5 @@
 import type {
-  PurchaseCorrection,
   PurchaseCorrectionInput,
-  PurchaseCorrectionLine,
 } from "@capella/shared/purchase-corrections/purchase-correction.types";
 import { and, asc, eq, like, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
@@ -16,153 +14,20 @@ import {
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
 import { recalculateIngredientBalances } from "../../services/stock-costing.service.js";
 import { StockLedgerConflictError } from "../../utils/stock-ledger.js";
-
-export class PurchaseCorrectionValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-type PurchaseCorrectionRow = {
-  id: number;
-  sourcePurchaseId: number;
-  sourcePurchaseInvoiceCode?: string | null;
-  reason: string;
-  createdAt: Date | string;
-};
-
-type PurchaseCorrectionLineRow = {
-  correctionId?: number;
-  id: number;
-  sourcePurchaseLineId: number;
-  ingredientId: number;
-  quantity: string | number;
-  unit: PurchaseCorrectionLine["unit"];
-  unitPrice: string | number;
-  lineTotal: string | number;
-  normalizedQuantity: string | number;
-};
-
-export function mapPurchaseCorrectionLineRow(row: PurchaseCorrectionLineRow): PurchaseCorrectionLine {
-  return {
-    id: row.id,
-    sourcePurchaseLineId: row.sourcePurchaseLineId,
-    ingredientId: row.ingredientId,
-    quantity: Number(row.quantity),
-    unit: row.unit,
-    unitPrice: Number(row.unitPrice),
-    lineTotal: Number(row.lineTotal),
-    normalizedQuantity: Number(row.normalizedQuantity),
-  };
-}
-
-export function mapPurchaseCorrectionRowToPurchaseCorrection(
-  row: PurchaseCorrectionRow,
-  lines: PurchaseCorrectionLineRow[],
-): PurchaseCorrection {
-  return {
-    id: row.id,
-    sourcePurchaseId: row.sourcePurchaseId,
-    ...(row.sourcePurchaseInvoiceCode
-      ? { sourcePurchaseInvoiceCode: row.sourcePurchaseInvoiceCode }
-      : {}),
-    reason: row.reason,
-    createdAt: toIsoString(row.createdAt),
-    lines: lines.map(mapPurchaseCorrectionLineRow),
-  };
-}
-
-export function normalizePurchaseCorrectionSearchQuery(query?: string) {
-  const normalized = query?.trim();
-  return normalized ? normalized : undefined;
-}
-
-export function resolvePurchaseCorrectionLineAmounts(input: {
-  sourceQuantity: number;
-  sourceLineTotal: number;
-  correctionQuantity: number;
-}) {
-  if (input.sourceQuantity === 0) {
-    throw new PurchaseCorrectionValidationError(
-      "Source purchase line quantity must be greater than zero",
-    );
-  }
-
-  const unitPrice = input.sourceLineTotal / input.sourceQuantity;
-
-  return {
-    unitPrice,
-    lineTotal: unitPrice * input.correctionQuantity,
-  };
-}
-
-export function buildPurchaseCorrectionAllocationRequest(input: {
-  ingredientId: number;
-  correctionId: number;
-  correctionLineId: number;
-  sourcePurchaseLineId: number;
-  normalizedQuantity: number;
-  occurredAt: Date;
-}) {
-  return {
-    domain: "ingredient" as const,
-    itemId: input.ingredientId,
-    outboundDocumentType: "purchase-correction",
-    outboundDocumentId: input.correctionId,
-    outboundLineId: input.correctionLineId,
-    sourceLineId: input.sourcePurchaseLineId,
-    quantity: input.normalizedQuantity,
-    occurredAt: input.occurredAt,
-  };
-}
-
-export function buildPurchaseCorrectionAllocationRow(input: {
-  correctionId: number;
-  lineId: number;
-  layerId: number;
-  ingredientId: number;
-  normalizedQuantity: number;
-  lineTotal: number;
-  occurredAt: Date;
-}) {
-  if (input.normalizedQuantity <= 0) {
-    throw new PurchaseCorrectionValidationError(
-      "Purchase correction line quantity must be greater than zero",
-    );
-  }
-
-  return {
-    domain: "ingredient" as const,
-    itemId: input.ingredientId,
-    outboundDocumentType: "purchase-correction",
-    outboundDocumentId: input.correctionId,
-    outboundLineId: input.lineId,
-    stockLayerId: input.layerId,
-    allocatedQuantity: input.normalizedQuantity.toFixed(3),
-    unitCost: (input.lineTotal / input.normalizedQuantity).toFixed(6),
-    allocatedCost: input.lineTotal.toFixed(3),
-    occurredAt: input.occurredAt,
-  };
-}
-
-export function getRemainingPurchaseCorrectionQuantity(
-  sourceQuantity: number,
-  previouslyCorrectedQuantity: number,
-) {
-  return sourceQuantity - previouslyCorrectedQuantity;
-}
-
-export function validatePurchaseCorrectionQuantity(input: {
-  ingredientName: string;
-  requestedQuantity: number;
-  remainingQuantity: number;
-}) {
-  if (input.requestedQuantity > input.remainingQuantity) {
-    throw new PurchaseCorrectionValidationError(
-      `Correction quantity exceeds remaining reversible quantity for ${input.ingredientName}`,
-    );
-  }
-}
+import {
+  buildPurchaseCorrectionAllocationRow,
+  getRemainingPurchaseCorrectionQuantity,
+  resolvePurchaseCorrectionLineAmounts,
+} from "./purchase-corrections.allocation.js";
+import {
+  assemblePurchaseCorrections,
+  mapPurchaseCorrectionRowToPurchaseCorrection,
+  normalizePurchaseCorrectionSearchQuery,
+} from "./purchase-corrections.mappers.js";
+import {
+  PurchaseCorrectionValidationError,
+  validatePurchaseCorrectionQuantity,
+} from "./purchase-corrections.validators.js";
 
 export async function listPurchaseCorrections(query?: string) {
   const normalizedQuery = normalizePurchaseCorrectionSearchQuery(query);
@@ -233,27 +98,6 @@ export async function getPurchaseCorrectionById(id: number) {
     .orderBy(asc(purchaseCorrectionLinesTable.id));
 
   return mapPurchaseCorrectionRowToPurchaseCorrection(row, lines);
-}
-
-export function assemblePurchaseCorrections(
-  rows: PurchaseCorrectionRow[],
-  lines: PurchaseCorrectionLineRow[],
-): PurchaseCorrection[] {
-  const linesByCorrectionId = new Map<number, PurchaseCorrectionLineRow[]>();
-
-  for (const line of lines) {
-    if (typeof line.correctionId !== "number") {
-      continue;
-    }
-
-    const groupedLines = linesByCorrectionId.get(line.correctionId) ?? [];
-    groupedLines.push(line);
-    linesByCorrectionId.set(line.correctionId, groupedLines);
-  }
-
-  return rows.map((row) =>
-    mapPurchaseCorrectionRowToPurchaseCorrection(row, linesByCorrectionId.get(row.id) ?? []),
-  );
 }
 
 export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
@@ -428,8 +272,4 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
 
     throw error;
   }
-}
-
-function toIsoString(value: Date | string) {
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }

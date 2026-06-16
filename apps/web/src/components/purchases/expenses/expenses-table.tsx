@@ -127,7 +127,7 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
                 <TableCell colSpan={7} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد مصروفات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
-                    ابدأ بتسجيل أول مصروف تشغيلي من شاشة المشتريات.
+                    ابدأ بتسجيل أول مصروف تشغيلي من شاشة المدفوعات.
                   </p>
                 </TableCell>
               </TableRow>
@@ -144,7 +144,7 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
           <div className="py-16 text-center">
             <p className="text-sm font-medium">لا توجد مصروفات بعد</p>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              ابدأ بتسجيل أول مصروف تشغيلي من شاشة المشتريات.
+              ابدأ بتسجيل أول مصروف تشغيلي من شاشة المدفوعات.
             </p>
           </div>
         ) : null}

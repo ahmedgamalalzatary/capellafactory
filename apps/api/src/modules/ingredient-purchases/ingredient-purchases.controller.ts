@@ -4,7 +4,7 @@ import {
   getIngredientPurchase,
   getIngredientPurchases,
 } from "./ingredient-purchases.service.js";
-import { IngredientPurchaseValidationError } from "./ingredient-purchases.repository.js";
+import { IngredientPurchaseValidationError } from "./ingredient-purchases.validators.js";
 
 export async function listIngredientPurchasesHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;

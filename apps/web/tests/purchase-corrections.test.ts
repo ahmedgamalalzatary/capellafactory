@@ -40,7 +40,7 @@ test("purchases page exposes a purchase corrections tab and dialog", () => {
 
 test("purchase corrections table links each correction to its detail page", () => {
   const source = readFileSync(
-    resolve(process.cwd(), "src/components/purchases/purchase-corrections-table.tsx"),
+    resolve(process.cwd(), "src/components/purchases/purchase-correction/purchase-corrections-table.tsx"),
     "utf8",
   );
 

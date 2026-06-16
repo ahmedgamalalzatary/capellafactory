@@ -20,7 +20,7 @@ import {
   getLocalDateInputValue,
   getLocalTimeInputValue,
   PurchaseDateTimeFields,
-} from "./datetime-fields";
+} from "../datetime-fields";
 
 type IngredientPurchaseFormProps = {
   suppliers: Supplier[];
@@ -110,11 +110,11 @@ export function IngredientPurchaseForm({
     await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
       try {
         const parsedLines = lines.map((line) => ({
-        ingredientId: Number(line.ingredientId),
-        quantity: Number(line.quantity),
-        unit: line.unit,
-        lineTotal: Number(line.lineTotal),
-      }));
+          ingredientId: Number(line.ingredientId),
+          quantity: Number(line.quantity),
+          unit: line.unit,
+          lineTotal: Number(line.lineTotal),
+        }));
 
         const hasInvalidLine = parsedLines.some(
           (line) =>

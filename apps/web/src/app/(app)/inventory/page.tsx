@@ -68,7 +68,7 @@ export default async function InventoryPage({ searchParams }: InventoryPageProps
               </h1>
               <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-slate-600 sm:text-[14px]">
                 شاشة تأسيس الكتالوج التشغيلي للخامات والمنتجات النهائية. من هنا تبدأ
-                أسماء السجلات الموحّدة التي ستعتمد عليها المشتريات، الإنتاج، والمبيعات.
+                أسماء السجلات الموحّدة التي ستعتمد عليها المدفوعات، الإنتاج، والمبيعات.
               </p>
             </div>
 

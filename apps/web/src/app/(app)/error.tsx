@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 
-type SuppliersErrorProps = {
+type AppErrorProps = {
   error: Error & { digest?: string };
   reset: () => void;
 };
 
-export default function SuppliersError({ error, reset }: SuppliersErrorProps) {
+export default function AppError({ error, reset }: AppErrorProps) {
   return (
     <div className="px-8 py-16 max-w-6xl mx-auto">
       <div
@@ -23,7 +23,7 @@ export default function SuppliersError({ error, reset }: SuppliersErrorProps) {
           خطأ في الاتصال
         </p>
         <h1 className="text-[18px] font-semibold text-foreground mt-1">
-          تعذّر تحميل بيانات الموردين
+          تعذّر تحميل البيانات
         </h1>
         <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">
           {error.message ||

@@ -1,17 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  assemblePurchaseCorrections,
   buildPurchaseCorrectionAllocationRequest,
   buildPurchaseCorrectionAllocationRow,
+  getRemainingPurchaseCorrectionQuantity,
+  resolvePurchaseCorrectionLineAmounts,
+} from "../src/modules/purchase-corrections/purchase-corrections.allocation.js";
+import {
+  assemblePurchaseCorrections,
   mapPurchaseCorrectionLineRow,
   mapPurchaseCorrectionRowToPurchaseCorrection,
   normalizePurchaseCorrectionSearchQuery,
+} from "../src/modules/purchase-corrections/purchase-corrections.mappers.js";
+import {
   PurchaseCorrectionValidationError,
-  getRemainingPurchaseCorrectionQuantity,
-  resolvePurchaseCorrectionLineAmounts,
   validatePurchaseCorrectionQuantity,
-} from "../src/modules/purchase-corrections/purchase-corrections.repository.js";
+} from "../src/modules/purchase-corrections/purchase-corrections.validators.js";
 
 test("derives correction line amounts proportionally from the source purchase line", () => {
   assert.deepEqual(

@@ -1,10 +1,10 @@
-import { ExpenseDialog } from "@/components/purchases/expense-dialog";
-import { IngredientPurchaseDialog } from "@/components/purchases/ingredient-purchase-dialog";
-import { IngredientPurchasesTable } from "@/components/purchases/ingredient-purchases-table";
-import { PurchaseCorrectionDialog } from "@/components/purchases/purchase-correction-dialog";
-import { PurchaseCorrectionsTable } from "@/components/purchases/purchase-corrections-table";
-import { ExpensesTable } from "@/components/purchases/expenses-table";
-import { PurchasesSearchInput } from "@/components/purchases/purchases-search-input";
+import { ExpenseDialog } from "@/components/purchases/expenses/expense-dialog";
+import { IngredientPurchaseDialog } from "@/components/purchases/ingredients/ingredient-purchase-dialog";
+import { IngredientPurchasesTable } from "@/components/purchases/ingredients/ingredient-purchases-table";
+import { PurchaseCorrectionDialog } from "@/components/purchases/purchase-correction/purchase-correction-dialog";
+import { PurchaseCorrectionsTable } from "@/components/purchases/purchase-correction/purchase-corrections-table";
+import { ExpensesTable } from "@/components/purchases/expenses/expenses-table";
+import { PurchasesSearchInput } from "@/components/purchases/purchase-correction/purchases-search-input";
 import { MetricCard } from "@/components/shared/metric-card";
 import type { PurchasesPageProps } from "@/app/types/types.purchases";
 import { buildPurchasesHref, formatPurchasesAmount } from "@/app/utils/utils.purchases";
@@ -72,7 +72,7 @@ export default async function PurchasesPage({ searchParams }: PurchasesPageProps
                 Expenses
               </p>
               <h1 className="text-[28px] font-bold leading-tight tracking-tight text-slate-950 sm:text-[34px]">
-                المشتريات
+                المصاريف
               </h1>
               <p className="mt-3 max-w-[60ch] text-[13px] leading-relaxed text-slate-600 sm:text-[14px]">
                 شاشة تسجيل المصروفات التشغيلية المدفوعة فعليًا. هذه المرحلة تغطي

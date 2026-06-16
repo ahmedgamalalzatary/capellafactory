@@ -1,4 +1,4 @@
-export default function SuppliersLoading() {
+export default function AppLoading() {
   return (
     <div className="px-8 py-8 max-w-6xl mx-auto">
       {/* Breadcrumb skeleton */}
@@ -54,7 +54,7 @@ export default function SuppliersLoading() {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="px-4 py-3 grid grid-cols-[40px_1.5fr_1fr_1fr_2fr_40px] gap-4 items-center"
+            className="px-4 py-3 flex items-center gap-4"
             style={{
               background: i % 2 === 1 ? "var(--secondary)" : "var(--background)",
               borderBottom: i < 5 ? "1px solid var(--border)" : "none",
@@ -64,7 +64,7 @@ export default function SuppliersLoading() {
             <div className="h-3 w-28 bg-secondary animate-pulse rounded" />
             <div className="h-3 w-24 bg-secondary animate-pulse rounded" />
             <div className="h-3 w-16 bg-secondary animate-pulse rounded" />
-            <div className="h-3 w-full bg-secondary animate-pulse rounded" />
+            <div className="h-3 flex-1 bg-secondary animate-pulse rounded" />
             <div className="h-6 w-6 bg-secondary animate-pulse rounded" />
           </div>
         ))}

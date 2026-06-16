@@ -1,10 +1,7 @@
 import type {
-  IngredientPurchaseInput,
   IngredientPurchase,
-  IngredientPurchaseLineInput,
-  IngredientPurchaseLine,
+  IngredientPurchaseInput,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
-import type { IngredientUnitFamily } from "@capella/shared/ingredients/ingredient.types";
 import { and, asc, eq, like, or } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
@@ -17,127 +14,19 @@ import {
 import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.js";
 import { buildIngredientPurchaseInvoiceCode } from "../../services/invoice-code.service.js";
 import { recalculateIngredientBalances } from "../../services/stock-costing.service.js";
-
-export class IngredientPurchaseValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
-
-type IngredientPurchaseRow = {
-  id: number;
-  invoiceCode: string;
-  occurredAt: Date | string;
-  supplierId: number | null;
-  supplierName: string | null;
-  notes: string | null;
-  createdAt: Date | string;
-};
-
-type IngredientPurchaseLineRow = {
-  id: number;
-  ingredientId: number;
-  quantity: string | number;
-  unit: IngredientPurchaseLine["unit"];
-  unitPrice: string | number;
-  lineTotal: string | number;
-  normalizedQuantity: string | number;
-};
-
-export function mapIngredientPurchaseLineRow(row: IngredientPurchaseLineRow): IngredientPurchaseLine {
-  return {
-    id: row.id,
-    ingredientId: row.ingredientId,
-    quantity: Number(row.quantity),
-    unit: row.unit,
-    unitPrice: Number(row.unitPrice),
-    lineTotal: Number(row.lineTotal),
-    normalizedQuantity: Number(row.normalizedQuantity),
-  };
-}
-
-export function mapIngredientPurchaseRowToIngredientPurchase(
-  row: IngredientPurchaseRow,
-  lines: IngredientPurchaseLineRow[],
-): IngredientPurchase {
-  return {
-    id: row.id,
-    invoiceCode: row.invoiceCode,
-    occurredAt: toIsoString(row.occurredAt),
-    ...(row.supplierId ? { supplierId: row.supplierId } : {}),
-    ...(row.supplierName ? { supplierName: row.supplierName } : {}),
-    ...(row.notes ? { notes: row.notes } : {}),
-    createdAt: toIsoString(row.createdAt),
-    lines: lines.map(mapIngredientPurchaseLineRow),
-  };
-}
-
-export function normalizeIngredientPurchaseSearchQuery(query?: string) {
-  const normalized = query?.trim();
-  return normalized ? normalized : undefined;
-}
-
-export function validateIngredientPurchaseLineUnit(
-  unitFamily: IngredientUnitFamily,
-  unit: IngredientPurchaseLine["unit"],
-) {
-  try {
-    normalizeIngredientQuantity(unitFamily, 1, unit);
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new IngredientPurchaseValidationError(error.message);
-    }
-
-    throw error;
-  }
-}
-
-export function resolveIngredientPurchaseSupplierFields(
-  input: Pick<IngredientPurchaseInput, "supplierId">,
-  savedSupplierName?: string,
-) {
-  return {
-    supplierId: input.supplierId,
-    supplierName: savedSupplierName,
-  };
-}
-
-export function resolveIngredientPurchaseLineCost(
-  line: Pick<IngredientPurchaseLineInput, "quantity" | "lineTotal">,
-) {
-  return {
-    unitPrice: line.lineTotal / line.quantity,
-    lineTotal: line.lineTotal,
-  };
-}
-
-export function buildIngredientPurchaseStockLayer(input: {
-  purchaseId: number;
-  purchaseLineId: number;
-  ingredientId: number;
-  normalizedQuantity: number;
-  lineTotal: number;
-  occurredAt: Date;
-}) {
-  if (input.normalizedQuantity <= 0) {
-    throw new IngredientPurchaseValidationError(
-      "Ingredient purchase line quantity must be greater than zero",
-    );
-  }
-
-  return {
-    domain: "ingredient" as const,
-    itemId: input.ingredientId,
-    sourceDocumentType: "ingredient-purchase",
-    sourceDocumentId: input.purchaseId,
-    sourceLineId: input.purchaseLineId,
-    originalQuantity: input.normalizedQuantity.toFixed(3),
-    remainingQuantity: input.normalizedQuantity.toFixed(3),
-    unitCost: (input.lineTotal / input.normalizedQuantity).toFixed(6),
-    totalCost: input.lineTotal.toFixed(3),
-    occurredAt: input.occurredAt,
-  };
-}
+import {
+  buildIngredientPurchaseStockLayer,
+  resolveIngredientPurchaseLineCost,
+  resolveIngredientPurchaseSupplierFields,
+} from "./ingredient-purchases.allocation.js";
+import {
+  mapIngredientPurchaseRowToIngredientPurchase,
+  normalizeIngredientPurchaseSearchQuery,
+} from "./ingredient-purchases.mappers.js";
+import {
+  IngredientPurchaseValidationError,
+  validateIngredientPurchaseLineUnit,
+} from "./ingredient-purchases.validators.js";
 
 export async function listIngredientPurchases(query?: string) {
   const normalizedQuery = normalizeIngredientPurchaseSearchQuery(query);
@@ -307,8 +196,4 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
     ingredientsById,
     supplierName: supplier.name,
   };
-}
-
-function toIsoString(value: Date | string) {
-  return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
