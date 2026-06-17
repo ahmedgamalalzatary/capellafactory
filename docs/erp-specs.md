@@ -16,8 +16,7 @@ The repository currently implements these functional areas:
 - purchase corrections
 - production batches
 - sales invoices
-
-There is also a `reports` route in the frontend shell, but the current docs and route tree suggest it is navigation scaffolding rather than a completed reporting module.
+- read-only reports workspace with tabbed views, date filtering, and PDF download
 
 ## Architecture
 
@@ -155,7 +154,22 @@ Current code proves:
 
 Because `docs/phases/06-ingredient-adjustments.md` is excluded from this update, that older document still uses the previous naming and should be treated as historical planning material.
 
-## Shared Contract Coverage
+### Reports
+
+The reports workspace is implemented end to end. It is a read-only, tabbed dashboard that aggregates data from every other domain.
+
+Current code proves:
+
+- backend exposes the same endpoints used by the reports page (no separate report API is required)
+- frontend route at `/reports` with tab and date-range query parameters
+- tabbed views for: overview, buyers, suppliers, ingredients, products, expenses, ingredient purchases, purchase corrections, production batches, and sales invoices
+- date-range filtering for `last-day`, `last-7-days`, `last-30-days`, and `all`
+- summary metric cards (people count, sales total, gross profit, net after expenses)
+- detail dialogs for master-data rows (buyers, suppliers, ingredients, products)
+- PDF download button that prints the active table via a styled print view
+- web tests covering tabs, hrefs, date filtering, and summary calculations
+
+### Shared Contract Coverage
 
 The shared package currently exports contracts for:
 
@@ -213,6 +227,7 @@ Current web coverage includes:
 - purchase corrections
 - production batches
 - sales invoices
+- reports helpers, tabs, filtering, and DOM rendering
 - dialog/form DOM tests
 - API helper tests
 - submit lock behavior
@@ -225,5 +240,6 @@ A few old assumptions are now stale relative to the code:
 - production batches are implemented
 - sales invoices are implemented
 - ingredient adjustments were renamed in code to `purchase-corrections`
+- reports workspace is implemented and no longer scaffolding
 
 Use this document and `docs/folder-structure.md` as the source of truth for the current repository shape. Use the phase docs as implementation history and rollout notes.

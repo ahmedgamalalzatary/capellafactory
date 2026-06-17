@@ -90,13 +90,14 @@
     "build": "tsc --project tsconfig.json",
     "dev": "tsc --project tsconfig.json --watch",
     "lint": "echo \"No lint for shared yet\"",
-    "test": "echo \"No tests for shared yet\"",
+    "test": "tsx --test tests/**/*.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "tsx": "^4.22.3",
     "typescript": "^5.9.3"
   }
 }

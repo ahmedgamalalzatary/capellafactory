@@ -1,20 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createExpenseSchema } from "../src/modules/expenses/expenses.validation.js";
+import { expenseInputSchema } from "../src/expenses/expense.schema.js";
 
-test("create expense accepts salary when employee name is provided", () => {
-  const result = createExpenseSchema.safeParse({
+test("expense input accepts salary when employee name is provided", () => {
+  const result = expenseInputSchema.safeParse({
     type: "salary",
     amount: 2500,
     occurredAt: "2026-05-24T12:00:00.000Z",
-    employeeName: "Ahmed",
+    employeeName: " Ahmed ",
   });
 
   assert.equal(result.success, true);
+
+  if (result.success) {
+    assert.equal(result.data.employeeName, "Ahmed");
+  }
 });
 
-test("create expense rejects salary without employee name", () => {
-  const result = createExpenseSchema.safeParse({
+test("expense input rejects salary without employee name", () => {
+  const result = expenseInputSchema.safeParse({
     type: "salary",
     amount: 2500,
     occurredAt: "2026-05-24T12:00:00.000Z",
@@ -23,8 +27,8 @@ test("create expense rejects salary without employee name", () => {
   assert.equal(result.success, false);
 });
 
-test("create expense rejects other without custom label", () => {
-  const result = createExpenseSchema.safeParse({
+test("expense input rejects other without custom label", () => {
+  const result = expenseInputSchema.safeParse({
     type: "other",
     amount: 300,
     occurredAt: "2026-05-24T12:00:00.000Z",
@@ -33,8 +37,8 @@ test("create expense rejects other without custom label", () => {
   assert.equal(result.success, false);
 });
 
-test("create expense strips salary-only and other-only fields from normal expense types", () => {
-  const result = createExpenseSchema.safeParse({
+test("expense input strips salary-only and other-only fields from normal expense types", () => {
+  const result = expenseInputSchema.safeParse({
     type: "rent",
     amount: 1200,
     occurredAt: "2026-05-24T12:00:00.000Z",
