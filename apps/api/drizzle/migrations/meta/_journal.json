@@ -92,6 +92,13 @@
       "when": 1781645911627,
       "tag": "0012_sales_invoices",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1781688135245,
+      "tag": "0013_nosy_newton_destine",
+      "breakpoints": true
     }
   ]
 }

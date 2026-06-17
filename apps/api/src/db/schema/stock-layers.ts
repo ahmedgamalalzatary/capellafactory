@@ -48,7 +48,12 @@ export const stockLayerAllocationsTable = mysqlTable(
     outboundDocumentType: varchar("outbound_document_type", { length: 64 }).notNull(),
     outboundDocumentId: int("outbound_document_id").notNull(),
     outboundLineId: int("outbound_line_id"),
-    stockLayerId: int("stock_layer_id").notNull(),
+    stockLayerId: int("stock_layer_id")
+      .notNull()
+      .references(() => stockLayersTable.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
     allocatedQuantity: decimal("allocated_quantity", { precision: 14, scale: 3 }).notNull(),
     unitCost: decimal("unit_cost", { precision: 14, scale: 6 }).notNull(),
     allocatedCost: decimal("allocated_cost", { precision: 14, scale: 3 }).notNull(),

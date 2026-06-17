@@ -25,7 +25,9 @@ export const authSessionsTable = mysqlTable(
   "auth_sessions",
   {
     id: int("id").autoincrement().primaryKey(),
-    adminId: int("admin_id").notNull(),
+    adminId: int("admin_id")
+      .notNull()
+      .references(() => adminsTable.id, { onDelete: "cascade", onUpdate: "cascade" }),
     tokenHash: varchar("token_hash", { length: 64 }).notNull(),
     credentialFingerprint: varchar("credential_fingerprint", { length: 64 }).notNull(),
     expiresAt: timestamp("expires_at").notNull(),
