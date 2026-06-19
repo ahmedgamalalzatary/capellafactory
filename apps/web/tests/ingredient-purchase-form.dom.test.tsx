@@ -94,27 +94,33 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     expect(createIngredientPurchase.mock.calls[0][0].supplierId).toBe(7);
   });
 
-  test("adds a second line and submits both in the payload", async () => {
+  test("adds a second line above the existing first row", async () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: "+ بند" }));
-
-    // After adding a line there are 4 number inputs: [qty1, total1, qty2, total2].
     const inputs = screen.getAllByRole("spinbutton");
-    expect(inputs).toHaveLength(4);
     await user.type(inputs[0], "3");
     await user.type(inputs[1], "30");
-    await user.type(inputs[2], "4");
-    await user.type(inputs[3], "80");
+
+    await user.click(screen.getByRole("button", { name: "+ بند" }));
+
+    const updatedInputs = screen.getAllByRole("spinbutton");
+    expect(updatedInputs).toHaveLength(4);
+    expect(updatedInputs[0]).toHaveValue(null);
+    expect(updatedInputs[1]).toHaveValue(null);
+    expect(updatedInputs[2]).toHaveValue(3);
+    expect(updatedInputs[3]).toHaveValue(30);
+
+    await user.type(updatedInputs[0], "4");
+    await user.type(updatedInputs[1], "80");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
     await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
     const { lines } = createIngredientPurchase.mock.calls[0][0];
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toMatchObject({ quantity: 3, lineTotal: 30 });
-    expect(lines[1]).toMatchObject({ quantity: 4, lineTotal: 80 });
+    expect(lines[0]).toMatchObject({ quantity: 4, lineTotal: 80 });
+    expect(lines[1]).toMatchObject({ quantity: 3, lineTotal: 30 });
   });
 
   test("filters ingredients while typing and selects the matching result", async () => {
@@ -132,5 +138,23 @@ describe("IngredientPurchaseForm (behavioral)", () => {
 
     await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
     expect(createIngredientPurchase.mock.calls[0][0].lines[0].ingredientId).toBe(12);
+  });
+
+  test("shows a read-only invoice total summed from all line totals", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    expect(screen.getByText("إجمالي الفاتورة")).toBeInTheDocument();
+    expect(screen.getByText("0.000")).toBeInTheDocument();
+
+    let inputs = screen.getAllByRole("spinbutton");
+    await user.type(inputs[1], "30");
+    expect(screen.getByText("30.000")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "+ بند" }));
+
+    inputs = screen.getAllByRole("spinbutton");
+    await user.type(inputs[1], "80");
+    expect(screen.getByText("110.000")).toBeInTheDocument();
   });
 });

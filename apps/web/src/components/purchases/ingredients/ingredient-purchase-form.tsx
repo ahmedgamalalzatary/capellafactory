@@ -150,6 +150,7 @@ export function IngredientPurchaseForm({
   );
   const [supplierId, setSupplierId] = useState(initialDraft?.supplierId ?? String(suppliers[0]?.id ?? ""));
   const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+  const invoiceTotal = lines.reduce((sum, line) => sum + (Number(line.lineTotal) || 0), 0);
 
   useEffect(() => {
     saveLocalDraft<IngredientPurchaseDraft>(ingredientPurchaseDraftKey, {
@@ -184,7 +185,7 @@ export function IngredientPurchaseForm({
   }
 
   function addLine() {
-    setLines((current) => [...current, createEmptyLine(ingredients)]);
+    setLines((current) => [createEmptyLine(ingredients), ...current]);
   }
 
   function removeLine(index: number) {
@@ -376,6 +377,13 @@ export function IngredientPurchaseForm({
             </div>
           );
         })}
+
+        <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-4 py-3 text-sm">
+          <span className="font-medium text-muted-foreground">إجمالي الفاتورة</span>
+          <span className="font-semibold tabular-nums text-foreground">
+            {invoiceTotal.toFixed(3)}
+          </span>
+        </div>
       </div>
 
       <Field id="notes" label="ملاحظات">

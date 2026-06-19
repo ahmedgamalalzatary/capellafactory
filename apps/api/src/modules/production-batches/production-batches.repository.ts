@@ -18,6 +18,7 @@ import {
   buildProductionBatchOutputLayer,
 } from "./production-batches.allocation.js";
 import {
+  compareProductionBatchListOrder,
   mapProductionBatchRowToProductionBatch,
   normalizeProductionBatchSearchQuery,
 } from "./production-batches.mappers.js";
@@ -44,9 +45,11 @@ export async function listProductionBatches(query?: string) {
     )
     .orderBy(asc(productionBatchesTable.occurredAt), asc(productionBatchesTable.id));
 
-  return Promise.all(rows.map((row) => getProductionBatchById(row.id))) as Promise<
-    ProductionBatch[]
-  >;
+  const batches = (await Promise.all(
+    rows.map((row) => getProductionBatchById(row.id)),
+  )) as ProductionBatch[];
+
+  return batches.sort(compareProductionBatchListOrder);
 }
 
 export async function getProductionBatchById(id: number) {

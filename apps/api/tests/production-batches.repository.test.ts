@@ -7,6 +7,7 @@ import {
   calculateProductionBatchLineCostFromAllocations,
 } from "../src/modules/production-batches/production-batches.allocation.js";
 import {
+  compareProductionBatchListOrder,
   mapProductionBatchLineRow,
   mapProductionBatchRowToProductionBatch,
   normalizeProductionBatchSearchQuery,
@@ -200,6 +201,40 @@ test("normalizes production batch search query", () => {
   assert.equal(normalizeProductionBatchSearchQuery(""), undefined);
   assert.equal(normalizeProductionBatchSearchQuery("   "), undefined);
   assert.equal(normalizeProductionBatchSearchQuery("  PRD  "), "PRD");
+});
+
+test("orders production batches by createdAt descending before occurredAt", () => {
+  const batches = [
+    {
+      id: 1,
+      batchCode: "PRD-20260619-0001",
+      occurredAt: "2026-06-19T10:00:00.000Z",
+      createdAt: "2026-06-19T10:00:00.000Z",
+      productId: 1,
+      producedQuantity: 10,
+      totalCost: 100,
+      unitCost: 10,
+      lines: [],
+    },
+    {
+      id: 2,
+      batchCode: "PRD-20260618-0002",
+      occurredAt: "2026-06-18T10:00:00.000Z",
+      createdAt: "2026-06-19T11:00:00.000Z",
+      productId: 1,
+      producedQuantity: 8,
+      totalCost: 80,
+      unitCost: 10,
+      lines: [],
+    },
+  ];
+
+  batches.sort(compareProductionBatchListOrder);
+
+  assert.deepEqual(
+    batches.map((batch) => batch.id),
+    [2, 1],
+  );
 });
 
 test("stock validation rejects insufficient ingredient quantity and names it", () => {

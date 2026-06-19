@@ -20,6 +20,7 @@ import {
   resolveIngredientPurchaseSupplierFields,
 } from "./ingredient-purchases.allocation.js";
 import {
+  compareIngredientPurchaseListOrder,
   mapIngredientPurchaseRowToIngredientPurchase,
   normalizeIngredientPurchaseSearchQuery,
 } from "./ingredient-purchases.mappers.js";
@@ -46,7 +47,11 @@ export async function listIngredientPurchases(query?: string) {
     )
     .orderBy(asc(ingredientPurchasesTable.occurredAt), asc(ingredientPurchasesTable.id));
 
-  return Promise.all(rows.map((row) => getIngredientPurchaseById(row.id))) as Promise<IngredientPurchase[]>;
+  const purchases = (await Promise.all(
+    rows.map((row) => getIngredientPurchaseById(row.id)),
+  )) as IngredientPurchase[];
+
+  return purchases.sort(compareIngredientPurchaseListOrder);
 }
 
 export async function getIngredientPurchaseById(id: number) {

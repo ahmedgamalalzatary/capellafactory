@@ -62,6 +62,20 @@ export function normalizeProductionBatchSearchQuery(query?: string) {
   return normalized ? normalized : undefined;
 }
 
+export function compareProductionBatchListOrder(
+  left: Pick<ProductionBatch, "id" | "createdAt">,
+  right: Pick<ProductionBatch, "id" | "createdAt">,
+) {
+  const leftTime = new Date(left.createdAt).getTime();
+  const rightTime = new Date(right.createdAt).getTime();
+
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  return right.id - left.id;
+}
+
 function toIsoString(value: Date | string) {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }

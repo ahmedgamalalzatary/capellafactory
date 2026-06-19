@@ -6,6 +6,7 @@ import {
   resolveIngredientPurchaseSupplierFields,
 } from "../src/modules/ingredient-purchases/ingredient-purchases.allocation.js";
 import {
+  compareIngredientPurchaseListOrder,
   mapIngredientPurchaseRowToIngredientPurchase,
   mapIngredientPurchaseLineRow,
   normalizeIngredientPurchaseSearchQuery,
@@ -87,6 +88,32 @@ test("normalizes ingredient purchase search query", () => {
   assert.equal(normalizeIngredientPurchaseSearchQuery(""), undefined);
   assert.equal(normalizeIngredientPurchaseSearchQuery("   "), undefined);
   assert.equal(normalizeIngredientPurchaseSearchQuery("  sugar  "), "sugar");
+});
+
+test("orders ingredient purchases by createdAt descending before occurredAt", () => {
+  const purchases = [
+    {
+      id: 1,
+      invoiceCode: "PUR-20260619-0001",
+      occurredAt: "2026-06-19T10:00:00.000Z",
+      createdAt: "2026-06-19T10:00:00.000Z",
+      lines: [],
+    },
+    {
+      id: 2,
+      invoiceCode: "PUR-20260618-0002",
+      occurredAt: "2026-06-18T10:00:00.000Z",
+      createdAt: "2026-06-19T11:00:00.000Z",
+      lines: [],
+    },
+  ];
+
+  purchases.sort(compareIngredientPurchaseListOrder);
+
+  assert.deepEqual(
+    purchases.map((purchase) => purchase.id),
+    [2, 1],
+  );
 });
 
 test("snapshots saved supplier name on ingredient purchase insert", () => {

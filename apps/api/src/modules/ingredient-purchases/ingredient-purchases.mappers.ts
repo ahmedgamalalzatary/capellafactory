@@ -56,6 +56,20 @@ export function normalizeIngredientPurchaseSearchQuery(query?: string) {
   return normalized ? normalized : undefined;
 }
 
+export function compareIngredientPurchaseListOrder(
+  left: Pick<IngredientPurchase, "id" | "createdAt">,
+  right: Pick<IngredientPurchase, "id" | "createdAt">,
+) {
+  const leftTime = new Date(left.createdAt).getTime();
+  const rightTime = new Date(right.createdAt).getTime();
+
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+
+  return right.id - left.id;
+}
+
 function toIsoString(value: Date | string) {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
