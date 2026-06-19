@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ExpenseInput, ExpenseType } from "@capella/shared/expenses/expense.types";
 import { createExpense } from "@/lib/api/expenses";
+import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,47 @@ const expenseTypeOptions: Array<{ value: ExpenseType; label: string }> = [
   { value: "salary", label: "مرتبات" },
   { value: "other", label: "أخرى" },
 ];
+
+type ExpenseDraft = {
+  type: ExpenseType;
+  amount: string;
+  occurredAtDate: string;
+  occurredAtTime: string;
+  notes: string;
+  employeeName: string;
+  otherLabel: string;
+};
+
+const expenseDraftKey = "capella:draft:expense";
+
+function isExpenseType(value: unknown): value is ExpenseType {
+  return (
+    value === "rent" ||
+    value === "food" ||
+    value === "water" ||
+    value === "gas" ||
+    value === "electricity" ||
+    value === "internet" ||
+    value === "salary" ||
+    value === "other"
+  );
+}
+
+function isExpenseDraft(value: unknown): value is ExpenseDraft {
+  const candidate = value as Partial<ExpenseDraft> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    isExpenseType(candidate?.type) &&
+    typeof candidate.amount === "string" &&
+    typeof candidate.occurredAtDate === "string" &&
+    typeof candidate.occurredAtTime === "string" &&
+    typeof candidate.notes === "string" &&
+    typeof candidate.employeeName === "string" &&
+    typeof candidate.otherLabel === "string"
+  );
+}
 
 function Field({
   id,
@@ -70,25 +112,68 @@ export function ExpenseForm({
 }: ExpenseFormProps) {
   const router = useRouter();
   const now = new Date();
+  const initialDraft = loadLocalDraft<ExpenseDraft>(expenseDraftKey, isExpenseDraft);
   const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [expenseType, setExpenseType] = useState<ExpenseType>("rent");
-  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
+  const [expenseType, setExpenseType] = useState<ExpenseType>(initialDraft?.type ?? "rent");
+  const [amount, setAmount] = useState(initialDraft?.amount ?? "");
+  const [occurredAtDate, setOccurredAtDate] = useState(
+    initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
+  );
+  const [occurredAtTime, setOccurredAtTime] = useState(
+    initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
+  );
+  const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+  const [employeeName, setEmployeeName] = useState(initialDraft?.employeeName ?? "");
+  const [otherLabel, setOtherLabel] = useState(initialDraft?.otherLabel ?? "");
 
-  async function onSubmit(formData: FormData) {
+  useEffect(() => {
+    saveLocalDraft<ExpenseDraft>(expenseDraftKey, {
+      type: expenseType,
+      amount,
+      occurredAtDate,
+      occurredAtTime,
+      notes,
+      employeeName,
+      otherLabel,
+    });
+  }, [amount, employeeName, expenseType, notes, occurredAtDate, occurredAtTime, otherLabel]);
+
+  function resetForm(clearDraft = false) {
+    const next = new Date();
+    setExpenseType("rent");
+    setAmount("");
+    setOccurredAtDate(getLocalDateInputValue(next));
+    setOccurredAtTime(getLocalTimeInputValue(next));
+    setNotes("");
+    setEmployeeName("");
+    setOtherLabel("");
+
+    if (clearDraft) {
+      clearLocalDraft(expenseDraftKey);
+    }
+  }
+
+  function handleCancel() {
+    resetForm(true);
+    onCancel?.();
+  }
+
+  async function onSubmit() {
     await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
       const payload: ExpenseInput = {
-        type: String(formData.get("type") ?? "rent") as ExpenseType,
-        amount: Number(formData.get("amount") ?? 0),
-        occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-        notes: String(formData.get("notes") ?? "").trim() || undefined,
-        employeeName: String(formData.get("employeeName") ?? "").trim() || undefined,
-        otherLabel: String(formData.get("otherLabel") ?? "").trim() || undefined,
+        type: expenseType,
+        amount: Number(amount || 0),
+        occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
+        notes: notes.trim() || undefined,
+        employeeName: employeeName.trim() || undefined,
+        otherLabel: otherLabel.trim() || undefined,
       };
 
       try {
         await createExpense(payload);
         toast.success("تم تسجيل المصروف بنجاح");
+        resetForm(true);
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -116,7 +201,16 @@ export function ExpenseForm({
       </Field>
 
       <Field id="amount" label="المبلغ" required hint="أدخل القيمة المدفوعة فعليًا لهذا المصروف.">
-        <Input id="amount" name="amount" type="number" min="0.001" step="0.001" required />
+        <Input
+          id="amount"
+          name="amount"
+          type="number"
+          min="0.001"
+          step="0.001"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+          required
+        />
       </Field>
 
       <PurchaseDateTimeFields
@@ -125,6 +219,8 @@ export function ExpenseForm({
         label="وقت الدفع الفعلي"
         hint="يسمح بإدخال تاريخ ووقت سابقين لأن المصروف لا يؤثر على المخزون."
         defaultDate={getLocalDateInputValue(now)}
+        dateValue={occurredAtDate}
+        onDateChange={setOccurredAtDate}
         timeValue={occurredAtTime}
         onTimeChange={setOccurredAtTime}
       />
@@ -136,7 +232,14 @@ export function ExpenseForm({
           required
           hint="اسم الموظف نص حر، ولا يرتبط بجدول موظفين في هذه المرحلة."
         >
-          <Input id="employeeName" name="employeeName" placeholder="أحمد" required />
+          <Input
+            id="employeeName"
+            name="employeeName"
+            placeholder="أحمد"
+            value={employeeName}
+            onChange={(event) => setEmployeeName(event.target.value)}
+            required
+          />
         </Field>
       ) : null}
 
@@ -147,7 +250,14 @@ export function ExpenseForm({
           required
           hint="اكتب تسمية واضحة عندما لا يناسب المصروف أي نوع جاهز."
         >
-          <Input id="otherLabel" name="otherLabel" placeholder="صيانة مفاجئة" required />
+          <Input
+            id="otherLabel"
+            name="otherLabel"
+            placeholder="صيانة مفاجئة"
+            value={otherLabel}
+            onChange={(event) => setOtherLabel(event.target.value)}
+            required
+          />
         </Field>
       ) : null}
 
@@ -156,7 +266,14 @@ export function ExpenseForm({
         label="ملاحظات"
         hint="أضف أي شرح إضافي يفيد في المراجعة لاحقًا، مثل السبب أو المرجع الورقي."
       >
-        <Textarea id="notes" name="notes" rows={4} placeholder="تفاصيل إضافية..." />
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={4}
+          placeholder="تفاصيل إضافية..."
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
       </Field>
 
       <div className="mt-2 flex items-center justify-between border-t pt-4">
@@ -164,7 +281,7 @@ export function ExpenseForm({
           <span className="text-destructive">*</span> حقول مطلوبة
         </p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
             إلغاء
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

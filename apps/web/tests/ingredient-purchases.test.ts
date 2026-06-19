@@ -101,7 +101,8 @@ test("ingredient purchase form requires choosing a saved supplier", () => {
     "utf8",
   );
 
-  expect(source).toContain('name="supplierId"');
+  expect(source).toContain("SearchableSelect");
+  expect(source).toContain("onChange={setSupplierId}");
   expect(source).not.toContain("supplierMode");
   expect(source).not.toContain('name="supplierName"');
   expect(source).not.toContain("اسم يدوي");

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
 import type { Product } from "@capella/shared/products/product.types";
@@ -71,7 +71,8 @@ describe("ProductionBatchForm (behavioral)", () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.selectOptions(screen.getAllByRole("combobox")[0], "9"); // productId select
+    await user.click(screen.getByRole("button", { name: "كيك" }));
+    await user.click(screen.getByRole("option", { name: "بسكويت" }));
     await user.click(screen.getByRole("button", { name: "+ خامة" }));
 
     // [producedQuantity, line1 quantity, line2 quantity]
@@ -95,14 +96,9 @@ describe("ProductionBatchForm (behavioral)", () => {
     renderForm();
 
     await user.click(screen.getByRole("button", { name: "+ خامة" }));
+    await user.click(screen.getByRole("button", { name: "سكر" }));
 
-    // Ingredient selects are the comboboxes that list ingredient options (not the
-    // product or unit selects). The second one belongs to the second line.
-    const ingredientSelects = screen
-      .getAllByRole("combobox")
-      .filter((select) => within(select).queryByRole("option", { name: "دقيق" }));
-    const secondLineSelect = ingredientSelects[1];
-    const optionFor11 = within(secondLineSelect).getByRole("option", { name: "دقيق" });
+    const optionFor11 = screen.getByRole("option", { name: "دقيق" });
     expect(optionFor11).toBeDisabled();
   });
 
@@ -115,5 +111,28 @@ describe("ProductionBatchForm (behavioral)", () => {
     await user.click(screen.getByRole("button", { name: "حذف البند" }));
     // Still present — removeLine refuses to drop the last line.
     expect(screen.getAllByRole("spinbutton")).toHaveLength(2);
+  });
+
+  test("filters products and ingredients while typing and submits the chosen matches", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByRole("button", { name: "كيك" }));
+    await user.type(screen.getByPlaceholderText("ابحث..."), "بسكويت");
+    await user.click(screen.getByRole("option", { name: "بسكويت" }));
+
+    await user.click(screen.getByRole("button", { name: "دقيق" }));
+    await user.type(screen.getByPlaceholderText("ابحث..."), "سكر");
+    await user.click(screen.getByRole("option", { name: "سكر" }));
+
+    const [producedQuantity, lineQuantity] = screen.getAllByRole("spinbutton");
+    await user.type(producedQuantity, "8");
+    await user.type(lineQuantity, "6");
+    await user.click(screen.getByRole("button", { name: "حفظ التشغيلة" }));
+
+    await waitFor(() => expect(createProductionBatch).toHaveBeenCalledTimes(1));
+    const payload = createProductionBatch.mock.calls[0][0];
+    expect(payload.productId).toBe(9);
+    expect(payload.lines[0].ingredientId).toBe(12);
   });
 });

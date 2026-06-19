@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
 import type {
@@ -9,12 +9,14 @@ import type {
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { createIngredientPurchase } from "@/lib/api/ingredient-purchases";
+import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import {
   buildIsoDateTime,
   getLocalDateInputValue,
@@ -36,11 +38,53 @@ type DraftLine = {
   lineTotal: string;
 };
 
+type IngredientPurchaseDraft = {
+  occurredAtDate: string;
+  occurredAtTime: string;
+  supplierId: string;
+  notes: string;
+  lines: DraftLine[];
+};
+
+const ingredientPurchaseDraftKey = "capella:draft:ingredient-purchase";
+
 const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
   weight: ["kg", "g"],
   volume: ["L", "ml"],
   count: ["piece"],
 };
+
+function isDraftLine(value: unknown): value is DraftLine {
+  const candidate = value as Partial<DraftLine> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.ingredientId === "number" &&
+    typeof candidate.quantity === "string" &&
+    typeof candidate.lineTotal === "string" &&
+    (candidate.unit === "kg" ||
+      candidate.unit === "g" ||
+      candidate.unit === "L" ||
+      candidate.unit === "ml" ||
+      candidate.unit === "piece")
+  );
+}
+
+function isIngredientPurchaseDraft(value: unknown): value is IngredientPurchaseDraft {
+  const candidate = value as Partial<IngredientPurchaseDraft> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.occurredAtDate === "string" &&
+    typeof candidate.occurredAtTime === "string" &&
+    typeof candidate.supplierId === "string" &&
+    typeof candidate.notes === "string" &&
+    Array.isArray(candidate.lines) &&
+    candidate.lines.every(isDraftLine)
+  );
+}
 
 function Field({
   id,
@@ -89,10 +133,51 @@ export function IngredientPurchaseForm({
 }: IngredientPurchaseFormProps) {
   const router = useRouter();
   const now = new Date();
+  const initialDraft = loadLocalDraft<IngredientPurchaseDraft>(
+    ingredientPurchaseDraftKey,
+    isIngredientPurchaseDraft,
+  );
   const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
-  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
+  const [lines, setLines] = useState<DraftLine[]>(
+    initialDraft?.lines.length ? initialDraft.lines : [createEmptyLine(ingredients)],
+  );
+  const [occurredAtDate, setOccurredAtDate] = useState(
+    initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
+  );
+  const [occurredAtTime, setOccurredAtTime] = useState(
+    initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
+  );
+  const [supplierId, setSupplierId] = useState(initialDraft?.supplierId ?? String(suppliers[0]?.id ?? ""));
+  const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+
+  useEffect(() => {
+    saveLocalDraft<IngredientPurchaseDraft>(ingredientPurchaseDraftKey, {
+      occurredAtDate,
+      occurredAtTime,
+      supplierId,
+      notes,
+      lines,
+    });
+  }, [lines, notes, occurredAtDate, occurredAtTime, supplierId]);
+
+  function resetForm(clearDraft = false) {
+    const next = new Date();
+    setLines([createEmptyLine(ingredients)]);
+    setOccurredAtDate(getLocalDateInputValue(next));
+    setOccurredAtTime(getLocalTimeInputValue(next));
+    setSupplierId(String(suppliers[0]?.id ?? ""));
+    setNotes("");
+
+    if (clearDraft) {
+      clearLocalDraft(ingredientPurchaseDraftKey);
+    }
+  }
+
+  function handleCancel() {
+    resetForm(true);
+    onCancel?.();
+  }
 
   function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
     setLines((current) => current.map((line, lineIndex) => (lineIndex === index ? updater(line) : line)));
@@ -106,7 +191,7 @@ export function IngredientPurchaseForm({
     setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
   }
 
-  async function onSubmit(formData: FormData) {
+  async function onSubmit() {
     await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
       try {
         const parsedLines = lines.map((line) => ({
@@ -131,22 +216,23 @@ export function IngredientPurchaseForm({
           return;
         }
 
-        const supplierId = Number(formData.get("supplierId") ?? 0);
+        const parsedSupplierId = Number(supplierId || 0);
 
-        if (!Number.isFinite(supplierId) || supplierId <= 0) {
+        if (!Number.isFinite(parsedSupplierId) || parsedSupplierId <= 0) {
           toast.error("اختر موردًا صالحًا.");
           return;
         }
 
         const payload: IngredientPurchaseInput = {
-          occurredAt: buildIsoDateTime(formData.get("occurredAtDate"), formData.get("occurredAtTime")),
-          supplierId,
-          notes: String(formData.get("notes") ?? "").trim() || undefined,
+          occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
+          supplierId: parsedSupplierId,
+          notes: notes.trim() || undefined,
           lines: parsedLines,
         };
 
         await createIngredientPurchase(payload);
         toast.success("تم حفظ فاتورة شراء الخامات");
+        resetForm(true);
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -163,6 +249,8 @@ export function IngredientPurchaseForm({
         label="وقت الفاتورة الفعلي"
         hint="اختر تاريخ الفاتورة ووقتها الفعليين حتى تبقى حركة المخزون مرتبة زمنيًا."
         defaultDate={getLocalDateInputValue(now)}
+        dateValue={occurredAtDate}
+        onDateChange={setOccurredAtDate}
         timeValue={occurredAtTime}
         onTimeChange={setOccurredAtTime}
       />
@@ -173,19 +261,14 @@ export function IngredientPurchaseForm({
         required
         hint="لا يمكن حفظ فاتورة خامات بدون اختيار مورد محفوظ من قائمة الموردين."
       >
-        <select
-          id="supplierId"
-          name="supplierId"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-          defaultValue={suppliers[0]?.id ?? ""}
-          required
-        >
-          {suppliers.map((supplier) => (
-            <option key={supplier.id} value={supplier.id}>
-              {supplier.name}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          value={supplierId}
+          onChange={setSupplierId}
+          options={suppliers.map((supplier) => ({
+            value: String(supplier.id),
+            label: supplier.name,
+          }))}
+        />
       </Field>
 
       <div className="grid gap-4 rounded-xl border p-4">
@@ -213,28 +296,25 @@ export function IngredientPurchaseForm({
               <div className="grid gap-3 md:grid-cols-4">
                 <div className="grid gap-1.5">
                   <Label>الخامة</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={line.ingredientId}
-                    onChange={(event) => {
+                  <SearchableSelect
+                    value={String(line.ingredientId)}
+                    onChange={(nextValue) => {
                       const nextIngredient = ingredients.find(
-                        (item) => item.id === Number(event.target.value),
+                        (item) => item.id === Number(nextValue),
                       );
                       updateLine(index, (current) => ({
                         ...current,
-                        ingredientId: Number(event.target.value),
+                        ingredientId: Number(nextValue),
                         unit: nextIngredient
                           ? unitOptionsByFamily[nextIngredient.unitFamily][0]
                           : current.unit,
                       }));
                     }}
-                  >
-                    {ingredients.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={ingredients.map((item) => ({
+                      value: String(item.id),
+                      label: item.name,
+                    }))}
+                  />
                 </div>
 
                 <div className="grid gap-1.5">
@@ -299,7 +379,14 @@ export function IngredientPurchaseForm({
       </div>
 
       <Field id="notes" label="ملاحظات">
-        <Textarea id="notes" name="notes" rows={4} placeholder="تفاصيل إضافية..." />
+        <Textarea
+          id="notes"
+          name="notes"
+          rows={4}
+          placeholder="تفاصيل إضافية..."
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
       </Field>
 
       <div className="mt-2 flex items-center justify-between border-t pt-4">
@@ -307,7 +394,7 @@ export function IngredientPurchaseForm({
           <span className="text-destructive">*</span> حقول مطلوبة
         </p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
             إلغاء
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 
 type PurchaseCorrectionFormProps = {
   purchases: IngredientPurchase[];
@@ -115,21 +116,17 @@ export function PurchaseCorrectionForm({
     <div className="grid gap-5">
       <div className="grid gap-1.5">
         <Label htmlFor="sourcePurchaseId">الفاتورة الأصلية</Label>
-        <select
-          id="sourcePurchaseId"
-          value={sourcePurchaseId}
-          onChange={(event) => {
-            setSourcePurchaseId(Number(event.target.value));
+        <SearchableSelect
+          value={String(sourcePurchaseId)}
+          onChange={(nextValue) => {
+            setSourcePurchaseId(Number(nextValue));
             setLineQuantities({});
           }}
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-        >
-          {purchases.map((purchase) => (
-            <option key={purchase.id} value={purchase.id}>
-              {purchase.invoiceCode}
-            </option>
-          ))}
-        </select>
+          options={purchases.map((purchase) => ({
+            value: String(purchase.id),
+            label: purchase.invoiceCode,
+          }))}
+        />
       </div>
 
       <div className="grid gap-1.5">

@@ -3,5 +3,7 @@ import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
 
 afterEach(() => {
+  window.localStorage.clear();
+  window.sessionStorage.clear();
   cleanup();
 });

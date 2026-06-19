@@ -1,18 +1,20 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
 import type { IngredientPurchaseUnit } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
 import { createProductionBatch } from "@/lib/api/production-batches";
+import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import {
   buildIsoDateTime,
   getLocalDateInputValue,
@@ -33,11 +35,54 @@ type DraftLine = {
   unit: IngredientPurchaseUnit;
 };
 
+type ProductionBatchDraft = {
+  occurredAtDate: string;
+  occurredAtTime: string;
+  productId: string;
+  producedQuantity: string;
+  notes: string;
+  lines: DraftLine[];
+};
+
+const productionBatchDraftKey = "capella:draft:production-batch";
+
 const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
   weight: ["kg", "g"],
   volume: ["L", "ml"],
   count: ["piece"],
 };
+
+function isDraftLine(value: unknown): value is DraftLine {
+  const candidate = value as Partial<DraftLine> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.ingredientId === "number" &&
+    typeof candidate.quantity === "string" &&
+    (candidate.unit === "kg" ||
+      candidate.unit === "g" ||
+      candidate.unit === "L" ||
+      candidate.unit === "ml" ||
+      candidate.unit === "piece")
+  );
+}
+
+function isProductionBatchDraft(value: unknown): value is ProductionBatchDraft {
+  const candidate = value as Partial<ProductionBatchDraft> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.occurredAtDate === "string" &&
+    typeof candidate.occurredAtTime === "string" &&
+    typeof candidate.productId === "string" &&
+    typeof candidate.producedQuantity === "string" &&
+    typeof candidate.notes === "string" &&
+    Array.isArray(candidate.lines) &&
+    candidate.lines.every(isDraftLine)
+  );
+}
 
 function Field({
   id,
@@ -83,18 +128,39 @@ export function ProductionBatchForm({
 }: ProductionBatchFormProps) {
   const router = useRouter();
   const now = new Date();
+  const initialDraft = loadLocalDraft<ProductionBatchDraft>(
+    productionBatchDraftKey,
+    isProductionBatchDraft,
+  );
   const submitLock = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(ingredients)]);
-  const [occurredAtDate, setOccurredAtDate] = useState(getLocalDateInputValue(now));
-  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
-  const [productId, setProductId] = useState(String(products[0]?.id ?? ""));
-  const [producedQuantity, setProducedQuantity] = useState("");
-  const [notes, setNotes] = useState("");
+  const [lines, setLines] = useState<DraftLine[]>(
+    initialDraft?.lines.length ? initialDraft.lines : [createEmptyLine(ingredients)],
+  );
+  const [occurredAtDate, setOccurredAtDate] = useState(
+    initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
+  );
+  const [occurredAtTime, setOccurredAtTime] = useState(
+    initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
+  );
+  const [productId, setProductId] = useState(initialDraft?.productId ?? String(products[0]?.id ?? ""));
+  const [producedQuantity, setProducedQuantity] = useState(initialDraft?.producedQuantity ?? "");
+  const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+
+  useEffect(() => {
+    saveLocalDraft<ProductionBatchDraft>(productionBatchDraftKey, {
+      occurredAtDate,
+      occurredAtTime,
+      productId,
+      producedQuantity,
+      notes,
+      lines,
+    });
+  }, [lines, notes, occurredAtDate, occurredAtTime, productId, producedQuantity]);
 
   // Cleared only after a successful save. On a rejected submit we deliberately
   // leave every field untouched so the user can fix the problem and retry.
-  function resetForm() {
+  function resetForm(clearDraft = false) {
     const next = new Date();
     setLines([createEmptyLine(ingredients)]);
     setOccurredAtDate(getLocalDateInputValue(next));
@@ -102,6 +168,15 @@ export function ProductionBatchForm({
     setProductId(String(products[0]?.id ?? ""));
     setProducedQuantity("");
     setNotes("");
+
+    if (clearDraft) {
+      clearLocalDraft(productionBatchDraftKey);
+    }
+  }
+
+  function handleCancel() {
+    resetForm(true);
+    onCancel?.();
   }
 
   function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
@@ -139,7 +214,7 @@ export function ProductionBatchForm({
 
         await createProductionBatch(payload);
         toast.success("تم حفظ تشغيلة الإنتاج");
-        resetForm();
+        resetForm(true);
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -164,20 +239,14 @@ export function ProductionBatchForm({
 
       <div className="grid gap-3 md:grid-cols-2">
         <Field id="productId" label="المنتج النهائي" required>
-          <select
-            id="productId"
-            name="productId"
-            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          <SearchableSelect
             value={productId}
-            onChange={(event) => setProductId(event.target.value)}
-            required
-          >
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-              </option>
-            ))}
-          </select>
+            onChange={setProductId}
+            options={products.map((product) => ({
+              value: String(product.id),
+              label: product.name,
+            }))}
+          />
         </Field>
 
         <Field id="producedQuantity" label="الكمية المنتجة" required>
@@ -216,35 +285,28 @@ export function ProductionBatchForm({
               <div className="grid gap-3 md:grid-cols-3">
                 <div className="grid gap-1.5">
                   <Label>الخامة</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={line.ingredientId}
-                    onChange={(event) => {
+                  <SearchableSelect
+                    value={String(line.ingredientId)}
+                    onChange={(nextValue) => {
                       const nextIngredient = ingredients.find(
-                        (item) => item.id === Number(event.target.value),
+                        (item) => item.id === Number(nextValue),
                       );
                       updateLine(index, (current) => ({
                         ...current,
-                        ingredientId: Number(event.target.value),
+                        ingredientId: Number(nextValue),
                         unit: nextIngredient
                           ? unitOptionsByFamily[nextIngredient.unitFamily][0]
                           : current.unit,
                       }));
                     }}
-                  >
-                    {ingredients.map((item) => (
-                      <option
-                        key={item.id}
-                        value={item.id}
-                        disabled={
-                          item.id !== line.ingredientId &&
-                          lines.some((other) => other.ingredientId === item.id)
-                        }
-                      >
-                        {item.name}
-                      </option>
-                    ))}
-                  </select>
+                    options={ingredients.map((item) => ({
+                      value: String(item.id),
+                      label: item.name,
+                      disabled:
+                        item.id !== line.ingredientId &&
+                        lines.some((other) => other.ingredientId === item.id),
+                    }))}
+                  />
                 </div>
 
                 <div className="grid gap-1.5">
@@ -308,7 +370,7 @@ export function ProductionBatchForm({
           <span className="text-destructive">*</span> حقول مطلوبة
         </p>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
             إلغاء
           </Button>
           <Button type="submit" size="sm" disabled={isSubmitting}>

@@ -31,6 +31,7 @@ const suppliers: Supplier[] = [
 
 const ingredients: Ingredient[] = [
   { id: 11, name: "دقيق", unitFamily: "weight" } as Ingredient,
+  { id: 12, name: "سكر", unitFamily: "weight" } as Ingredient,
 ];
 
 function renderForm() {
@@ -81,8 +82,8 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     const user = userEvent.setup();
     renderForm();
 
-    // First combobox is the supplier select (others are per-line ingredient/unit).
-    await user.selectOptions(screen.getAllByRole("combobox")[0], "7");
+    await user.click(screen.getByRole("button", { name: "مورد أ" }));
+    await user.click(screen.getByRole("option", { name: "مورد ب" }));
     const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "2");
     await user.type(lineTotal, "50");
@@ -114,5 +115,22 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({ quantity: 3, lineTotal: 30 });
     expect(lines[1]).toMatchObject({ quantity: 4, lineTotal: 80 });
+  });
+
+  test("filters ingredients while typing and selects the matching result", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByRole("button", { name: "دقيق" }));
+    await user.type(screen.getByPlaceholderText("ابحث..."), "سكر");
+    await user.click(screen.getByRole("option", { name: "سكر" }));
+
+    const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "2");
+    await user.type(lineTotal, "50");
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
+    expect(createIngredientPurchase.mock.calls[0][0].lines[0].ingredientId).toBe(12);
   });
 });

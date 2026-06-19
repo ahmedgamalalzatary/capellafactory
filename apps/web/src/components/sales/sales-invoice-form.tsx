@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchableSelect } from "@/components/shared/searchable-select";
 import {
   buildIsoDateTime,
   getLocalDateInputValue,
@@ -151,20 +152,15 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
       />
 
       <Field id="buyerId" label="المشتري" required>
-        <select
-          id="buyerId"
-          name="buyerId"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        <SearchableSelect
           value={buyerId}
-          onChange={(event) => setBuyerId(event.target.value)}
-          required
-        >
-          {buyers.map((buyer) => (
-            <option key={buyer.id} value={buyer.id}>
-              {buyer.name} - {buyer.phone}
-            </option>
-          ))}
-        </select>
+          onChange={setBuyerId}
+          options={buyers.map((buyer) => ({
+            value: String(buyer.id),
+            label: `${buyer.name} - ${buyer.phone}`,
+            searchText: `${buyer.name} ${buyer.phone}`,
+          }))}
+        />
       </Field>
 
       <div className="grid gap-4 rounded-xl border p-4">
@@ -191,29 +187,23 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
               <div className="grid gap-3 md:grid-cols-[1.4fr_0.8fr_0.9fr]">
                 <div className="grid gap-1.5">
                   <Label>المنتج</Label>
-                  <select
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    value={line.productId}
-                    onChange={(event) =>
+                  <SearchableSelect
+                    value={String(line.productId)}
+                    onChange={(nextValue) =>
                       updateLine(index, (current) => ({
                         ...current,
-                        productId: Number(event.target.value),
+                        productId: Number(nextValue),
                       }))
                     }
-                  >
-                    {products.map((item) => (
-                      <option
-                        key={item.id}
-                        value={item.id}
-                        disabled={
-                          item.id !== line.productId &&
-                          lines.some((other) => other.productId === item.id)
-                        }
-                      >
-                        {item.name} - متاح {item.stockQuantity.toFixed(0)}
-                      </option>
-                    ))}
-                  </select>
+                    options={products.map((item) => ({
+                      value: String(item.id),
+                      label: `${item.name} - متاح ${item.stockQuantity.toFixed(0)}`,
+                      searchText: item.name,
+                      disabled:
+                        item.id !== line.productId &&
+                        lines.some((other) => other.productId === item.id),
+                    }))}
+                  />
                   {product ? (
                     <p className="text-[11px] text-muted-foreground">
                       تكلفة حالية مشتقة: {product.averageUnitCost.toFixed(6)}

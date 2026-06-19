@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Product } from "@capella/shared/products/product.types";
@@ -49,7 +49,8 @@ describe("SalesInvoiceForm (behavioral)", () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.selectOptions(screen.getAllByRole("combobox")[0], "8");
+    await user.click(screen.getByRole("button", { name: /شركة النيل/ }));
+    await user.click(screen.getByRole("option", { name: /دلتا - 0111/ }));
     const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "3");
     await user.type(sellingUnitPrice, "12.5");
@@ -70,13 +71,8 @@ describe("SalesInvoiceForm (behavioral)", () => {
     renderForm();
 
     await user.click(screen.getByRole("button", { name: "+ منتج" }));
-
-    const productSelects = screen
-      .getAllByRole("combobox")
-      .filter((select) => within(select).queryByRole("option", { name: /كيك/ }));
-    const secondProductSelect = productSelects[1];
-
-    expect(within(secondProductSelect).getByRole("option", { name: /كيك/ })).toBeDisabled();
+    await user.click(screen.getAllByRole("button", { name: /بسكويت - متاح 4/ })[0]);
+    expect(screen.getByRole("option", { name: /كيك - متاح 12/ })).toBeDisabled();
 
     const spinbuttons = screen.getAllByRole("spinbutton");
     await user.type(spinbuttons[0], "1");
@@ -108,5 +104,28 @@ describe("SalesInvoiceForm (behavioral)", () => {
     expect(quantity).toHaveValue(2);
     expect(sellingUnitPrice).toHaveValue(50);
     expect(notes).toHaveValue("urgent");
+  });
+
+  test("filters buyers and products while typing and submits the chosen matches", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    await user.click(screen.getByRole("button", { name: /شركة النيل/ }));
+    await user.type(screen.getByPlaceholderText("ابحث..."), "دلتا");
+    await user.click(screen.getByRole("option", { name: /دلتا - 0111/ }));
+
+    await user.click(screen.getByRole("button", { name: /كيك/ }));
+    await user.type(screen.getByPlaceholderText("ابحث..."), "بسكويت");
+    await user.click(screen.getByRole("option", { name: /بسكويت - متاح 4/ }));
+
+    const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "3");
+    await user.type(sellingUnitPrice, "12");
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createSalesInvoice).toHaveBeenCalledTimes(1));
+    const payload = createSalesInvoice.mock.calls[0][0];
+    expect(payload.buyerId).toBe(8);
+    expect(payload.lines[0].productId).toBe(9);
   });
 });
