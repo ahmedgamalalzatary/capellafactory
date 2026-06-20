@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ingredientPurchaseUnits } from "./ingredient-purchase.types.js";
+import { paymentMethodSchema } from "../payments/payment.schema.js";
 
 const optionalTrimmedString = z
   .string()
@@ -23,6 +24,9 @@ export const ingredientPurchaseInputSchema = z
       .string()
       .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
     supplierId: z.coerce.number().int().positive("Supplier is required"),
+    paidAmount: z.coerce.number().min(0, "Paid amount cannot be negative"),
+    paymentMethod: paymentMethodSchema.optional(),
+    paidAt: z.string().datetime({ offset: true }).optional(),
     notes: optionalTrimmedString,
     lines: z
       .array(ingredientPurchaseLineInputSchema)
@@ -34,6 +38,32 @@ export const ingredientPurchaseInputSchema = z
     notes: value.notes?.trim(),
   }))
   .superRefine((value, ctx) => {
+    const totalAmount = value.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+
+    if (value.paidAmount > totalAmount) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paidAmount"],
+        message: "Paid amount cannot exceed total amount",
+      });
+    }
+
+    if (value.paidAmount > 0 && !value.paymentMethod) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paymentMethod"],
+        message: "Payment method is required when paid amount is greater than zero",
+      });
+    }
+
+    if (value.paidAmount > 0 && !value.paidAt) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["paidAt"],
+        message: "Payment date is required when paid amount is greater than zero",
+      });
+    }
+
     if ("supplierName" in value) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -56,4 +86,9 @@ export const ingredientPurchaseInputSchema = z
 
       seenIngredientIds.add(line.ingredientId);
     });
-  });
+  })
+  .transform((value) => ({
+    ...value,
+    paymentMethod: value.paidAmount > 0 ? value.paymentMethod : undefined,
+    paidAt: value.paidAmount > 0 ? value.paidAt : undefined,
+  }));

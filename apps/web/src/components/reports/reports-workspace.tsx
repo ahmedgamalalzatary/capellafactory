@@ -1,20 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
-import type { Buyer } from "@capella/shared/buyers/buyer.types";
-import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
-import type { Product } from "@capella/shared/products/product.types";
-import type { Supplier } from "@capella/shared/suppliers/supplier.types";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -43,18 +31,11 @@ type ReportsWorkspaceProps = {
   activeRange?: ReportsRangeKey;
 };
 
-type DetailRecord =
-  | { type: "buyer"; row: Buyer }
-  | { type: "supplier"; row: Supplier }
-  | { type: "ingredient"; row: Ingredient }
-  | { type: "product"; row: Product };
-
 export function ReportsWorkspace({
   data,
   activeTab,
   activeRange = "all",
 }: ReportsWorkspaceProps) {
-  const [detail, setDetail] = useState<DetailRecord | null>(null);
   const summary = useMemo(() => summarizeReports(data), [data]);
   const activeLabel =
     getReportTabs().find((tab) => tab.key === activeTab)?.label ?? "نظرة عامة";
@@ -136,12 +117,10 @@ export function ReportsWorkspace({
           </div>
 
           <div className="overflow-hidden rounded-3xl border bg-white">
-            {renderActiveTable(activeTab, data, tableId, setDetail, summary)}
+            {renderActiveTable(activeTab, data, tableId, summary)}
           </div>
         </div>
       </section>
-
-      <MasterDetailDialog detail={detail} onOpenChange={(open) => !open && setDetail(null)} />
     </div>
   );
 }
@@ -150,92 +129,10 @@ function renderActiveTable(
   activeTab: ReportsTabKey,
   data: ReportsData,
   tableId: string,
-  setDetail: (detail: DetailRecord) => void,
   summary: ReturnType<typeof summarizeReports>,
 ) {
   if (activeTab === "overview") {
     return <OverviewTable tableId={tableId} data={data} summary={summary} />;
-  }
-
-  if (activeTab === "buyers") {
-    return (
-      <SimpleTable
-        tableId={tableId}
-        headers={["الاسم", "الهاتف", "الموقع", "الملاحظات", "تاريخ التسجيل", ""]}
-        emptyText="لا يوجد مشترون"
-        rows={data.buyers.map((buyer) => [
-          buyer.name,
-          buyer.phone,
-          buyer.where ?? "-",
-          buyer.notes ?? "-",
-          formatReportDateTime(buyer.createdAt),
-          <Button key="show" variant="outline" size="sm" onClick={() => setDetail({ type: "buyer", row: buyer })}>
-            {`عرض ${buyer.name}`}
-          </Button>,
-        ])}
-      />
-    );
-  }
-
-  if (activeTab === "suppliers") {
-    return (
-      <SimpleTable
-        tableId={tableId}
-        headers={["الاسم", "الهاتف", "الموقع", "الملاحظات", "تاريخ التسجيل", ""]}
-        emptyText="لا يوجد موردون"
-        rows={data.suppliers.map((supplier) => [
-          supplier.name,
-          supplier.phone,
-          supplier.where ?? "-",
-          supplier.notes ?? "-",
-          formatReportDateTime(supplier.createdAt),
-          <Button key="show" variant="outline" size="sm" onClick={() => setDetail({ type: "supplier", row: supplier })}>
-            {`عرض ${supplier.name}`}
-          </Button>,
-        ])}
-      />
-    );
-  }
-
-  if (activeTab === "ingredients") {
-    return (
-      <SimpleTable
-        tableId={tableId}
-        headers={["الخامة", "العائلة", "الوحدة", "الرصيد", "الحالة", "تاريخ حركات", ""]}
-        emptyText="لا توجد خامات"
-        rows={data.ingredients.map((ingredient) => [
-          ingredient.name,
-          ingredientFamilyLabel(ingredient.unitFamily),
-          ingredient.baseUnit,
-          formatReportQuantity(ingredient.stockQuantity),
-          ingredient.isArchived ? "مؤرشف" : "نشط",
-          ingredient.hasHistory ? "موجود" : "لا يوجد",
-          <Button key="show" variant="outline" size="sm" onClick={() => setDetail({ type: "ingredient", row: ingredient })}>
-            {`عرض ${ingredient.name}`}
-          </Button>,
-        ])}
-      />
-    );
-  }
-
-  if (activeTab === "products") {
-    return (
-      <SimpleTable
-        tableId={tableId}
-        headers={["المنتج", "الرصيد", "متوسط التكلفة", "الحالة", "تاريخ حركات", ""]}
-        emptyText="لا توجد منتجات"
-        rows={data.products.map((product) => [
-          product.name,
-          formatReportQuantity(product.stockQuantity),
-          formatReportAmount(product.averageUnitCost),
-          product.isArchived ? "مؤرشف" : "نشط",
-          product.hasHistory ? "موجود" : "لا يوجد",
-          <Button key="show" variant="outline" size="sm" onClick={() => setDetail({ type: "product", row: product })}>
-            {`عرض ${product.name}`}
-          </Button>,
-        ])}
-      />
-    );
   }
 
   if (activeTab === "expenses") {
@@ -270,6 +167,50 @@ function renderActiveTable(
           formatReportAmount(purchase.lines.reduce((sum, line) => sum + line.lineTotal, 0)),
           <ShowLink key="show" href={`/purchases/ingredient-purchases/${purchase.id}`} label={`عرض ${purchase.invoiceCode}`} />,
         ])}
+      />
+    );
+  }
+
+  if (activeTab === "supplier-debts") {
+    return (
+      <SimpleTable
+        tableId={tableId}
+        headers={["الكود", "المورد", "وقت الفاتورة", "الإجمالي", "المدفوع", "المتبقي", ""]}
+        emptyText="لا توجد ديون موردين"
+        rows={data.ingredientPurchases
+          .filter((purchase) => purchase.remainingAmount > 0)
+          .map((purchase) => [
+            purchase.invoiceCode,
+            purchase.supplierName ?? (purchase.supplierId ? `مورد محفوظ #${purchase.supplierId}` : "مورد محفوظ"),
+            formatReportDateTime(purchase.occurredAt),
+            formatReportAmount(purchase.totalAmount),
+            formatReportAmount(purchase.paidAmount),
+            formatReportAmount(purchase.remainingAmount),
+            <ShowLink key="show" href={`/purchases/ingredient-purchases/${purchase.id}`} label={`عرض ${purchase.invoiceCode}`} />,
+          ])}
+      />
+    );
+  }
+
+  if (activeTab === "buyer-debts") {
+    const buyerNames = new Map(data.buyers.map((buyer) => [buyer.id, buyer.name]));
+
+    return (
+      <SimpleTable
+        tableId={tableId}
+        headers={["الكود", "المشتري", "وقت البيع", "الإجمالي", "المدفوع", "المتبقي", ""]}
+        emptyText="لا توجد ديون مشترين"
+        rows={data.salesInvoices
+          .filter((invoice) => invoice.remainingAmount > 0)
+          .map((invoice) => [
+            invoice.invoiceCode,
+            buyerNames.get(invoice.buyerId) ?? `مشتري #${invoice.buyerId}`,
+            formatReportDateTime(invoice.occurredAt),
+            formatReportAmount(invoice.subtotal),
+            formatReportAmount(invoice.paidAmount),
+            formatReportAmount(invoice.remainingAmount),
+            <ShowLink key="show" href={`/sales/${invoice.id}`} label={`عرض ${invoice.invoiceCode}`} />,
+          ])}
       />
     );
   }
@@ -436,106 +377,6 @@ function ShowLink({ href, label }: { href: string; label: string }) {
       {label}
     </Link>
   );
-}
-
-function MasterDetailDialog({
-  detail,
-  onOpenChange,
-}: {
-  detail: DetailRecord | null;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const title =
-    detail?.type === "buyer"
-      ? "تفاصيل المشتري"
-      : detail?.type === "supplier"
-        ? "تفاصيل المورد"
-        : detail?.type === "ingredient"
-          ? "تفاصيل الخامة"
-          : "تفاصيل المنتج";
-
-  return (
-    <Dialog open={Boolean(detail)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>عرض كامل للبيانات بدون أي إجراءات تعديل.</DialogDescription>
-        </DialogHeader>
-        {detail ? <DetailGrid detail={detail} /> : null}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function DetailGrid({ detail }: { detail: DetailRecord }) {
-  if (detail.type === "ingredient") {
-    const row = detail.row;
-
-    return (
-      <dl className="grid gap-3 sm:grid-cols-2">
-        <DetailItem label="الاسم" value={row.name} />
-        <DetailItem label="العائلة" value={ingredientFamilyLabel(row.unitFamily)} />
-        <DetailItem label="الوحدة الأساسية" value={row.baseUnit} />
-        <DetailItem label="الرصيد" value={formatReportQuantity(row.stockQuantity)} />
-        <DetailItem label="الحالة" value={row.isArchived ? "مؤرشف" : "نشط"} />
-        <DetailItem label="تاريخ حركات" value={row.hasHistory ? "موجود" : "لا يوجد"} />
-        <DetailItem label="تاريخ التسجيل" value={formatReportDateTime(row.createdAt)} />
-        <DetailItem label="آخر تحديث" value={formatReportDateTime(row.updatedAt)} />
-      </dl>
-    );
-  }
-
-  if (detail.type === "product") {
-    const row = detail.row;
-
-    return (
-      <dl className="grid gap-3 sm:grid-cols-2">
-        <DetailItem label="الاسم" value={row.name} />
-        <DetailItem label="الرصيد" value={formatReportQuantity(row.stockQuantity)} />
-        <DetailItem label="متوسط التكلفة" value={formatReportAmount(row.averageUnitCost)} />
-        <DetailItem label="الحالة" value={row.isArchived ? "مؤرشف" : "نشط"} />
-        <DetailItem label="تاريخ حركات" value={row.hasHistory ? "موجود" : "لا يوجد"} />
-        <DetailItem label="تاريخ التسجيل" value={formatReportDateTime(row.createdAt)} />
-        <DetailItem label="آخر تحديث" value={formatReportDateTime(row.updatedAt)} />
-      </dl>
-    );
-  }
-
-  const row = detail.row;
-
-  return (
-    <dl className="grid gap-3 sm:grid-cols-2">
-      <DetailItem label="الاسم" value={row.name} />
-      <DetailItem label="الهاتف" value={row.phone} />
-      <DetailItem label="الموقع" value={row.where ?? "-"} />
-      <DetailItem label="الملاحظات" value={row.notes ?? "-"} />
-      <DetailItem label="تاريخ التسجيل" value={formatReportDateTime(row.createdAt)} />
-      <DetailItem label="آخر تحديث" value={formatReportDateTime(row.updatedAt)} />
-    </dl>
-  );
-}
-
-function DetailItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border bg-slate-50/70 px-4 py-3">
-      <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-        {label}
-      </dt>
-      <dd className="mt-2 text-[14px] font-semibold text-slate-950">{value}</dd>
-    </div>
-  );
-}
-
-function ingredientFamilyLabel(value: Ingredient["unitFamily"]) {
-  if (value === "weight") {
-    return "وزن";
-  }
-
-  if (value === "volume") {
-    return "حجم";
-  }
-
-  return "عدد";
 }
 
 function expenseDetailLabel(expense: {

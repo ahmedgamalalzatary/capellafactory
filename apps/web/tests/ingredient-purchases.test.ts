@@ -78,6 +78,35 @@ test("ingredient purchase detail page has mobile line cards", () => {
   expect(source).toContain("divide-y sm:hidden");
 });
 
+test("ingredient purchase detail page shows payment summary and method", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/app/(app)/purchases/ingredient-purchases/[id]/page.tsx",
+    ),
+    "utf8",
+  );
+
+  expect(source).toContain("paidAmount");
+  expect(source).toContain("remainingAmount");
+  expect(source).toContain("paymentStatus");
+  expect(source).toContain("paymentMethod");
+  expect(source).toContain("طريقة الدفع");
+});
+
+test("ingredient purchases table exposes add payment action for partial invoices", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/components/purchases/ingredients/ingredient-purchases-table.tsx",
+    ),
+    "utf8",
+  );
+
+  expect(source).toContain("remainingAmount");
+  expect(source).toContain("إضافة دفعة");
+});
+
 test("ingredient purchase form submits line total instead of unit price", () => {
   const source = readFileSync(
     resolve(

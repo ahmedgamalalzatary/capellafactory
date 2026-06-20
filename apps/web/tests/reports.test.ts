@@ -19,15 +19,13 @@ describe("reports helpers", () => {
   test("defines the approved reports tabs in display order", () => {
     expect(getReportTabs().map((tab) => tab.key)).toEqual([
       "overview",
-      "buyers",
-      "suppliers",
-      "ingredients",
-      "products",
       "expenses",
       "ingredient-purchases",
       "purchase-corrections",
       "production-batches",
       "sales",
+      "supplier-debts",
+      "buyer-debts",
     ]);
   });
 
@@ -39,6 +37,7 @@ describe("reports helpers", () => {
     expect(buildReportDownloadName("ingredient-purchases")).toBe(
       "capella-ingredient-purchases-report.pdf",
     );
+    expect(buildReportsHref("supplier-debts")).toBe("/reports?tab=supplier-debts");
   });
 
   test("filters every reports collection by createdAt for selected date ranges", () => {
@@ -121,6 +120,9 @@ describe("reports helpers", () => {
       ingredientPurchases: [
         {
           id: 1,
+          totalAmount: 150,
+          paidAmount: 120,
+          remainingAmount: 30,
           lines: [{ lineTotal: 100 }, { lineTotal: 50 }],
         } as IngredientPurchase,
       ],
@@ -131,7 +133,14 @@ describe("reports helpers", () => {
         { id: 1, totalCost: 80, producedQuantity: 8 } as ProductionBatch,
       ],
       salesInvoices: [
-        { id: 1, subtotal: 200, totalCost: 120, grossProfit: 80 } as SalesInvoice,
+        {
+          id: 1,
+          subtotal: 200,
+          paidAmount: 125,
+          remainingAmount: 75,
+          totalCost: 120,
+          grossProfit: 80,
+        } as SalesInvoice,
       ],
     });
 
@@ -142,6 +151,8 @@ describe("reports helpers", () => {
     expect(summary.purchaseCorrectionsTotal).toBe(15);
     expect(summary.productionCostTotal).toBe(80);
     expect(summary.salesTotal).toBe(200);
+    expect(summary.supplierDebtTotal).toBe(30);
+    expect(summary.buyerDebtTotal).toBe(75);
     expect(summary.grossProfitTotal).toBe(80);
     expect(summary.netAfterExpenses).toBe(38);
   });

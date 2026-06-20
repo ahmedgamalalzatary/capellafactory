@@ -2,10 +2,13 @@ import type {
   IngredientPurchase,
   IngredientPurchaseInput,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
-import { and, asc, eq, like, or } from "drizzle-orm";
+import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
+import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
   ingredientPurchaseLinesTable,
+  ingredientPurchasePaymentsTable,
   ingredientPurchasesTable,
   ingredientsTable,
   stockLayersTable,
@@ -21,6 +24,7 @@ import {
 } from "./ingredient-purchases.allocation.js";
 import {
   compareIngredientPurchaseListOrder,
+  createIngredientPurchasePaymentTotalLookup,
   mapIngredientPurchaseRowToIngredientPurchase,
   normalizeIngredientPurchaseSearchQuery,
 } from "./ingredient-purchases.mappers.js";
@@ -69,7 +73,15 @@ export async function getIngredientPurchaseById(id: number) {
     .where(eq(ingredientPurchaseLinesTable.purchaseId, id))
     .orderBy(asc(ingredientPurchaseLinesTable.id));
 
-  return mapIngredientPurchaseRowToIngredientPurchase(row, lines);
+  const paymentTotals = await getIngredientPurchasePaymentTotals([id]);
+  const payments = await getIngredientPurchasePayments(id);
+
+  return mapIngredientPurchaseRowToIngredientPurchase(
+    row,
+    lines,
+    paymentTotals.get(id) ?? Number(row.totalAmount),
+    payments,
+  );
 }
 
 export async function createIngredientPurchase(input: IngredientPurchaseInput) {
@@ -81,12 +93,14 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
 
   const insertedId = await db.transaction(async (tx) => {
     const occurredAt = new Date(input.occurredAt);
+    const totalAmount = input.lines.reduce((sum, line) => sum + line.lineTotal, 0);
 
     const inserted = await tx
       .insert(ingredientPurchasesTable)
       .values({
         invoiceCode: "",
         occurredAt,
+        totalAmount: totalAmount.toFixed(3),
         supplierId: supplierFields.supplierId,
         supplierName: supplierFields.supplierName,
         notes: input.notes,
@@ -131,6 +145,15 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
       }),
     );
 
+    if (input.paidAmount > 0 && input.paymentMethod && input.paidAt) {
+      await tx.insert(ingredientPurchasePaymentsTable).values({
+        purchaseId,
+        amount: input.paidAmount.toFixed(3),
+        paymentMethod: input.paymentMethod,
+        paidAt: new Date(input.paidAt),
+      });
+    }
+
     const insertedLines = await tx
       .select()
       .from(ingredientPurchaseLinesTable)
@@ -164,6 +187,62 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
   }
 
   return purchase;
+}
+
+export async function addIngredientPurchasePayment(id: number, input: AdditionalPaymentInput) {
+  const purchase = await getIngredientPurchaseById(id);
+
+  if (!purchase) {
+    return null;
+  }
+
+  const result = additionalPaymentInputSchema.safeParse({
+    ...input,
+    remainingAmount: purchase.remainingAmount,
+  });
+
+  if (!result.success) {
+    throw new IngredientPurchaseValidationError(result.error.issues[0]?.message ?? "Invalid payment");
+  }
+
+  await db.insert(ingredientPurchasePaymentsTable).values({
+    purchaseId: id,
+    amount: input.amount.toFixed(3),
+    paymentMethod: input.paymentMethod,
+    paidAt: new Date(input.paidAt),
+  });
+
+  return getIngredientPurchaseById(id);
+}
+
+async function getIngredientPurchasePaymentTotals(purchaseIds: number[]) {
+  if (purchaseIds.length === 0) {
+    return new Map<number, number>();
+  }
+
+  const rows = await db
+    .select({
+      purchaseId: ingredientPurchasePaymentsTable.purchaseId,
+      paidAmount: sql<string | null>`sum(${ingredientPurchasePaymentsTable.amount})`,
+    })
+    .from(ingredientPurchasePaymentsTable)
+    .where(inArray(ingredientPurchasePaymentsTable.purchaseId, purchaseIds))
+    .groupBy(ingredientPurchasePaymentsTable.purchaseId);
+
+  return createIngredientPurchasePaymentTotalLookup(rows);
+}
+
+async function getIngredientPurchasePayments(purchaseId: number) {
+  return db
+    .select({
+      id: ingredientPurchasePaymentsTable.id,
+      amount: ingredientPurchasePaymentsTable.amount,
+      paymentMethod: ingredientPurchasePaymentsTable.paymentMethod,
+      paidAt: ingredientPurchasePaymentsTable.paidAt,
+    })
+    .from(ingredientPurchasePaymentsTable)
+    .where(eq(ingredientPurchasePaymentsTable.purchaseId, purchaseId))
+    .orderBy(asc(ingredientPurchasePaymentsTable.paidAt), asc(ingredientPurchasePaymentsTable.id));
 }
 
 async function validateIngredientPurchaseRelations(input: IngredientPurchaseInput) {

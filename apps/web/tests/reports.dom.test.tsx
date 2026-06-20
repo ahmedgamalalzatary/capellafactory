@@ -1,8 +1,8 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
-import userEvent from "@testing-library/user-event";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Ingredient } from "@capella/shared/ingredients/ingredient.types";
+import type { IngredientPurchase } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { ProductionBatch } from "@capella/shared/production-batches/production-batch.types";
 import type { SalesInvoice } from "@capella/shared/sales-invoices/sales-invoice.types";
@@ -83,6 +83,23 @@ const baseData = {
       totalCost: 70,
       grossProfit: 50,
       lines: [{ id: 1, productId: 5, quantity: 2 }],
+      paidAmount: 100,
+      remainingAmount: 20,
+      paymentStatus: "partial",
+    } as SalesInvoice,
+    {
+      id: 3,
+      invoiceCode: "SAL-003",
+      buyerId: 7,
+      occurredAt: "2026-06-03T08:00:00.000Z",
+      createdAt: "2026-06-15T08:00:00.000Z",
+      subtotal: 50,
+      paidAmount: 50,
+      remainingAmount: 0,
+      totalCost: 30,
+      grossProfit: 20,
+      lines: [],
+      paymentStatus: "paid",
     } as SalesInvoice,
   ],
 };
@@ -99,6 +116,10 @@ describe("ReportsWorkspace", () => {
       "href",
       "/reports?tab=sales",
     );
+    expect(screen.queryByRole("link", { name: "المشترون" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "الموردون" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "الخامات" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "المنتجات" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "آخر 7 أيام" })).toHaveAttribute(
       "href",
       "/reports?tab=overview&range=last-7-days",
@@ -117,18 +138,6 @@ describe("ReportsWorkspace", () => {
       "href",
       "/reports?tab=sales&range=last-30-days",
     );
-  });
-
-  test("opens full master-data details in a read-only dialog", async () => {
-    render(<ReportsWorkspace data={baseData} activeTab="buyers" />);
-
-    await userEvent.click(screen.getByRole("button", { name: "عرض شركة النيل" }));
-
-    const dialog = screen.getByRole("dialog");
-    expect(dialog).toBeInTheDocument();
-    expect(screen.getByText("تفاصيل المشتري")).toBeInTheDocument();
-    expect(within(dialog).getByText("0100")).toBeInTheDocument();
-    expect(within(dialog).getByText("عميل نقدي")).toBeInTheDocument();
   });
 
   test("links transaction rows to their existing detail routes", () => {
@@ -150,5 +159,56 @@ describe("ReportsWorkspace", () => {
       "href",
       "/products/production-batches/4",
     );
+  });
+
+  test("buyer debt report shows only invoices with remaining amount", () => {
+    render(<ReportsWorkspace data={baseData} activeTab="buyer-debts" />);
+
+    expect(screen.getByText("SAL-002")).toBeInTheDocument();
+    expect(screen.queryByText("SAL-003")).not.toBeInTheDocument();
+    expect(screen.getByText("20.000")).toBeInTheDocument();
+  });
+
+  test("supplier debt report shows only purchases with remaining amount", () => {
+    render(
+      <ReportsWorkspace
+        data={{
+          ...baseData,
+          ingredientPurchases: [
+            {
+              id: 10,
+              invoiceCode: "PUR-010",
+              supplierId: 9,
+              supplierName: "مورد الدلتا",
+              occurredAt: "2026-06-03T08:00:00.000Z",
+              createdAt: "2026-06-03T08:00:00.000Z",
+              totalAmount: 100,
+              paidAmount: 70,
+              remainingAmount: 30,
+              paymentStatus: "partial",
+              payments: [],
+              lines: [],
+            } as IngredientPurchase,
+            {
+              id: 11,
+              invoiceCode: "PUR-011",
+              occurredAt: "2026-06-03T08:00:00.000Z",
+              createdAt: "2026-06-03T08:00:00.000Z",
+              totalAmount: 20,
+              paidAmount: 20,
+              remainingAmount: 0,
+              paymentStatus: "paid",
+              payments: [],
+              lines: [],
+            } as IngredientPurchase,
+          ],
+        }}
+        activeTab="supplier-debts"
+      />,
+    );
+
+    expect(screen.getByText("PUR-010")).toBeInTheDocument();
+    expect(screen.queryByText("PUR-011")).not.toBeInTheDocument();
+    expect(screen.getByText("30.000")).toBeInTheDocument();
   });
 });

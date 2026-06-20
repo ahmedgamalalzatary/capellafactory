@@ -3,6 +3,7 @@ import {
   addIngredientPurchase,
   getIngredientPurchase,
   getIngredientPurchases,
+  recordIngredientPurchasePayment,
 } from "./ingredient-purchases.service.js";
 import { IngredientPurchaseValidationError } from "./ingredient-purchases.validators.js";
 
@@ -32,6 +33,33 @@ export async function getIngredientPurchaseHandler(request: Request, response: R
 export async function createIngredientPurchaseHandler(request: Request, response: Response) {
   try {
     const purchase = await addIngredientPurchase(request.body);
+    response.status(201).json(purchase);
+  } catch (error) {
+    if (error instanceof IngredientPurchaseValidationError) {
+      response.status(400).json({ message: error.message });
+      return;
+    }
+
+    throw error;
+  }
+}
+
+export async function addIngredientPurchasePaymentHandler(request: Request, response: Response) {
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "Invalid ingredient purchase id" });
+    return;
+  }
+
+  try {
+    const purchase = await recordIngredientPurchasePayment(id, request.body);
+
+    if (!purchase) {
+      response.status(404).json({ message: "Ingredient purchase not found" });
+      return;
+    }
+
     response.status(201).json(purchase);
   } catch (error) {
     if (error instanceof IngredientPurchaseValidationError) {

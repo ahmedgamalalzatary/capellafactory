@@ -1,3 +1,5 @@
+import type { PaymentMethod, PaymentStatus } from "../payments/payment.types.js";
+
 export const ingredientPurchaseUnits = ["kg", "g", "L", "ml", "piece"] as const;
 
 export type IngredientPurchaseUnit = (typeof ingredientPurchaseUnits)[number];
@@ -12,6 +14,9 @@ export type IngredientPurchaseLineInput = {
 export type IngredientPurchaseInput = {
   occurredAt: string;
   supplierId: number;
+  paidAmount: number;
+  paymentMethod?: PaymentMethod;
+  paidAt?: string;
   notes?: string;
   lines: IngredientPurchaseLineInput[];
 };
@@ -26,13 +31,25 @@ export type IngredientPurchaseLine = {
   normalizedQuantity: number;
 };
 
+export type IngredientPurchasePayment = {
+  id: number;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  paidAt: string;
+};
+
 export type IngredientPurchase = {
   id: number;
   invoiceCode: string;
   occurredAt: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: PaymentStatus;
   supplierId?: number;
   supplierName?: string;
   notes?: string;
   createdAt: string;
+  payments: IngredientPurchasePayment[];
   lines: IngredientPurchaseLine[];
 };

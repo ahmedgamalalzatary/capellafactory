@@ -81,6 +81,14 @@
       "types": "./dist/sales-invoices/sales-invoice.schema.d.ts",
       "default": "./dist/sales-invoices/sales-invoice.schema.js"
     },
+    "./payments/payment.types": {
+      "types": "./dist/payments/payment.types.d.ts",
+      "default": "./dist/payments/payment.types.js"
+    },
+    "./payments/payment.schema": {
+      "types": "./dist/payments/payment.schema.d.ts",
+      "default": "./dist/payments/payment.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

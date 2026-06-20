@@ -35,3 +35,26 @@ export const expensesTable = mysqlTable(
     occurredAtIndex: index("expenses_occurred_at_index").on(table.occurredAt),
   }),
 );
+
+export const expensePaymentsTable = mysqlTable(
+  "expense_payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    expenseId: int("expense_id")
+      .notNull()
+      .references(() => expensesTable.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    amount: decimal("amount", { precision: 14, scale: 3 }).notNull(),
+    paymentMethod: mysqlEnum("payment_method", [
+      "visa",
+      "vodafone_cash",
+      "cod",
+      "instapay",
+    ]).notNull(),
+    paidAt: timestamp("paid_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    expenseIdIndex: index("expense_payments_expense_id_index").on(table.expenseId),
+    paidAtIndex: index("expense_payments_paid_at_index").on(table.paidAt),
+  }),
+);

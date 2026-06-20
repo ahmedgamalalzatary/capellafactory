@@ -2,6 +2,7 @@ import type {
   Expense,
   ExpenseInput,
 } from "@capella/shared/expenses/expense.types";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 
 import {
   API_URL,
@@ -74,6 +75,21 @@ export async function createExpense(input: ExpenseInput) {
   );
 
   await handleApiResponse(response, "Expense request failed");
+
+  return (await response.json()) as Expense;
+}
+
+export async function addExpensePayment(id: number, input: AdditionalPaymentInput) {
+  const response = await fetch(
+    `${CLIENT_API_URL}/expenses/${id}/payments`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
+
+  await handleApiResponse(response, "Expense payment request failed");
 
   return (await response.json()) as Expense;
 }

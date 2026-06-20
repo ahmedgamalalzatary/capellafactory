@@ -1,5 +1,7 @@
 import type { IngredientPurchaseInput } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import {
+  addIngredientPurchasePayment,
   createIngredientPurchase,
   getIngredientPurchaseById,
   listIngredientPurchases,
@@ -15,4 +17,8 @@ export async function getIngredientPurchase(id: number) {
 
 export async function addIngredientPurchase(input: IngredientPurchaseInput) {
   return createIngredientPurchase(input);
+}
+
+export async function recordIngredientPurchasePayment(id: number, input: AdditionalPaymentInput) {
+  return addIngredientPurchasePayment(id, input);
 }

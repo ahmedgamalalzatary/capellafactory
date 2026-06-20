@@ -1,6 +1,10 @@
+"use client";
+
 import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
 import type { Expense } from "@capella/shared/expenses/expense.types";
 import Link from "next/link";
+import { PaymentDialog } from "@/components/payments/payment-dialog";
+import { addExpensePayment } from "@/lib/api/expenses";
 import {
   Table,
   TableBody,
@@ -70,6 +74,14 @@ function ExpenseCard({ expense, idx }: { expense: Expense; idx: number }) {
       >
         عرض
       </Link>
+      {expense.remainingAmount > 0 ? (
+        <PaymentDialog
+          remainingAmount={expense.remainingAmount}
+          onSubmitPayment={(input) => addExpensePayment(expense.id, input)}
+          title={`إضافة دفعة إلى ${expenseTypeLabels[expense.type]}`}
+          description="سجّل دفعة جديدة حتى يكتمل سداد المصروف."
+        />
+      ) : null}
     </div>
   );
 }
@@ -85,6 +97,7 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
               <TableHead className="text-center">النوع</TableHead>
               <TableHead className="text-center">التفصيل</TableHead>
               <TableHead className="text-center">المبلغ</TableHead>
+              <TableHead className="text-center">المتبقي</TableHead>
               <TableHead className="text-center">وقت الدفع</TableHead>
               <TableHead className="text-center">ملاحظات</TableHead>
               <TableHead className="text-center">اخرى</TableHead>
@@ -106,25 +119,38 @@ export function ExpensesTable({ expenses }: ExpensesTableProps) {
                   {formatAmount(expense.amount)}
                 </TableCell>
                 <TableCell className="text-center text-muted-foreground">
+                  {formatAmount(expense.remainingAmount)}
+                </TableCell>
+                <TableCell className="text-center text-muted-foreground">
                   {formatOccurredAt(expense.occurredAt)}
                 </TableCell>
                 <TableCell className="text-center text-muted-foreground">
                   {expense.notes ?? "لا توجد"}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Link
-                    href={`/purchases/expenses/${expense.id}`}
-                    className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
-                  >
-                    عرض
-                  </Link>
+                  <div className="flex items-center justify-center gap-2">
+                    <Link
+                      href={`/purchases/expenses/${expense.id}`}
+                      className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
+                    >
+                      عرض
+                    </Link>
+                    {expense.remainingAmount > 0 ? (
+                      <PaymentDialog
+                        remainingAmount={expense.remainingAmount}
+                        onSubmitPayment={(input) => addExpensePayment(expense.id, input)}
+                        title={`إضافة دفعة إلى ${expenseTypeLabels[expense.type]}`}
+                        description="سجّل دفعة جديدة حتى يكتمل سداد المصروف."
+                      />
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
 
             {expenses.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="py-20 text-center">
+                <TableCell colSpan={8} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد مصروفات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     ابدأ بتسجيل أول مصروف تشغيلي من شاشة المدفوعات.

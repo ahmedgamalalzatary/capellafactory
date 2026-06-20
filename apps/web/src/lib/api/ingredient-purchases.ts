@@ -8,6 +8,7 @@ import type {
   IngredientPurchase,
   IngredientPurchaseInput,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 
 export function buildIngredientPurchasesUrl(baseUrl: string, query?: string) {
   const url = new URL("/ingredient-purchases", baseUrl);
@@ -83,6 +84,21 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
   );
 
   await handleApiResponse(response, "Ingredient purchase request failed");
+
+  return (await response.json()) as IngredientPurchase;
+}
+
+export async function addIngredientPurchasePayment(id: number, input: AdditionalPaymentInput) {
+  const response = await fetch(
+    `${CLIENT_API_URL}/ingredient-purchases/${id}/payments`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
+
+  await handleApiResponse(response, "Ingredient purchase payment request failed");
 
   return (await response.json()) as IngredientPurchase;
 }

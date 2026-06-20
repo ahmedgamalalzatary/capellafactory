@@ -1,10 +1,13 @@
 import type { SalesInvoice, SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
-import { and, asc, eq, inArray, like, or } from "drizzle-orm";
+import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
+import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
 import { db } from "../../db/index.js";
 import {
   buyersTable,
   productsTable,
   salesInvoiceLinesTable,
+  salesInvoicePaymentsTable,
   salesInvoicesTable,
   stockLayerAllocationsTable,
   stockLayersTable,
@@ -19,6 +22,7 @@ import {
 import {
   mapSalesInvoiceRowToSalesInvoice,
   mapSalesInvoiceRowsToSalesInvoices,
+  createSalesInvoicePaymentTotalLookup,
   normalizeSalesInvoiceSearchQuery,
 } from "./sales-invoices.mappers.js";
 import {
@@ -67,7 +71,9 @@ export async function listSalesInvoices(query?: string) {
     .where(inArray(salesInvoiceLinesTable.invoiceId, rows.map((row) => row.id)))
     .orderBy(asc(salesInvoiceLinesTable.invoiceId), asc(salesInvoiceLinesTable.id));
 
-  return mapSalesInvoiceRowsToSalesInvoices(rows, lines);
+  const paymentTotals = await getSalesInvoicePaymentTotals(rows.map((row) => row.id));
+
+  return mapSalesInvoiceRowsToSalesInvoices(rows, lines, paymentTotals);
 }
 
 export async function getSalesInvoiceById(id: number) {
@@ -85,7 +91,13 @@ export async function getSalesInvoiceById(id: number) {
     .where(eq(salesInvoiceLinesTable.invoiceId, id))
     .orderBy(asc(salesInvoiceLinesTable.id));
 
-  return mapSalesInvoiceRowToSalesInvoice(row, lines);
+  const paymentTotals = await getSalesInvoicePaymentTotals([id]);
+
+  return mapSalesInvoiceRowToSalesInvoice(
+    row,
+    lines,
+    paymentTotals.get(id) ?? Number(row.subtotal),
+  );
 }
 
 export async function createSalesInvoice(input: SalesInvoiceInput) {
@@ -246,6 +258,15 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
         })
         .where(eq(salesInvoicesTable.id, invoiceId));
 
+      if (input.paidAmount > 0 && input.paymentMethod && input.paidAt) {
+        await tx.insert(salesInvoicePaymentsTable).values({
+          invoiceId,
+          amount: input.paidAmount.toFixed(3),
+          paymentMethod: input.paymentMethod,
+          paidAt: new Date(input.paidAt),
+        });
+      }
+
       await recalculateStockBalances(tx);
 
       return invoiceId;
@@ -269,6 +290,49 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
 
     throw error;
   }
+}
+
+export async function addSalesInvoicePayment(id: number, input: AdditionalPaymentInput) {
+  const invoice = await getSalesInvoiceById(id);
+
+  if (!invoice) {
+    return null;
+  }
+
+  const result = additionalPaymentInputSchema.safeParse({
+    ...input,
+    remainingAmount: invoice.remainingAmount,
+  });
+
+  if (!result.success) {
+    throw new SalesInvoiceValidationError(result.error.issues[0]?.message ?? "Invalid payment");
+  }
+
+  await db.insert(salesInvoicePaymentsTable).values({
+    invoiceId: id,
+    amount: input.amount.toFixed(3),
+    paymentMethod: input.paymentMethod,
+    paidAt: new Date(input.paidAt),
+  });
+
+  return getSalesInvoiceById(id);
+}
+
+async function getSalesInvoicePaymentTotals(invoiceIds: number[]) {
+  if (invoiceIds.length === 0) {
+    return new Map<number, number>();
+  }
+
+  const rows = await db
+    .select({
+      invoiceId: salesInvoicePaymentsTable.invoiceId,
+      paidAmount: sql<string | null>`sum(${salesInvoicePaymentsTable.amount})`,
+    })
+    .from(salesInvoicePaymentsTable)
+    .where(inArray(salesInvoicePaymentsTable.invoiceId, invoiceIds))
+    .groupBy(salesInvoicePaymentsTable.invoiceId);
+
+  return createSalesInvoicePaymentTotalLookup(rows);
 }
 
 export async function buyerHasSalesInvoiceHistory(buyerId: number) {

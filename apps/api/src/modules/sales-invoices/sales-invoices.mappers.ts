@@ -2,6 +2,7 @@ import type {
   SalesInvoice,
   SalesInvoiceLine,
 } from "@capella/shared/sales-invoices/sales-invoice.types";
+import { createPaymentSummary } from "@capella/shared/payments/payment.schema";
 
 export type SalesInvoiceRow = {
   id: number;
@@ -29,6 +30,15 @@ export type ListedSalesInvoiceLineRow = SalesInvoiceLineRow & {
   invoiceId: number;
 };
 
+export type SalesInvoicePaymentTotalRow = {
+  invoiceId: number;
+  paidAmount: string | null;
+};
+
+export function createSalesInvoicePaymentTotalLookup(rows: SalesInvoicePaymentTotalRow[]) {
+  return new Map(rows.map((row) => [row.invoiceId, row.paidAmount ? Number(row.paidAmount) : 0]));
+}
+
 export function mapSalesInvoiceLineRow(row: SalesInvoiceLineRow): SalesInvoiceLine {
   return {
     id: row.id,
@@ -44,13 +54,20 @@ export function mapSalesInvoiceLineRow(row: SalesInvoiceLineRow): SalesInvoiceLi
 export function mapSalesInvoiceRowToSalesInvoice(
   row: SalesInvoiceRow,
   lines: SalesInvoiceLineRow[],
+  paidAmount = Number(row.subtotal),
 ): SalesInvoice {
+  const subtotal = Number(row.subtotal);
+  const summary = createPaymentSummary({ totalAmount: subtotal, paidAmount });
+
   return {
     id: row.id,
     invoiceCode: row.invoiceCode,
     occurredAt: toIsoString(row.occurredAt),
     buyerId: row.buyerId,
-    subtotal: Number(row.subtotal),
+    subtotal,
+    paidAmount: summary.paidAmount,
+    remainingAmount: summary.remainingAmount,
+    paymentStatus: summary.paymentStatus,
     totalCost: Number(row.totalCost),
     grossProfit: Number(row.grossProfit),
     notes: row.notes ?? undefined,
@@ -62,6 +79,7 @@ export function mapSalesInvoiceRowToSalesInvoice(
 export function mapSalesInvoiceRowsToSalesInvoices(
   rows: SalesInvoiceRow[],
   lines: ListedSalesInvoiceLineRow[],
+  paymentTotals = new Map<number, number>(),
 ): SalesInvoice[] {
   const linesByInvoiceId = new Map<number, SalesInvoiceLineRow[]>();
 
@@ -71,7 +89,13 @@ export function mapSalesInvoiceRowsToSalesInvoices(
     linesByInvoiceId.set(line.invoiceId, existingLines);
   }
 
-  return rows.map((row) => mapSalesInvoiceRowToSalesInvoice(row, linesByInvoiceId.get(row.id) ?? []));
+  return rows.map((row) =>
+    mapSalesInvoiceRowToSalesInvoice(
+      row,
+      linesByInvoiceId.get(row.id) ?? [],
+      paymentTotals.get(row.id) ?? Number(row.subtotal),
+    ),
+  );
 }
 
 export function normalizeSalesInvoiceSearchQuery(query?: string) {

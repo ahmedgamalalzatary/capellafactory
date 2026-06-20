@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ExpenseInput, ExpenseType } from "@capella/shared/expenses/expense.types";
+import type { PaymentMethod } from "@capella/shared/payments/payment.types";
 import { createExpense } from "@/lib/api/expenses";
 import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
@@ -35,9 +36,18 @@ const expenseTypeOptions: Array<{ value: ExpenseType; label: string }> = [
   { value: "other", label: "أخرى" },
 ];
 
+const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
+  { value: "visa", label: "Visa" },
+  { value: "vodafone_cash", label: "Vodafone Cash" },
+  { value: "cod", label: "COD" },
+  { value: "instapay", label: "Instapay" },
+];
+
 type ExpenseDraft = {
   type: ExpenseType;
   amount: string;
+  paidAmount: string;
+  paymentMethod: PaymentMethod;
   occurredAtDate: string;
   occurredAtTime: string;
   notes: string;
@@ -68,12 +78,18 @@ function isExpenseDraft(value: unknown): value is ExpenseDraft {
     value !== null &&
     isExpenseType(candidate?.type) &&
     typeof candidate.amount === "string" &&
+    typeof candidate.paidAmount === "string" &&
+    isPaymentMethod(candidate.paymentMethod) &&
     typeof candidate.occurredAtDate === "string" &&
     typeof candidate.occurredAtTime === "string" &&
     typeof candidate.notes === "string" &&
     typeof candidate.employeeName === "string" &&
     typeof candidate.otherLabel === "string"
   );
+}
+
+function isPaymentMethod(value: unknown): value is PaymentMethod {
+  return value === "visa" || value === "vodafone_cash" || value === "cod" || value === "instapay";
 }
 
 function Field({
@@ -117,6 +133,10 @@ export function ExpenseForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [expenseType, setExpenseType] = useState<ExpenseType>(initialDraft?.type ?? "rent");
   const [amount, setAmount] = useState(initialDraft?.amount ?? "");
+  const [paidAmount, setPaidAmount] = useState(initialDraft?.paidAmount ?? "");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
+    initialDraft?.paymentMethod ?? "cod",
+  );
   const [occurredAtDate, setOccurredAtDate] = useState(
     initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
   );
@@ -126,23 +146,41 @@ export function ExpenseForm({
   const [notes, setNotes] = useState(initialDraft?.notes ?? "");
   const [employeeName, setEmployeeName] = useState(initialDraft?.employeeName ?? "");
   const [otherLabel, setOtherLabel] = useState(initialDraft?.otherLabel ?? "");
+  const totalAmountValue = Number(amount || 0);
+  const paidAmountValue = Number(paidAmount || 0);
+  const remainingAmount = Math.max(totalAmountValue - paidAmountValue, 0);
+  const hasPayment = paidAmountValue > 0;
 
   useEffect(() => {
     saveLocalDraft<ExpenseDraft>(expenseDraftKey, {
       type: expenseType,
       amount,
+      paidAmount,
+      paymentMethod,
       occurredAtDate,
       occurredAtTime,
       notes,
       employeeName,
       otherLabel,
     });
-  }, [amount, employeeName, expenseType, notes, occurredAtDate, occurredAtTime, otherLabel]);
+  }, [
+    amount,
+    employeeName,
+    expenseType,
+    notes,
+    occurredAtDate,
+    occurredAtTime,
+    otherLabel,
+    paidAmount,
+    paymentMethod,
+  ]);
 
   function resetForm(clearDraft = false) {
     const next = new Date();
     setExpenseType("rent");
     setAmount("");
+    setPaidAmount("");
+    setPaymentMethod("cod");
     setOccurredAtDate(getLocalDateInputValue(next));
     setOccurredAtTime(getLocalTimeInputValue(next));
     setNotes("");
@@ -163,7 +201,10 @@ export function ExpenseForm({
     await runWithSubmitLock(submitLock, setIsSubmitting, async () => {
       const payload: ExpenseInput = {
         type: expenseType,
-        amount: Number(amount || 0),
+        amount: totalAmountValue,
+        paidAmount: paidAmountValue,
+        paymentMethod: hasPayment ? paymentMethod : undefined,
+        paidAt: hasPayment ? buildIsoDateTime(occurredAtDate, occurredAtTime) : undefined,
         occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
         notes: notes.trim() || undefined,
         employeeName: employeeName.trim() || undefined,
@@ -200,7 +241,7 @@ export function ExpenseForm({
         </select>
       </Field>
 
-      <Field id="amount" label="المبلغ" required hint="أدخل القيمة المدفوعة فعليًا لهذا المصروف.">
+      <Field id="amount" label="إجمالي المصروف" required hint="إجمالي قيمة المصروف قبل حساب المدفوع والمتبقي.">
         <Input
           id="amount"
           name="amount"
@@ -212,6 +253,49 @@ export function ExpenseForm({
           required
         />
       </Field>
+
+      <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
+        <Field id="paidAmount" label="المدفوع" required hint="يمكن أن يكون صفر إذا لم يتم دفع أي مبلغ بعد.">
+          <Input
+            id="paidAmount"
+            name="paidAmount"
+            type="number"
+            min="0"
+            max={amount || undefined}
+            step="0.001"
+            value={paidAmount}
+            onChange={(event) => setPaidAmount(event.target.value)}
+            required
+          />
+        </Field>
+
+        <div className="rounded-md bg-background px-3 py-2 text-sm">
+          <span className="text-muted-foreground">المتبقي: </span>
+          <span className="font-semibold tabular-nums">{remainingAmount.toLocaleString("en-US", {
+            minimumFractionDigits: 3,
+            maximumFractionDigits: 3,
+          })}</span>
+        </div>
+
+        {hasPayment ? (
+          <Field id="paymentMethod" label="طريقة الدفع" required>
+            <select
+              id="paymentMethod"
+              name="paymentMethod"
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              value={paymentMethod}
+              onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+              required
+            >
+              {paymentMethodOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
+      </div>
 
       <PurchaseDateTimeFields
         dateId="occurredAtDate"

@@ -1,5 +1,7 @@
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import type { SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
 import {
+  addSalesInvoicePayment,
   createSalesInvoice,
   getSalesInvoiceById,
   listSalesInvoices,
@@ -15,4 +17,8 @@ export async function getSalesInvoice(id: number) {
 
 export async function addSalesInvoice(input: SalesInvoiceInput) {
   return createSalesInvoice(input);
+}
+
+export async function recordSalesInvoicePayment(id: number, input: AdditionalPaymentInput) {
+  return addSalesInvoicePayment(id, input);
 }

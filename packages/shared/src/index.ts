@@ -17,3 +17,5 @@ export * from "./purchase-corrections/purchase-correction.types.js";
 export * from "./purchase-corrections/purchase-correction.schema.js";
 export * from "./sales-invoices/sales-invoice.types.js";
 export * from "./sales-invoices/sales-invoice.schema.js";
+export * from "./payments/payment.types.js";
+export * from "./payments/payment.schema.js";

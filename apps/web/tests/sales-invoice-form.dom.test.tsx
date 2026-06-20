@@ -54,8 +54,9 @@ describe("SalesInvoiceForm (behavioral)", () => {
     const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "3");
     await user.type(sellingUnitPrice, "12.5");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
 
-    expect(screen.getAllByText("37.500")).toHaveLength(2);
+    expect(screen.getAllByText("37.500").length).toBeGreaterThanOrEqual(2);
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
@@ -79,6 +80,7 @@ describe("SalesInvoiceForm (behavioral)", () => {
     await user.type(spinbuttons[1], "10");
     await user.type(spinbuttons[2], "2");
     await user.type(spinbuttons[3], "20");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
@@ -96,6 +98,7 @@ describe("SalesInvoiceForm (behavioral)", () => {
     const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "2");
     await user.type(sellingUnitPrice, "50");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
     await user.type(notes, "urgent");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
@@ -121,11 +124,33 @@ describe("SalesInvoiceForm (behavioral)", () => {
     const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "3");
     await user.type(sellingUnitPrice, "12");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
     await waitFor(() => expect(createSalesInvoice).toHaveBeenCalledTimes(1));
     const payload = createSalesInvoice.mock.calls[0][0];
     expect(payload.buyerId).toBe(8);
     expect(payload.lines[0].productId).toBe(9);
+  });
+
+  test("submits partial payment details and shows remaining amount", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "4");
+    await user.type(sellingUnitPrice, "25");
+    await user.type(screen.getByLabelText(/المدفوع/), "75");
+    await user.selectOptions(screen.getByLabelText(/طريقة الدفع/), "visa");
+
+    expect(screen.getByText("25.000")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createSalesInvoice).toHaveBeenCalledTimes(1));
+    expect(createSalesInvoice.mock.calls[0][0]).toMatchObject({
+      paidAmount: 75,
+      paymentMethod: "visa",
+    });
   });
 });

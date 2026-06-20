@@ -61,6 +61,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     // 8 units for a total of 100 → unit price would be 12.5. We must NOT send 12.5.
     await user.type(quantity, "8");
     await user.type(lineTotal, "100");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
@@ -87,6 +88,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "2");
     await user.type(lineTotal, "50");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
@@ -104,7 +106,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
 
     await user.click(screen.getByRole("button", { name: "+ بند" }));
 
-    const updatedInputs = screen.getAllByRole("spinbutton");
+    const updatedInputs = screen.getAllByRole("spinbutton").slice(0, 4);
     expect(updatedInputs).toHaveLength(4);
     expect(updatedInputs[0]).toHaveValue(null);
     expect(updatedInputs[1]).toHaveValue(null);
@@ -113,6 +115,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
 
     await user.type(updatedInputs[0], "4");
     await user.type(updatedInputs[1], "80");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
 
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
@@ -134,6 +137,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
     await user.type(quantity, "2");
     await user.type(lineTotal, "50");
+    await user.type(screen.getByLabelText(/المدفوع/), "0");
     await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
 
     await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
@@ -145,16 +149,37 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     renderForm();
 
     expect(screen.getByText("إجمالي الفاتورة")).toBeInTheDocument();
-    expect(screen.getByText("0.000")).toBeInTheDocument();
+    expect(screen.getAllByText("0.000").length).toBeGreaterThanOrEqual(1);
 
     let inputs = screen.getAllByRole("spinbutton");
     await user.type(inputs[1], "30");
-    expect(screen.getByText("30.000")).toBeInTheDocument();
+    expect(screen.getAllByText("30.000").length).toBeGreaterThanOrEqual(1);
 
     await user.click(screen.getByRole("button", { name: "+ بند" }));
 
     inputs = screen.getAllByRole("spinbutton");
     await user.type(inputs[1], "80");
-    expect(screen.getByText("110.000")).toBeInTheDocument();
+    expect(screen.getAllByText("110.000").length).toBeGreaterThanOrEqual(1);
+  });
+
+  test("submits partial payment details and shows remaining amount", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "8");
+    await user.type(lineTotal, "100");
+    await user.type(screen.getByLabelText(/المدفوع/), "60");
+    await user.selectOptions(screen.getByLabelText(/طريقة الدفع/), "vodafone_cash");
+
+    expect(screen.getByText("40.000")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
+    expect(createIngredientPurchase.mock.calls[0][0]).toMatchObject({
+      paidAmount: 60,
+      paymentMethod: "vodafone_cash",
+    });
   });
 });

@@ -2,6 +2,7 @@ import type {
   SalesInvoice,
   SalesInvoiceInput,
 } from "@capella/shared/sales-invoices/sales-invoice.types";
+import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 
 import {
   API_URL,
@@ -78,6 +79,21 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
   );
 
   await handleApiResponse(response, "Sales invoice request failed");
+
+  return (await response.json()) as SalesInvoice;
+}
+
+export async function addSalesInvoicePayment(id: number, input: AdditionalPaymentInput) {
+  const response = await fetch(
+    `${CLIENT_API_URL}/sales-invoices/${id}/payments`,
+    withApiCredentials({
+      method: "POST",
+      headers: mergeJsonHeaders(),
+      body: JSON.stringify(input),
+    }),
+  );
+
+  await handleApiResponse(response, "Sales invoice payment request failed");
 
   return (await response.json()) as SalesInvoice;
 }

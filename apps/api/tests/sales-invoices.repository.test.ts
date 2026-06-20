@@ -6,6 +6,7 @@ import {
   resolveSalesInvoiceLineRevenue,
 } from "../src/modules/sales-invoices/sales-invoices.allocation.js";
 import {
+  createSalesInvoicePaymentTotalLookup,
   mapSalesInvoiceLineRow,
   mapSalesInvoiceRowToSalesInvoice,
   mapSalesInvoiceRowsToSalesInvoices,
@@ -64,6 +65,7 @@ test("maps sales invoice headers with nested lines", () => {
         lineCost: "60.250",
       },
     ],
+    40,
   );
 
   assert.deepEqual(invoice, {
@@ -72,6 +74,9 @@ test("maps sales invoice headers with nested lines", () => {
     occurredAt: "2026-05-24T12:00:00.000Z",
     buyerId: 4,
     subtotal: 90.5,
+    paidAmount: 40,
+    remainingAmount: 50.5,
+    paymentStatus: "partial",
     totalCost: 60.25,
     grossProfit: 30.25,
     notes: "urgent",
@@ -145,12 +150,23 @@ test("maps listed sales invoice headers with batched lines by invoice id", () =>
       id: invoice.id,
       notes: invoice.notes,
       lineIds: invoice.lines.map((line) => line.id),
+      paymentStatus: invoice.paymentStatus,
     })),
     [
-      { id: 9, notes: "urgent", lineIds: [11] },
-      { id: 10, notes: undefined, lineIds: [13] },
+      { id: 9, notes: "urgent", lineIds: [11], paymentStatus: "paid" },
+      { id: 10, notes: undefined, lineIds: [13], paymentStatus: "paid" },
     ],
   );
+});
+
+test("creates sales invoice payment total lookup from grouped payment rows", () => {
+  const lookup = createSalesInvoicePaymentTotalLookup([
+    { invoiceId: 1, paidAmount: "1000.000" },
+    { invoiceId: 2, paidAmount: null },
+  ]);
+
+  assert.equal(lookup.get(1), 1000);
+  assert.equal(lookup.get(2), 0);
 });
 
 test("derives sales invoice line total from quantity and selling unit price", () => {

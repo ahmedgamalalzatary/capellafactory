@@ -6,6 +6,7 @@ import {
   resolveIngredientPurchaseSupplierFields,
 } from "../src/modules/ingredient-purchases/ingredient-purchases.allocation.js";
 import {
+  createIngredientPurchasePaymentTotalLookup,
   compareIngredientPurchaseListOrder,
   mapIngredientPurchaseRowToIngredientPurchase,
   mapIngredientPurchaseLineRow,
@@ -44,6 +45,7 @@ test("maps ingredient purchase headers with nested lines", () => {
       id: 9,
       invoiceCode: "PUR-20260524-0009",
       occurredAt: new Date("2026-05-24T12:00:00.000Z"),
+      totalAmount: "113.125",
       supplierId: 4,
       supplierName: null,
       notes: "urgent",
@@ -60,15 +62,36 @@ test("maps ingredient purchase headers with nested lines", () => {
         normalizedQuantity: "2500.000",
       },
     ],
+    50,
+    [
+      {
+        id: 3,
+        amount: "50.000",
+        paymentMethod: "instapay",
+        paidAt: new Date("2026-05-24T12:01:00.000Z"),
+      },
+    ],
   );
 
   assert.deepEqual(purchase, {
     id: 9,
     invoiceCode: "PUR-20260524-0009",
     occurredAt: "2026-05-24T12:00:00.000Z",
+    totalAmount: 113.125,
+    paidAmount: 50,
+    remainingAmount: 63.125,
+    paymentStatus: "partial",
     supplierId: 4,
     notes: "urgent",
     createdAt: "2026-05-24T12:05:00.000Z",
+    payments: [
+      {
+        id: 3,
+        amount: 50,
+        paymentMethod: "instapay",
+        paidAt: "2026-05-24T12:01:00.000Z",
+      },
+    ],
     lines: [
       {
         id: 11,
@@ -90,20 +113,40 @@ test("normalizes ingredient purchase search query", () => {
   assert.equal(normalizeIngredientPurchaseSearchQuery("  sugar  "), "sugar");
 });
 
+test("creates ingredient purchase payment total lookup from grouped payment rows", () => {
+  const lookup = createIngredientPurchasePaymentTotalLookup([
+    { purchaseId: 1, paidAmount: "1000.000" },
+    { purchaseId: 2, paidAmount: null },
+  ]);
+
+  assert.equal(lookup.get(1), 1000);
+  assert.equal(lookup.get(2), 0);
+});
+
 test("orders ingredient purchases by createdAt descending before occurredAt", () => {
   const purchases = [
     {
       id: 1,
       invoiceCode: "PUR-20260619-0001",
       occurredAt: "2026-06-19T10:00:00.000Z",
+      totalAmount: 0,
+      paidAmount: 0,
+      remainingAmount: 0,
+      paymentStatus: "paid",
       createdAt: "2026-06-19T10:00:00.000Z",
+      payments: [],
       lines: [],
     },
     {
       id: 2,
       invoiceCode: "PUR-20260618-0002",
       occurredAt: "2026-06-18T10:00:00.000Z",
+      totalAmount: 0,
+      paidAmount: 0,
+      remainingAmount: 0,
+      paymentStatus: "paid",
       createdAt: "2026-06-19T11:00:00.000Z",
+      payments: [],
       lines: [],
     },
   ];
@@ -127,10 +170,16 @@ test("snapshots saved supplier name on ingredient purchase insert", () => {
 });
 
 test("derives ingredient purchase unit price from entered line total", () => {
-  assert.deepEqual(resolveIngredientPurchaseLineCost({ quantity: 2.5, lineTotal: 100 }), {
+  assert.deepEqual(
+    resolveIngredientPurchaseLineCost({
+      quantity: 2.5,
+      lineTotal: 100,
+    }),
+    {
     unitPrice: 40,
     lineTotal: 100,
-  });
+    },
+  );
 });
 
 test("builds one inbound fifo stock layer per ingredient purchase line", () => {

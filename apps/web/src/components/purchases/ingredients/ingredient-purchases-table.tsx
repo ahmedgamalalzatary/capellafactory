@@ -1,5 +1,9 @@
+"use client";
+
 import type { IngredientPurchase } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import Link from "next/link";
+import { addIngredientPurchasePayment } from "@/lib/api/ingredient-purchases";
+import { PaymentDialog } from "@/components/payments/payment-dialog";
 import {
   Table,
   TableBody,
@@ -42,8 +46,14 @@ function supplierLabel(purchase: IngredientPurchase) {
   return "مورد غير محدد";
 }
 
+function purchaseTotal(purchase: IngredientPurchase) {
+  return Number.isFinite(purchase.totalAmount)
+    ? purchase.totalAmount
+    : purchase.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+}
+
 function IngredientPurchaseCard({ purchase, idx }: { purchase: IngredientPurchase; idx: number }) {
-  const total = purchase.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  const total = purchaseTotal(purchase);
 
   return (
     <div className="flex flex-col gap-3 bg-card px-4 py-4">
@@ -71,6 +81,14 @@ function IngredientPurchaseCard({ purchase, idx }: { purchase: IngredientPurchas
       >
         عرض
       </Link>
+      {purchase.remainingAmount > 0 ? (
+        <PaymentDialog
+          remainingAmount={purchase.remainingAmount}
+          onSubmitPayment={(input) => addIngredientPurchasePayment(purchase.id, input)}
+          title={`إضافة دفعة إلى ${purchase.invoiceCode}`}
+          description="سجّل دفعة جديدة حتى يصل المتبقي إلى صفر."
+        />
+      ) : null}
     </div>
   );
 }
@@ -86,13 +104,14 @@ export function IngredientPurchasesTable({ purchases }: IngredientPurchasesTable
               <TableHead className="text-center">المورد</TableHead>
               <TableHead className="text-center">عدد البنود</TableHead>
               <TableHead className="text-center">إجمالي الفاتورة</TableHead>
+              <TableHead className="text-center">المتبقي</TableHead>
               <TableHead className="text-center">وقت الفاتورة</TableHead>
               <TableHead className="text-center">اخرى</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {purchases.map((purchase) => {
-              const total = purchase.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+              const total = purchaseTotal(purchase);
 
               return (
                 <TableRow key={purchase.id}>
@@ -107,15 +126,28 @@ export function IngredientPurchasesTable({ purchases }: IngredientPurchasesTable
                     {formatAmount(total)}
                   </TableCell>
                   <TableCell className="text-center text-muted-foreground">
+                    {formatAmount(purchase.remainingAmount)}
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">
                     {formatOccurredAt(purchase.occurredAt)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <Link
-                      href={`/purchases/ingredient-purchases/${purchase.id}`}
-                      className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
-                    >
-                      عرض
-                    </Link>
+                    <div className="flex items-center justify-center gap-2">
+                      <Link
+                        href={`/purchases/ingredient-purchases/${purchase.id}`}
+                        className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
+                      >
+                        عرض
+                      </Link>
+                      {purchase.remainingAmount > 0 ? (
+                        <PaymentDialog
+                          remainingAmount={purchase.remainingAmount}
+                          onSubmitPayment={(input) => addIngredientPurchasePayment(purchase.id, input)}
+                          title={`إضافة دفعة إلى ${purchase.invoiceCode}`}
+                          description="سجّل دفعة جديدة حتى يصل المتبقي إلى صفر."
+                        />
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               );
@@ -123,7 +155,7 @@ export function IngredientPurchasesTable({ purchases }: IngredientPurchasesTable
 
             {purchases.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="py-20 text-center">
+                <TableCell colSpan={7} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد فواتير شراء خامات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     ابدأ بإضافة أول فاتورة لرفع مخزون الخامات.

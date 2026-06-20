@@ -1,3 +1,5 @@
+import type { PaymentMethod, PaymentStatus } from "../payments/payment.types.js";
+
 export const expenseTypes = [
   "rent",
   "food",
@@ -15,6 +17,9 @@ export type Expense = {
   id: number;
   type: ExpenseType;
   amount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentStatus: PaymentStatus;
   occurredAt: string;
   notes?: string;
   employeeName?: string;
@@ -25,6 +30,9 @@ export type Expense = {
 export type ExpenseInput = {
   type: ExpenseType;
   amount: number;
+  paidAmount: number;
+  paymentMethod?: PaymentMethod;
+  paidAt?: string;
   occurredAt: string;
   notes?: string;
   employeeName?: string;

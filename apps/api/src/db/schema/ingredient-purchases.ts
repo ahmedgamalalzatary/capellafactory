@@ -1,5 +1,6 @@
 import {
   decimal,
+  foreignKey,
   index,
   int,
   mysqlEnum,
@@ -18,6 +19,7 @@ export const ingredientPurchasesTable = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     invoiceCode: varchar("invoice_code", { length: 32 }).notNull(),
     occurredAt: timestamp("occurred_at").notNull(),
+    totalAmount: decimal("total_amount", { precision: 14, scale: 3 }).notNull(),
     supplierId: int("supplier_id").references(() => suppliersTable.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
@@ -32,6 +34,35 @@ export const ingredientPurchasesTable = mysqlTable(
     ),
     occurredAtIndex: index("ingredient_purchases_occurred_at_index").on(table.occurredAt),
     supplierIdIndex: index("ingredient_purchases_supplier_id_index").on(table.supplierId),
+  }),
+);
+
+export const ingredientPurchasePaymentsTable = mysqlTable(
+  "ingredient_purchase_payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    purchaseId: int("purchase_id").notNull(),
+    amount: decimal("amount", { precision: 14, scale: 3 }).notNull(),
+    paymentMethod: mysqlEnum("payment_method", [
+      "visa",
+      "vodafone_cash",
+      "cod",
+      "instapay",
+    ]).notNull(),
+    paidAt: timestamp("paid_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    // Explicit short name: the drizzle-derived name exceeds MySQL's 64-char identifier limit.
+    purchaseFk: foreignKey({
+      name: "ingredient_purchase_payments_purchase_fk",
+      columns: [table.purchaseId],
+      foreignColumns: [ingredientPurchasesTable.id],
+    })
+      .onDelete("restrict")
+      .onUpdate("cascade"),
+    purchaseIdIndex: index("ingredient_purchase_payments_purchase_id_index").on(table.purchaseId),
+    paidAtIndex: index("ingredient_purchase_payments_paid_at_index").on(table.paidAt),
   }),
 );
 

@@ -4,6 +4,8 @@ import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { SalesInvoice } from "@capella/shared/sales-invoices/sales-invoice.types";
 import Link from "next/link";
+import { PaymentDialog } from "@/components/payments/payment-dialog";
+import { addSalesInvoicePayment } from "@/lib/api/sales-invoices";
 import {
   Table,
   TableBody,
@@ -56,6 +58,14 @@ function SalesInvoiceCard({
       >
         عرض
       </Link>
+      {invoice.remainingAmount > 0 ? (
+        <PaymentDialog
+          remainingAmount={invoice.remainingAmount}
+          onSubmitPayment={(input) => addSalesInvoicePayment(invoice.id, input)}
+          title={`إضافة دفعة إلى ${invoice.invoiceCode}`}
+          description="سجّل دفعة جديدة حتى يكتمل تحصيل الفاتورة."
+        />
+      ) : null}
     </div>
   );
 }
@@ -73,6 +83,7 @@ export function SalesInvoicesTable({ invoices, buyers, products }: SalesInvoices
               <TableHead className="text-center">كود الفاتورة</TableHead>
               <TableHead className="text-center">المشتري</TableHead>
               <TableHead className="text-center">الإجمالي</TableHead>
+              <TableHead className="text-center">المتبقي</TableHead>
               <TableHead className="text-center">التكلفة</TableHead>
               <TableHead className="text-center">الربح</TableHead>
               <TableHead className="text-center">المنتجات</TableHead>
@@ -90,6 +101,9 @@ export function SalesInvoicesTable({ invoices, buyers, products }: SalesInvoices
                   {formatAmount(invoice.subtotal)}
                 </TableCell>
                 <TableCell className="text-center text-muted-foreground">
+                  {formatAmount(invoice.remainingAmount)}
+                </TableCell>
+                <TableCell className="text-center text-muted-foreground">
                   {formatAmount(invoice.totalCost)}
                 </TableCell>
                 <TableCell className="text-center text-muted-foreground">
@@ -102,19 +116,29 @@ export function SalesInvoicesTable({ invoices, buyers, products }: SalesInvoices
                     .join("، ")}
                 </TableCell>
                 <TableCell className="text-center">
-                  <Link
-                    href={`/sales/${invoice.id}`}
-                    className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
-                  >
-                    عرض
-                  </Link>
+                  <div className="flex items-center justify-center gap-2">
+                    <Link
+                      href={`/sales/${invoice.id}`}
+                      className="inline-flex h-8 items-center justify-center rounded-md border px-3 text-[12px] font-semibold transition hover:bg-accent"
+                    >
+                      عرض
+                    </Link>
+                    {invoice.remainingAmount > 0 ? (
+                      <PaymentDialog
+                        remainingAmount={invoice.remainingAmount}
+                        onSubmitPayment={(input) => addSalesInvoicePayment(invoice.id, input)}
+                        title={`إضافة دفعة إلى ${invoice.invoiceCode}`}
+                        description="سجّل دفعة جديدة حتى يكتمل تحصيل الفاتورة."
+                      />
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
 
             {invoices.length === 0 && (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={7} className="py-20 text-center">
+                <TableCell colSpan={8} className="py-20 text-center">
                   <p className="text-sm font-medium">لا توجد فواتير مبيعات بعد</p>
                   <p className="mt-1.5 text-sm text-muted-foreground">
                     احفظ أول فاتورة لتقليل رصيد المنتجات النهائية.

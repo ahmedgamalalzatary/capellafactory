@@ -1,12 +1,16 @@
 import type {
   IngredientPurchase,
   IngredientPurchaseLine,
+  IngredientPurchasePayment,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type { PaymentMethod } from "@capella/shared/payments/payment.types";
+import { createPaymentSummary } from "@capella/shared/payments/payment.schema";
 
 export type IngredientPurchaseRow = {
   id: number;
   invoiceCode: string;
   occurredAt: Date | string;
+  totalAmount: string | number;
   supplierId: number | null;
   supplierName: string | null;
   notes: string | null;
@@ -23,6 +27,35 @@ export type IngredientPurchaseLineRow = {
   normalizedQuantity: string | number;
 };
 
+export type IngredientPurchasePaymentTotalRow = {
+  purchaseId: number;
+  paidAmount: string | null;
+};
+
+export type IngredientPurchasePaymentRow = {
+  id: number;
+  amount: string | number;
+  paymentMethod: PaymentMethod;
+  paidAt: Date | string;
+};
+
+export function createIngredientPurchasePaymentTotalLookup(
+  rows: IngredientPurchasePaymentTotalRow[],
+) {
+  return new Map(rows.map((row) => [row.purchaseId, row.paidAmount ? Number(row.paidAmount) : 0]));
+}
+
+function mapIngredientPurchasePaymentRow(
+  row: IngredientPurchasePaymentRow,
+): IngredientPurchasePayment {
+  return {
+    id: row.id,
+    amount: Number(row.amount),
+    paymentMethod: row.paymentMethod,
+    paidAt: toIsoString(row.paidAt),
+  };
+}
+
 export function mapIngredientPurchaseLineRow(row: IngredientPurchaseLineRow): IngredientPurchaseLine {
   return {
     id: row.id,
@@ -38,15 +71,25 @@ export function mapIngredientPurchaseLineRow(row: IngredientPurchaseLineRow): In
 export function mapIngredientPurchaseRowToIngredientPurchase(
   row: IngredientPurchaseRow,
   lines: IngredientPurchaseLineRow[],
+  paidAmount = Number(row.totalAmount),
+  payments: IngredientPurchasePaymentRow[] = [],
 ): IngredientPurchase {
+  const totalAmount = Number(row.totalAmount);
+  const summary = createPaymentSummary({ totalAmount, paidAmount });
+
   return {
     id: row.id,
     invoiceCode: row.invoiceCode,
     occurredAt: toIsoString(row.occurredAt),
+    totalAmount,
+    paidAmount: summary.paidAmount,
+    remainingAmount: summary.remainingAmount,
+    paymentStatus: summary.paymentStatus,
     ...(row.supplierId ? { supplierId: row.supplierId } : {}),
     ...(row.supplierName ? { supplierName: row.supplierName } : {}),
     ...(row.notes ? { notes: row.notes } : {}),
     createdAt: toIsoString(row.createdAt),
+    payments: payments.map(mapIngredientPurchasePaymentRow),
     lines: lines.map(mapIngredientPurchaseLineRow),
   };
 }

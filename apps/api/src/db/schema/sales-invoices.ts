@@ -2,6 +2,7 @@ import {
   decimal,
   index,
   int,
+  mysqlEnum,
   mysqlTable,
   text,
   timestamp,
@@ -32,6 +33,32 @@ export const salesInvoicesTable = mysqlTable(
     ),
     occurredAtIndex: index("sales_invoices_occurred_at_index").on(table.occurredAt),
     buyerIdIndex: index("sales_invoices_buyer_id_index").on(table.buyerId),
+  }),
+);
+
+export const salesInvoicePaymentsTable = mysqlTable(
+  "sales_invoice_payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    invoiceId: int("invoice_id")
+      .notNull()
+      .references(() => salesInvoicesTable.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    amount: decimal("amount", { precision: 14, scale: 3 }).notNull(),
+    paymentMethod: mysqlEnum("payment_method", [
+      "visa",
+      "vodafone_cash",
+      "cod",
+      "instapay",
+    ]).notNull(),
+    paidAt: timestamp("paid_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    invoiceIdIndex: index("sales_invoice_payments_invoice_id_index").on(table.invoiceId),
+    paidAtIndex: index("sales_invoice_payments_paid_at_index").on(table.paidAt),
   }),
 );
 

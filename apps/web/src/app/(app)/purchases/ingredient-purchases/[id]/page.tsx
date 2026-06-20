@@ -11,6 +11,7 @@ import {
 import { getIngredientPurchase } from "@/lib/api/ingredient-purchases";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 import { getIngredients } from "@/lib/api/ingredients";
+import type { PaymentMethod, PaymentStatus } from "@capella/shared/payments/payment.types";
 
 type IngredientPurchaseDetailPageProps = {
   params: Promise<{
@@ -39,7 +40,7 @@ export default async function IngredientPurchaseDetailPage({
   }
 
   const ingredientNames = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
-  const total = purchase.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+  const total = purchase.totalAmount;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
@@ -75,6 +76,64 @@ export default async function IngredientPurchaseDetailPage({
           <DetailItem label="وقت الفاتورة" value={formatDateTime(purchase.occurredAt)} />
           <DetailItem label="وقت التسجيل" value={formatDateTime(purchase.createdAt)} />
           <DetailItem label="ملاحظات" value={purchase.notes ?? "لا توجد"} />
+        </div>
+
+        <div className="border-t px-5 py-5 sm:px-8">
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-[17px] font-bold text-slate-950">ملخص الدفع</h2>
+              <p className="mt-1 text-sm text-slate-600">
+                حالة الفاتورة: {paymentStatusLabel(purchase.paymentStatus)}
+              </p>
+            </div>
+          </div>
+
+          <div className="mb-5 grid gap-3 sm:grid-cols-3">
+            <Metric label="إجمالي الفاتورة" value={formatAmount(purchase.totalAmount)} />
+            <Metric label="المدفوع" value={formatAmount(purchase.paidAmount)} />
+            <Metric label="المتبقي" value={formatAmount(purchase.remainingAmount)} />
+          </div>
+
+          {purchase.payments.length > 0 ? (
+            <>
+              <div className="hidden overflow-x-auto rounded-2xl border sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-center">المبلغ المدفوع</TableHead>
+                      <TableHead className="text-center">طريقة الدفع</TableHead>
+                      <TableHead className="text-center">وقت الدفع</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {purchase.payments.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="text-center font-medium">
+                          {formatAmount(payment.amount)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {paymentMethodLabel(payment.paymentMethod)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {formatDateTime(payment.paidAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="divide-y overflow-hidden rounded-2xl border sm:hidden">
+                {purchase.payments.map((payment) => (
+                  <PaymentCard key={payment.id} payment={payment} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-600">
+              لا توجد دفعات مسجلة لهذه الفاتورة
+            </div>
+          )}
         </div>
 
         <div className="border-t px-5 py-5 sm:px-8">
@@ -171,6 +230,28 @@ function IngredientPurchaseLineCard({
   );
 }
 
+function PaymentCard({
+  payment,
+}: {
+  payment: {
+    amount: number;
+    paymentMethod: PaymentMethod;
+    paidAt: string;
+  };
+}) {
+  return (
+    <div className="bg-card px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-semibold text-foreground">{formatAmount(payment.amount)}</p>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+          {paymentMethodLabel(payment.paymentMethod)}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(payment.paidAt)}</p>
+    </div>
+  );
+}
+
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border bg-slate-50/80 px-4 py-3">
@@ -222,4 +303,25 @@ function formatDateTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function paymentMethodLabel(value: PaymentMethod) {
+  const labels: Record<PaymentMethod, string> = {
+    visa: "Visa",
+    vodafone_cash: "Vodafone Cash",
+    cod: "COD",
+    instapay: "Instapay",
+  };
+
+  return labels[value];
+}
+
+function paymentStatusLabel(value: PaymentStatus) {
+  const labels: Record<PaymentStatus, string> = {
+    unpaid: "غير مدفوعة",
+    partial: "مدفوعة جزئياً",
+    paid: "مدفوعة بالكامل",
+  };
+
+  return labels[value];
 }

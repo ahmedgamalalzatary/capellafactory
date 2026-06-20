@@ -7,15 +7,13 @@ type ReportTab = {
 
 const reportTabs: readonly ReportTab[] = [
   { key: "overview", label: "نظرة عامة" },
-  { key: "buyers", label: "المشترون" },
-  { key: "suppliers", label: "الموردون" },
-  { key: "ingredients", label: "الخامات" },
-  { key: "products", label: "المنتجات" },
   { key: "expenses", label: "المصاريف" },
   { key: "ingredient-purchases", label: "فواتير الخامات" },
   { key: "purchase-corrections", label: "عكس الشراء" },
   { key: "production-batches", label: "تشغيلات الإنتاج" },
   { key: "sales", label: "المبيعات" },
+  { key: "supplier-debts", label: "ديون الموردين" },
+  { key: "buyer-debts", label: "ديون المشترين" },
 ] as const;
 
 type ReportRange = {
@@ -77,6 +75,14 @@ export function summarizeReports(data: ReportsData) {
     0,
   );
   const salesTotal = data.salesInvoices.reduce((sum, invoice) => sum + invoice.subtotal, 0);
+  const supplierDebtTotal = data.ingredientPurchases.reduce(
+    (sum, purchase) => sum + purchase.remainingAmount,
+    0,
+  );
+  const buyerDebtTotal = data.salesInvoices.reduce(
+    (sum, invoice) => sum + invoice.remainingAmount,
+    0,
+  );
   const grossProfitTotal = data.salesInvoices.reduce(
     (sum, invoice) => sum + invoice.grossProfit,
     0,
@@ -94,6 +100,8 @@ export function summarizeReports(data: ReportsData) {
     purchaseCorrectionsTotal,
     productionCostTotal,
     salesTotal,
+    supplierDebtTotal,
+    buyerDebtTotal,
     grossProfitTotal,
     currentProductStockValue,
     netAfterExpenses: grossProfitTotal - expensesTotal,

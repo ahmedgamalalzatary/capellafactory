@@ -10,15 +10,13 @@ import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 
 export type ReportsTabKey =
   | "overview"
-  | "buyers"
-  | "suppliers"
-  | "ingredients"
-  | "products"
   | "expenses"
   | "ingredient-purchases"
   | "purchase-corrections"
   | "production-batches"
-  | "sales";
+  | "sales"
+  | "supplier-debts"
+  | "buyer-debts";
 
 export type ReportsRangeKey = "all" | "last-day" | "last-7-days" | "last-30-days";
 

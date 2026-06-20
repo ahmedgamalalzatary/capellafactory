@@ -1,5 +1,11 @@
 import type { Request, Response } from "express";
-import { addExpense, getExpense, getExpenses } from "./expenses.service.js";
+import {
+  addExpense,
+  getExpense,
+  getExpenses,
+  recordExpensePayment,
+} from "./expenses.service.js";
+import { ExpenseValidationError } from "./expenses.validators.js";
 
 export async function listExpensesHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;
@@ -27,4 +33,31 @@ export async function getExpenseHandler(request: Request, response: Response) {
 export async function createExpenseHandler(request: Request, response: Response) {
   const expense = await addExpense(request.body);
   response.status(201).json(expense);
+}
+
+export async function addExpensePaymentHandler(request: Request, response: Response) {
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "Invalid expense id" });
+    return;
+  }
+
+  try {
+    const expense = await recordExpensePayment(id, request.body);
+
+    if (!expense) {
+      response.status(404).json({ message: "Expense not found" });
+      return;
+    }
+
+    response.status(201).json(expense);
+  } catch (error) {
+    if (error instanceof ExpenseValidationError) {
+      response.status(400).json({ message: error.message });
+      return;
+    }
+
+    throw error;
+  }
 }
