@@ -1,3 +1,4 @@
+ALTER TABLE `expenses` MODIFY COLUMN `id` int AUTO_INCREMENT NOT NULL;--> statement-breakpoint
 CREATE TABLE `expense_payments` (
 	`id` int AUTO_INCREMENT NOT NULL,
 	`expense_id` int NOT NULL,

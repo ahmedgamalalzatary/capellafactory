@@ -201,6 +201,12 @@ curl -i https://capellaerp.cloud/api/health
 
 Use this once production may contain valuable data. Do not use `down -v`.
 
+Legacy schema note:
+
+- Older databases created before the `serial` to `int` normalization can still have `expenses.id` as `bigint unsigned`.
+- Migration `0014_lethal_natasha_romanoff.sql` now normalizes `expenses.id` to `int` before adding `expense_payments` foreign keys so older environments can migrate cleanly.
+- If `migrate` ever fails partway through `0014`, inspect `__drizzle_migrations`, `expenses`, `expense_payments`, `ingredient_purchase_payments`, `sales_invoice_payments`, and `ingredient_purchases.total_amount` before retrying. MySQL DDL is not transactional, so partial objects can remain.
+
 Start on the VPS:
 
 ```bash
@@ -229,6 +235,7 @@ Verify containers and migration result:
 docker compose --env-file .env.production ps
 docker compose --env-file .env.production logs migrate --tail 80
 docker compose --env-file .env.production logs api --tail 80
+docker compose --env-file .env.production exec db sh -lc 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" -e "SELECT * FROM __drizzle_migrations;"'
 ```
 
 Verify public services:
