@@ -101,6 +101,22 @@ test("sales invoice tables expose expected money and FIFO cost columns", () => {
   assert.equal(salesInvoiceLinesTable.lineCost.getSQLType(), "decimal(14,3)");
 });
 
+test("document header tables expose tax discount and final total columns", () => {
+  for (const table of [ingredientPurchasesTable, salesInvoicesTable, expensesTable]) {
+    assert.equal(table.baseTotal.getSQLType(), "decimal(14,3)");
+    assert.equal(table.taxState.getSQLType(), "enum('active','inactive')");
+    assert.equal(table.taxType.getSQLType(), "enum('amount','percentage')");
+    assert.equal(table.taxValue.getSQLType(), "decimal(14,3)");
+    assert.equal(table.taxAmount.getSQLType(), "decimal(14,3)");
+    assert.equal(table.totalAfterTax.getSQLType(), "decimal(14,3)");
+    assert.equal(table.discountState.getSQLType(), "enum('active','inactive')");
+    assert.equal(table.discountType.getSQLType(), "enum('amount','percentage')");
+    assert.equal(table.discountValue.getSQLType(), "decimal(14,3)");
+    assert.equal(table.discountAmount.getSQLType(), "decimal(14,3)");
+    assert.equal(table.finalTotal.getSQLType(), "decimal(14,3)");
+  }
+});
+
 test("schema defines foreign keys for clear single-parent relationships", () => {
   assert.deepEqual(foreignKeyNames(authSessionsTable), [
     "auth_sessions_admin_id_admins_id_fk",

@@ -1,4 +1,13 @@
+import type { PaymentMethod, PaymentStatus } from "@capella/shared/payments/payment.types";
 import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getExpense } from "@/lib/api/expenses";
@@ -24,7 +33,6 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
   if (!expense) {
     notFound();
   }
-
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 sm:px-8 sm:py-8">
       <div className="mb-5">
@@ -60,8 +68,87 @@ export default async function ExpenseDetailPage({ params }: ExpenseDetailPagePro
           <DetailItem label="تفصيل المصروف" value={expenseDetailLabel(expense)} />
           <DetailItem label="ملاحظات" value={expense.notes ?? "لا توجد"} />
         </div>
+
+        <div className="border-t px-5 py-5 sm:px-8">
+          <div className="mb-4">
+            <h2 className="text-[17px] font-bold text-slate-950">الملخص المالي</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              القيم الأساسية والضريبة والخصم والإجمالي النهائي وحالة السداد.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Metric label="الإجمالي الأساسي" value={formatAmount(expense.baseTotal)} />
+            <Metric label="قيمة الضريبة" value={formatAmount(expense.taxAmount)} />
+            <Metric label="بعد الضريبة" value={formatAmount(expense.totalAfterTax)} />
+            <Metric label="قيمة الخصم" value={formatAmount(expense.discountAmount)} />
+            <Metric label="الإجمالي النهائي" value={formatAmount(expense.finalTotal)} />
+            <Metric label="حالة الدفع" value={paymentStatusLabel(expense.paymentStatus)} />
+            <Metric label="المدفوع" value={formatAmount(expense.paidAmount)} />
+            <Metric label="المتبقي" value={formatAmount(expense.remainingAmount)} />
+          </div>
+        </div>
+
+        <div className="border-t px-5 py-5 sm:px-8">
+          <div className="mb-4">
+            <h2 className="text-[17px] font-bold text-slate-950">سجل الدفعات</h2>
+            <p className="mt-1 text-sm text-slate-600">كل الدفعات الجزئية المسجلة على هذا المصروف.</p>
+          </div>
+
+          {expense.payments.length > 0 ? (
+            <>
+              <div className="hidden overflow-x-auto rounded-2xl border sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="text-center">المبلغ المدفوع</TableHead>
+                      <TableHead className="text-center">طريقة الدفع</TableHead>
+                      <TableHead className="text-center">وقت الدفع</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {expense.payments.map((payment) => (
+                      <TableRow key={payment.id}>
+                        <TableCell className="text-center font-medium">
+                          {formatAmount(payment.amount)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {paymentMethodLabel(payment.paymentMethod)}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {formatDateTime(payment.paidAt)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="divide-y overflow-hidden rounded-2xl border sm:hidden">
+                {expense.payments.map((payment) => (
+                  <PaymentCard key={payment.id} payment={payment} />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed bg-slate-50/70 px-4 py-6 text-center text-sm text-slate-600">
+              لا توجد دفعات مسجلة لهذا المصروف
+            </div>
+          )}
+        </div>
       </section>
     </main>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border bg-slate-50/80 px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-2 text-[22px] font-bold leading-none text-slate-950">{value}</p>
+    </div>
   );
 }
 
@@ -72,6 +159,31 @@ function DetailItem({ label, value }: { label: string; value: string }) {
         {label}
       </dt>
       <dd className="mt-2 text-[15px] font-semibold text-slate-950">{value}</dd>
+    </div>
+  );
+}
+
+function PaymentCard({
+  payment,
+}: {
+  payment: {
+    amount: number;
+    paymentMethod: PaymentMethod;
+    paidAt: string;
+  };
+}) {
+  return (
+    <div className="bg-card px-4 py-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{formatAmount(payment.amount)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">طريقة الدفع</p>
+        </div>
+        <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
+          {paymentMethodLabel(payment.paymentMethod)}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">{formatDateTime(payment.paidAt)}</p>
     </div>
   );
 }
@@ -107,4 +219,25 @@ function formatDateTime(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function paymentMethodLabel(value: PaymentMethod) {
+  const labels: Record<PaymentMethod, string> = {
+    visa: "Visa",
+    vodafone_cash: "Vodafone Cash",
+    cod: "COD",
+    instapay: "Instapay",
+  };
+
+  return labels[value];
+}
+
+function paymentStatusLabel(value: PaymentStatus) {
+  const labels: Record<PaymentStatus, string> = {
+    unpaid: "غير مدفوع",
+    partial: "مدفوع جزئياً",
+    paid: "مدفوع بالكامل",
+  };
+
+  return labels[value];
 }

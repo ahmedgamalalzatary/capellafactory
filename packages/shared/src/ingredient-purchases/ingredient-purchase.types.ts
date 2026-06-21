@@ -1,3 +1,8 @@
+import type {
+  AdjustmentState,
+  AdjustmentType,
+  DocumentPaymentInput,
+} from "../payments/document-payment.types.js";
 import type { PaymentMethod, PaymentStatus } from "../payments/payment.types.js";
 
 export const ingredientPurchaseUnits = ["kg", "g", "L", "ml", "piece"] as const;
@@ -14,9 +19,13 @@ export type IngredientPurchaseLineInput = {
 export type IngredientPurchaseInput = {
   occurredAt: string;
   supplierId: number;
-  paidAmount: number;
-  paymentMethod?: PaymentMethod;
-  paidAt?: string;
+  taxState: AdjustmentState;
+  taxType?: AdjustmentType;
+  taxValue: number;
+  discountState: AdjustmentState;
+  discountType?: AdjustmentType;
+  discountValue: number;
+  payments: DocumentPaymentInput[];
   notes?: string;
   lines: IngredientPurchaseLineInput[];
 };
@@ -42,6 +51,17 @@ export type IngredientPurchase = {
   id: number;
   invoiceCode: string;
   occurredAt: string;
+  baseTotal: number;
+  taxState: AdjustmentState;
+  taxType?: AdjustmentType;
+  taxValue: number;
+  taxAmount: number;
+  totalAfterTax: number;
+  discountState: AdjustmentState;
+  discountType?: AdjustmentType;
+  discountValue: number;
+  discountAmount: number;
+  finalTotal: number;
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;

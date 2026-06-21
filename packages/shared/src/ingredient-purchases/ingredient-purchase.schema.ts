@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { ingredientPurchaseUnits } from "./ingredient-purchase.types.js";
-import { paymentMethodSchema } from "../payments/payment.schema.js";
+import {
+  adjustmentStateSchema,
+  adjustmentTypeSchema,
+  calculateDocumentTotals,
+  documentPaymentsInputSchema,
+  sumDocumentPayments,
+  validateDocumentAdjustments,
+} from "../payments/document-payment.schema.js";
 
 const optionalTrimmedString = z
   .string()
@@ -24,10 +31,14 @@ export const ingredientPurchaseInputSchema = z
       .string()
       .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
     supplierId: z.coerce.number().int().positive("Supplier is required"),
-    paidAmount: z.coerce.number().min(0, "Paid amount cannot be negative"),
-    paymentMethod: paymentMethodSchema.optional(),
-    paidAt: z.string().datetime({ offset: true }).optional(),
     notes: optionalTrimmedString,
+    taxState: adjustmentStateSchema,
+    taxType: adjustmentTypeSchema.optional(),
+    taxValue: z.coerce.number(),
+    discountState: adjustmentStateSchema,
+    discountType: adjustmentTypeSchema.optional(),
+    discountValue: z.coerce.number(),
+    payments: documentPaymentsInputSchema,
     lines: z
       .array(ingredientPurchaseLineInputSchema)
       .min(1, "At least one ingredient line is required"),
@@ -38,29 +49,17 @@ export const ingredientPurchaseInputSchema = z
     notes: value.notes?.trim(),
   }))
   .superRefine((value, ctx) => {
+    validateDocumentAdjustments(value, ctx);
+
     const totalAmount = value.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+    const totals = calculateDocumentTotals(totalAmount, value);
+    const paidAmount = sumDocumentPayments(value.payments);
 
-    if (value.paidAmount > totalAmount) {
+    if (paidAmount > totals.finalTotal) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["paidAmount"],
+        path: ["payments"],
         message: "Paid amount cannot exceed total amount",
-      });
-    }
-
-    if (value.paidAmount > 0 && !value.paymentMethod) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["paymentMethod"],
-        message: "Payment method is required when paid amount is greater than zero",
-      });
-    }
-
-    if (value.paidAmount > 0 && !value.paidAt) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["paidAt"],
-        message: "Payment date is required when paid amount is greater than zero",
       });
     }
 
@@ -86,9 +85,19 @@ export const ingredientPurchaseInputSchema = z
 
       seenIngredientIds.add(line.ingredientId);
     });
+
+    if (totals.finalTotal < 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["discountValue"],
+        message: "Final total cannot be negative",
+      });
+    }
   })
   .transform((value) => ({
     ...value,
-    paymentMethod: value.paidAmount > 0 ? value.paymentMethod : undefined,
-    paidAt: value.paidAmount > 0 ? value.paidAt : undefined,
+    taxType: value.taxState === "active" ? value.taxType : undefined,
+    taxValue: Number(value.taxValue),
+    discountType: value.discountState === "active" ? value.discountType : undefined,
+    discountValue: Number(value.discountValue),
   }));

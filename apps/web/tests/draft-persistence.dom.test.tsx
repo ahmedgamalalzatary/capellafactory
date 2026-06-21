@@ -131,7 +131,7 @@ describe("Draft persistence in dialogs", () => {
 
     await user.click(screen.getByRole("button", { name: "+ إضافة مصروف" }));
 
-    await user.selectOptions(screen.getByRole("combobox"), "other");
+    await user.selectOptions(screen.getByLabelText(/نوع المصروف/), "other");
     await user.type(screen.getByLabelText(/إجمالي المصروف/), "250");
     await user.type(screen.getByLabelText(/وصف النوع/), "صيانة");
     await user.type(screen.getByLabelText(/ملاحظات/), "لا تضعها من جديد");
@@ -143,7 +143,7 @@ describe("Draft persistence in dialogs", () => {
 
     await user.click(screen.getByRole("button", { name: "+ إضافة مصروف" }));
 
-    expect(screen.getByRole("combobox")).toHaveValue("other");
+    expect(screen.getByLabelText(/نوع المصروف/)).toHaveValue("other");
     expect(screen.getByLabelText(/إجمالي المصروف/)).toHaveValue(250);
     expect(screen.getByLabelText(/وصف النوع/)).toHaveValue("صيانة");
     expect(screen.getByLabelText(/ملاحظات/)).toHaveValue("لا تضعها من جديد");
@@ -154,7 +154,7 @@ describe("Draft persistence in dialogs", () => {
     render(<ExpenseDialog />);
 
     await user.click(screen.getByRole("button", { name: "+ إضافة مصروف" }));
-    await user.selectOptions(screen.getByRole("combobox"), "other");
+    await user.selectOptions(screen.getByLabelText(/نوع المصروف/), "other");
     await user.type(screen.getByLabelText(/إجمالي المصروف/), "250");
     await user.type(screen.getByLabelText(/وصف النوع/), "صيانة");
     await user.type(screen.getByLabelText(/ملاحظات/), "امسحني");
@@ -166,7 +166,7 @@ describe("Draft persistence in dialogs", () => {
 
     await user.click(screen.getByRole("button", { name: "+ إضافة مصروف" }));
 
-    expect(screen.getByRole("combobox")).toHaveValue("rent");
+    expect(screen.getByLabelText(/نوع المصروف/)).toHaveValue("rent");
     expect(screen.getByLabelText(/إجمالي المصروف/)).toHaveValue(null);
     expect(screen.queryByLabelText(/وصف النوع/)).not.toBeInTheDocument();
     expect(screen.getByLabelText(/ملاحظات/)).toHaveValue("");

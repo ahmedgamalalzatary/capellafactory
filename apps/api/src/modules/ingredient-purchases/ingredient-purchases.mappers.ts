@@ -3,6 +3,10 @@ import type {
   IngredientPurchaseLine,
   IngredientPurchasePayment,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import type {
+  AdjustmentState,
+  AdjustmentType,
+} from "@capella/shared/payments/document-payment.types";
 import type { PaymentMethod } from "@capella/shared/payments/payment.types";
 import { createPaymentSummary } from "@capella/shared/payments/payment.schema";
 
@@ -10,6 +14,17 @@ export type IngredientPurchaseRow = {
   id: number;
   invoiceCode: string;
   occurredAt: Date | string;
+  baseTotal: string | number;
+  taxState: AdjustmentState;
+  taxType: AdjustmentType | null;
+  taxValue: string | number;
+  taxAmount: string | number;
+  totalAfterTax: string | number;
+  discountState: AdjustmentState;
+  discountType: AdjustmentType | null;
+  discountValue: string | number;
+  discountAmount: string | number;
+  finalTotal: string | number;
   totalAmount: string | number;
   supplierId: number | null;
   supplierName: string | null;
@@ -75,12 +90,24 @@ export function mapIngredientPurchaseRowToIngredientPurchase(
   payments: IngredientPurchasePaymentRow[] = [],
 ): IngredientPurchase {
   const totalAmount = Number(row.totalAmount);
-  const summary = createPaymentSummary({ totalAmount, paidAmount });
+  const finalTotal = Number(row.finalTotal);
+  const summary = createPaymentSummary({ totalAmount: finalTotal, paidAmount });
 
   return {
     id: row.id,
     invoiceCode: row.invoiceCode,
     occurredAt: toIsoString(row.occurredAt),
+    baseTotal: Number(row.baseTotal),
+    taxState: row.taxState,
+    taxType: row.taxType ?? undefined,
+    taxValue: Number(row.taxValue),
+    taxAmount: Number(row.taxAmount),
+    totalAfterTax: Number(row.totalAfterTax),
+    discountState: row.discountState,
+    discountType: row.discountType ?? undefined,
+    discountValue: Number(row.discountValue),
+    discountAmount: Number(row.discountAmount),
+    finalTotal,
     totalAmount,
     paidAmount: summary.paidAmount,
     remainingAmount: summary.remainingAmount,

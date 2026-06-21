@@ -41,7 +41,6 @@ export default async function IngredientPurchaseDetailPage({
 
   const ingredientNames = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient.name]));
   const total = purchase.totalAmount;
-
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-8 sm:py-8">
       <div className="mb-5">
@@ -79,9 +78,27 @@ export default async function IngredientPurchaseDetailPage({
         </div>
 
         <div className="border-t px-5 py-5 sm:px-8">
+          <div className="mb-4">
+            <h2 className="text-[17px] font-bold text-slate-950">الملخص المالي</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              عرض كامل لقيم الفاتورة الأساسية والضريبة والخصم والرصيد.
+            </p>
+          </div>
+
+          <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Metric label="الإجمالي الأساسي" value={formatAmount(purchase.baseTotal)} />
+            <Metric label="قيمة الضريبة" value={formatAmount(purchase.taxAmount)} />
+            <Metric label="بعد الضريبة" value={formatAmount(purchase.totalAfterTax)} />
+            <Metric label="قيمة الخصم" value={formatAmount(purchase.discountAmount)} />
+            <Metric label="الإجمالي النهائي" value={formatAmount(purchase.finalTotal)} />
+            <Metric label="حالة الدفع" value={paymentStatusLabel(purchase.paymentStatus)} />
+          </div>
+        </div>
+
+        <div className="border-t px-5 py-5 sm:px-8">
           <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <h2 className="text-[17px] font-bold text-slate-950">ملخص الدفع</h2>
+              <h2 className="text-[17px] font-bold text-slate-950">سجل الدفعات</h2>
               <p className="mt-1 text-sm text-slate-600">
                 حالة الفاتورة: {paymentStatusLabel(purchase.paymentStatus)}
               </p>
@@ -242,7 +259,10 @@ function PaymentCard({
   return (
     <div className="bg-card px-4 py-4">
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-foreground">{formatAmount(payment.amount)}</p>
+        <div>
+          <p className="text-sm font-semibold text-foreground">{formatAmount(payment.amount)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">طريقة الدفع</p>
+        </div>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700">
           {paymentMethodLabel(payment.paymentMethod)}
         </span>

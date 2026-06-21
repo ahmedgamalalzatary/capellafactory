@@ -2,6 +2,7 @@ import type {
   IngredientPurchase,
   IngredientPurchaseInput,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
+import { calculateDocumentTotals } from "@capella/shared/payments/document-payment.schema";
 import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
@@ -79,7 +80,7 @@ export async function getIngredientPurchaseById(id: number) {
   return mapIngredientPurchaseRowToIngredientPurchase(
     row,
     lines,
-    paymentTotals.get(id) ?? Number(row.totalAmount),
+    paymentTotals.get(id) ?? Number(row.finalTotal),
     payments,
   );
 }
@@ -93,14 +94,26 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
 
   const insertedId = await db.transaction(async (tx) => {
     const occurredAt = new Date(input.occurredAt);
-    const totalAmount = input.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+    const baseTotal = input.lines.reduce((sum, line) => sum + line.lineTotal, 0);
+    const totals = calculateDocumentTotals(baseTotal, input);
 
     const inserted = await tx
       .insert(ingredientPurchasesTable)
       .values({
         invoiceCode: "",
         occurredAt,
-        totalAmount: totalAmount.toFixed(3),
+        baseTotal: totals.baseTotal.toFixed(3),
+        taxState: input.taxState,
+        taxType: input.taxType,
+        taxValue: input.taxValue.toFixed(3),
+        taxAmount: totals.taxAmount.toFixed(3),
+        totalAfterTax: totals.totalAfterTax.toFixed(3),
+        discountState: input.discountState,
+        discountType: input.discountType,
+        discountValue: input.discountValue.toFixed(3),
+        discountAmount: totals.discountAmount.toFixed(3),
+        finalTotal: totals.finalTotal.toFixed(3),
+        totalAmount: totals.finalTotal.toFixed(3),
         supplierId: supplierFields.supplierId,
         supplierName: supplierFields.supplierName,
         notes: input.notes,
@@ -145,13 +158,15 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
       }),
     );
 
-    if (input.paidAmount > 0 && input.paymentMethod && input.paidAt) {
-      await tx.insert(ingredientPurchasePaymentsTable).values({
-        purchaseId,
-        amount: input.paidAmount.toFixed(3),
-        paymentMethod: input.paymentMethod,
-        paidAt: new Date(input.paidAt),
-      });
+    if (input.payments.length > 0) {
+      await tx.insert(ingredientPurchasePaymentsTable).values(
+        input.payments.map((payment) => ({
+          purchaseId,
+          amount: payment.amount.toFixed(3),
+          paymentMethod: payment.paymentMethod,
+          paidAt: new Date(payment.paidAt),
+        })),
+      );
     }
 
     const insertedLines = await tx

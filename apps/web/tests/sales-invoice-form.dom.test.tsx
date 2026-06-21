@@ -133,7 +133,7 @@ describe("SalesInvoiceForm (behavioral)", () => {
     expect(payload.lines[0].productId).toBe(9);
   });
 
-  test("submits partial payment details and shows remaining amount", async () => {
+  test("submits split payment details as payments array and shows remaining amount", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -149,8 +149,53 @@ describe("SalesInvoiceForm (behavioral)", () => {
 
     await waitFor(() => expect(createSalesInvoice).toHaveBeenCalledTimes(1));
     expect(createSalesInvoice.mock.calls[0][0]).toMatchObject({
-      paidAmount: 75,
-      paymentMethod: "visa",
+      payments: [
+        expect.objectContaining({
+          amount: 75,
+          paymentMethod: "visa",
+        }),
+      ],
+    });
+  });
+
+  test("applies tax then discount and submits multiple payments", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    const [quantity, sellingUnitPrice] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "4");
+    await user.type(sellingUnitPrice, "25");
+
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الضريبة/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الضريبة/), "amount");
+    await user.type(screen.getByLabelText(/قيمة الضريبة/), "10");
+
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الخصم/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الخصم/), "percentage");
+    await user.type(screen.getByLabelText(/قيمة الخصم/), "10");
+
+    expect(screen.getAllByText("99.000").length).toBeGreaterThanOrEqual(1);
+
+    await user.type(screen.getByLabelText(/المدفوع/), "30");
+    await user.selectOptions(screen.getByLabelText(/طريقة الدفع/), "cod");
+    await user.click(screen.getByRole("button", { name: /إضافة دفعة/ }));
+    await user.type(screen.getAllByLabelText(/المدفوع/)[1], "5");
+    await user.selectOptions(screen.getAllByLabelText(/طريقة الدفع/)[1], "instapay");
+
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createSalesInvoice).toHaveBeenCalledTimes(1));
+    expect(createSalesInvoice.mock.calls[0][0]).toMatchObject({
+      taxState: "active",
+      taxType: "amount",
+      taxValue: 10,
+      discountState: "active",
+      discountType: "percentage",
+      discountValue: 10,
+      payments: [
+        expect.objectContaining({ amount: 30, paymentMethod: "cod" }),
+        expect.objectContaining({ amount: 5, paymentMethod: "instapay" }),
+      ],
     });
   });
 });

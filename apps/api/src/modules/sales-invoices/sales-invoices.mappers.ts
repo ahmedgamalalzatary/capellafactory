@@ -2,6 +2,10 @@ import type {
   SalesInvoice,
   SalesInvoiceLine,
 } from "@capella/shared/sales-invoices/sales-invoice.types";
+import type {
+  AdjustmentState,
+  AdjustmentType,
+} from "@capella/shared/payments/document-payment.types";
 import { createPaymentSummary } from "@capella/shared/payments/payment.schema";
 
 export type SalesInvoiceRow = {
@@ -9,6 +13,17 @@ export type SalesInvoiceRow = {
   invoiceCode: string;
   occurredAt: Date | string;
   buyerId: number;
+  baseTotal: string | number;
+  taxState: AdjustmentState;
+  taxType: AdjustmentType | null;
+  taxValue: string | number;
+  taxAmount: string | number;
+  totalAfterTax: string | number;
+  discountState: AdjustmentState;
+  discountType: AdjustmentType | null;
+  discountValue: string | number;
+  discountAmount: string | number;
+  finalTotal: string | number;
   subtotal: string | number;
   totalCost: string | number;
   grossProfit: string | number;
@@ -57,12 +72,24 @@ export function mapSalesInvoiceRowToSalesInvoice(
   paidAmount = Number(row.subtotal),
 ): SalesInvoice {
   const subtotal = Number(row.subtotal);
-  const summary = createPaymentSummary({ totalAmount: subtotal, paidAmount });
+  const finalTotal = Number(row.finalTotal);
+  const summary = createPaymentSummary({ totalAmount: finalTotal, paidAmount });
 
   return {
     id: row.id,
     invoiceCode: row.invoiceCode,
     occurredAt: toIsoString(row.occurredAt),
+    baseTotal: Number(row.baseTotal),
+    taxState: row.taxState,
+    taxType: row.taxType ?? undefined,
+    taxValue: Number(row.taxValue),
+    taxAmount: Number(row.taxAmount),
+    totalAfterTax: Number(row.totalAfterTax),
+    discountState: row.discountState,
+    discountType: row.discountType ?? undefined,
+    discountValue: Number(row.discountValue),
+    discountAmount: Number(row.discountAmount),
+    finalTotal,
     buyerId: row.buyerId,
     subtotal,
     paidAmount: summary.paidAmount,
@@ -93,7 +120,7 @@ export function mapSalesInvoiceRowsToSalesInvoices(
     mapSalesInvoiceRowToSalesInvoice(
       row,
       linesByInvoiceId.get(row.id) ?? [],
-      paymentTotals.get(row.id) ?? Number(row.subtotal),
+      paymentTotals.get(row.id) ?? Number(row.finalTotal),
     ),
   );
 }

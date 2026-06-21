@@ -94,6 +94,25 @@ test("ingredient purchase detail page shows payment summary and method", () => {
   expect(source).toContain("طريقة الدفع");
 });
 
+test("ingredient purchase detail page shows adjustment summary and payment history", () => {
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/app/(app)/purchases/ingredient-purchases/[id]/page.tsx",
+    ),
+    "utf8",
+  );
+
+  expect(source).toContain("الملخص المالي");
+  expect(source).toContain("baseTotal");
+  expect(source).toContain("taxAmount");
+  expect(source).toContain("discountAmount");
+  expect(source).toContain("finalTotal");
+  expect(source).toContain("سجل الدفعات");
+  expect(source).toContain("payments.map");
+  expect(source).toContain("paidAt");
+});
+
 test("ingredient purchases table exposes add payment action for partial invoices", () => {
   const source = readFileSync(
     resolve(

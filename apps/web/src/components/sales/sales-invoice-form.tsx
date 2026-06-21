@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
-import type { PaymentMethod } from "@capella/shared/payments/payment.types";
 import { createSalesInvoice } from "@/lib/api/sales-invoices";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
@@ -20,6 +19,15 @@ import {
   getLocalTimeInputValue,
   PurchaseDateTimeFields,
 } from "@/components/purchases/datetime-fields";
+import {
+  buildPaymentInputs,
+  createEmptyPaymentRow,
+  createInactiveAdjustment,
+  DocumentFinancialSection,
+  formatAmount,
+  type DraftAdjustment,
+  type DraftPaymentRow,
+} from "@/components/purchases/document-financial-section";
 
 type SalesInvoiceFormProps = {
   buyers: Buyer[];
@@ -33,13 +41,6 @@ type DraftLine = {
   quantity: string;
   sellingUnitPrice: string;
 };
-
-const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
-  { value: "visa", label: "Visa" },
-  { value: "vodafone_cash", label: "Vodafone Cash" },
-  { value: "cod", label: "COD" },
-  { value: "instapay", label: "Instapay" },
-];
 
 function Field({
   id,
@@ -85,9 +86,10 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
   const [occurredAtDate, setOccurredAtDate] = useState(getLocalDateInputValue(now));
   const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
   const [buyerId, setBuyerId] = useState(String(buyers[0]?.id ?? ""));
-  const [paidAmount, setPaidAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [notes, setNotes] = useState("");
+  const [tax, setTax] = useState<DraftAdjustment>(createInactiveAdjustment());
+  const [discount, setDiscount] = useState<DraftAdjustment>(createInactiveAdjustment());
+  const [payments, setPayments] = useState<DraftPaymentRow[]>([createEmptyPaymentRow()]);
 
   function resetForm() {
     const next = new Date();
@@ -95,9 +97,10 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
     setOccurredAtDate(getLocalDateInputValue(next));
     setOccurredAtTime(getLocalTimeInputValue(next));
     setBuyerId(String(buyers[0]?.id ?? ""));
-    setPaidAmount("");
-    setPaymentMethod("cod");
     setNotes("");
+    setTax(createInactiveAdjustment());
+    setDiscount(createInactiveAdjustment());
+    setPayments([createEmptyPaymentRow()]);
   }
 
   function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
@@ -124,12 +127,16 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
         const payload: SalesInvoiceInput = {
           occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
           buyerId: Number(buyerId || 0),
-          paidAmount: Number(paidAmount || 0),
-          paymentMethod: Number(paidAmount || 0) > 0 ? paymentMethod : undefined,
-          paidAt:
-            Number(paidAmount || 0) > 0
-              ? buildIsoDateTime(occurredAtDate, occurredAtTime)
-              : undefined,
+          taxState: tax.state,
+          taxType: tax.state === "active" ? tax.type : undefined,
+          taxValue: Number(tax.value) || 0,
+          discountState: discount.state,
+          discountType: discount.state === "active" ? discount.type : undefined,
+          discountValue: Number(discount.value) || 0,
+          payments: buildPaymentInputs(
+            payments,
+            buildIsoDateTime(occurredAtDate, occurredAtTime),
+          ),
           notes: notes.trim() || undefined,
           lines: lines.map((line) => ({
             productId: Number(line.productId),
@@ -154,9 +161,6 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
     const sellingUnitPrice = Number(line.sellingUnitPrice || 0);
     return sum + quantity * sellingUnitPrice;
   }, 0);
-  const paidAmountValue = Number(paidAmount || 0);
-  const remainingAmount = Math.max(invoiceTotal - paidAmountValue, 0);
-  const hasPayment = paidAmountValue > 0;
 
   return (
     <form action={onSubmit} className="grid gap-5">
@@ -289,50 +293,16 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
         />
       </Field>
 
-      <div className="rounded-2xl border bg-muted/40 px-4 py-3">
-        <p className="text-[11px] font-medium text-muted-foreground">إجمالي الفاتورة</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums">{formatAmount(invoiceTotal)}</p>
-      </div>
-
-      <div className="grid gap-3 rounded-2xl border bg-muted/20 p-4">
-        <Field id="paidAmount" label="المدفوع" required>
-          <Input
-            id="paidAmount"
-            name="paidAmount"
-            type="number"
-            min="0"
-            max={invoiceTotal || undefined}
-            step="0.001"
-            value={paidAmount}
-            onChange={(event) => setPaidAmount(event.target.value)}
-            required
-          />
-        </Field>
-
-        <div className="rounded-md bg-background px-3 py-2 text-sm">
-          <span className="text-muted-foreground">المتبقي: </span>
-          <span className="font-semibold tabular-nums">{formatAmount(remainingAmount)}</span>
-        </div>
-
-        {hasPayment ? (
-          <Field id="paymentMethod" label="طريقة الدفع" required>
-            <select
-              id="paymentMethod"
-              name="paymentMethod"
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              value={paymentMethod}
-              onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-              required
-            >
-              {paymentMethodOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        ) : null}
-      </div>
+      <DocumentFinancialSection
+        baseTotal={invoiceTotal}
+        totalLabel="إجمالي الفاتورة"
+        tax={tax}
+        discount={discount}
+        payments={payments}
+        onTaxChange={setTax}
+        onDiscountChange={setDiscount}
+        onPaymentsChange={setPayments}
+      />
 
       <div className="mt-2 flex items-center justify-between border-t pt-4">
         <p className="text-xs text-muted-foreground">
@@ -349,11 +319,4 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
       </div>
     </form>
   );
-}
-
-function formatAmount(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 3,
-    maximumFractionDigits: 3,
-  }).format(value);
 }

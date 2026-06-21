@@ -37,7 +37,7 @@ describe("ExpenseForm (behavioral)", () => {
     localStorage.clear();
   });
 
-  test("submits total amount and partial paid amount with payment method", async () => {
+  test("submits total amount and partial paid amount as payments array", async () => {
     const user = userEvent.setup();
     render(<ExpenseForm />);
 
@@ -52,28 +52,29 @@ describe("ExpenseForm (behavioral)", () => {
     await waitFor(() => expect(createExpense).toHaveBeenCalledTimes(1));
     expect(createExpense.mock.calls[0][0]).toMatchObject({
       amount: 40000,
-      paidAmount: 37000,
-      paymentMethod: "instapay",
+      payments: [
+        expect.objectContaining({
+          amount: 37000,
+          paymentMethod: "instapay",
+        }),
+      ],
     });
   });
 
-  test("hides payment method when paid amount is zero", async () => {
+  test("submits no payments when all payment rows are zero", async () => {
     const user = userEvent.setup();
     render(<ExpenseForm />);
 
     await user.type(screen.getByLabelText(/إجمالي المصروف/), "40000");
     await user.type(screen.getByLabelText(/المدفوع/), "0");
 
-    expect(screen.queryByLabelText(/طريقة الدفع/)).not.toBeInTheDocument();
-
     await user.click(screen.getByRole("button", { name: "حفظ المصروف" }));
 
     await waitFor(() => expect(createExpense).toHaveBeenCalledTimes(1));
     expect(createExpense.mock.calls[0][0]).toMatchObject({
       amount: 40000,
-      paidAmount: 0,
+      payments: [],
     });
-    expect(createExpense.mock.calls[0][0].paymentMethod).toBeUndefined();
   });
 
   test("submits additional expense payment within remaining amount", async () => {
@@ -97,5 +98,42 @@ describe("ExpenseForm (behavioral)", () => {
         paymentMethod: "instapay",
       }),
     );
+  });
+
+  test("applies tax then discount and submits multiple payments", async () => {
+    const user = userEvent.setup();
+    render(<ExpenseForm />);
+
+    await user.type(screen.getByLabelText(/إجمالي المصروف/), "40000");
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الضريبة/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الضريبة/), "percentage");
+    await user.type(screen.getByLabelText(/قيمة الضريبة/), "10");
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الخصم/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الخصم/), "amount");
+    await user.type(screen.getByLabelText(/قيمة الخصم/), "2000");
+
+    expect(screen.getAllByText("42,000.000").length).toBeGreaterThanOrEqual(1);
+
+    await user.type(screen.getByLabelText(/المدفوع/), "30000");
+    await user.selectOptions(screen.getByLabelText(/طريقة الدفع/), "cod");
+    await user.click(screen.getByRole("button", { name: /إضافة دفعة/ }));
+    await user.type(screen.getAllByLabelText(/المدفوع/)[1], "5000");
+    await user.selectOptions(screen.getAllByLabelText(/طريقة الدفع/)[1], "vodafone_cash");
+
+    await user.click(screen.getByRole("button", { name: "حفظ المصروف" }));
+
+    await waitFor(() => expect(createExpense).toHaveBeenCalledTimes(1));
+    expect(createExpense.mock.calls[0][0]).toMatchObject({
+      taxState: "active",
+      taxType: "percentage",
+      taxValue: 10,
+      discountState: "active",
+      discountType: "amount",
+      discountValue: 2000,
+      payments: [
+        expect.objectContaining({ amount: 30000, paymentMethod: "cod" }),
+        expect.objectContaining({ amount: 5000, paymentMethod: "vodafone_cash" }),
+      ],
+    });
   });
 });

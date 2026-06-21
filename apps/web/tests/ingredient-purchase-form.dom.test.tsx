@@ -162,7 +162,7 @@ describe("IngredientPurchaseForm (behavioral)", () => {
     expect(screen.getAllByText("110.000").length).toBeGreaterThanOrEqual(1);
   });
 
-  test("submits partial payment details and shows remaining amount", async () => {
+  test("submits split payment details as payments array and shows remaining amount", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -178,8 +178,53 @@ describe("IngredientPurchaseForm (behavioral)", () => {
 
     await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
     expect(createIngredientPurchase.mock.calls[0][0]).toMatchObject({
-      paidAmount: 60,
-      paymentMethod: "vodafone_cash",
+      payments: [
+        expect.objectContaining({
+          amount: 60,
+          paymentMethod: "vodafone_cash",
+        }),
+      ],
+    });
+  });
+
+  test("applies tax then discount and submits multiple payments", async () => {
+    const user = userEvent.setup();
+    renderForm();
+
+    const [quantity, lineTotal] = screen.getAllByRole("spinbutton");
+    await user.type(quantity, "8");
+    await user.type(lineTotal, "100");
+
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الضريبة/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الضريبة/), "percentage");
+    await user.type(screen.getByLabelText(/قيمة الضريبة/), "10");
+
+    await user.click(screen.getByRole("checkbox", { name: /تفعيل الخصم/ }));
+    await user.selectOptions(screen.getByLabelText(/نوع الخصم/), "amount");
+    await user.type(screen.getByLabelText(/قيمة الخصم/), "5");
+
+    expect(screen.getAllByText("105.000").length).toBeGreaterThanOrEqual(1);
+
+    await user.type(screen.getByLabelText(/المدفوع/), "30");
+    await user.selectOptions(screen.getByLabelText(/طريقة الدفع/), "cod");
+    await user.click(screen.getByRole("button", { name: /إضافة دفعة/ }));
+    await user.type(screen.getAllByLabelText(/المدفوع/)[1], "5");
+    await user.selectOptions(screen.getAllByLabelText(/طريقة الدفع/)[1], "vodafone_cash");
+
+    await user.click(screen.getByRole("button", { name: "حفظ الفاتورة" }));
+
+    await waitFor(() => expect(createIngredientPurchase).toHaveBeenCalledTimes(1));
+    expect(createIngredientPurchase.mock.calls[0][0]).toMatchObject({
+      taxState: "active",
+      taxType: "percentage",
+      taxValue: 10,
+      discountState: "active",
+      discountType: "amount",
+      discountValue: 5,
+      payments: [
+        expect.objectContaining({ amount: 30, paymentMethod: "cod" }),
+        expect.objectContaining({ amount: 5, paymentMethod: "vodafone_cash" }),
+      ],
     });
   });
 });

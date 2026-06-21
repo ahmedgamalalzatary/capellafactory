@@ -69,3 +69,21 @@ test("expense detail page falls back to notFound when the fetch fails", () => {
   expect(source).toContain("if (!expense) {");
   expect(source).toContain("notFound();");
 });
+
+test("expense detail page shows financial summary and payment history", () => {
+  const source = readFileSync(
+    resolve(process.cwd(), "src/app/(app)/purchases/expenses/[id]/page.tsx"),
+    "utf8",
+  );
+
+  expect(source).toContain("الملخص المالي");
+  expect(source).toContain("baseTotal");
+  expect(source).toContain("taxAmount");
+  expect(source).toContain("discountAmount");
+  expect(source).toContain("finalTotal");
+  expect(source).toContain("سجل الدفعات");
+  expect(source).toContain("payments");
+  expect(source).toContain("paidAt");
+  expect(source).toContain("employeeName");
+  expect(source).toContain("otherLabel");
+});

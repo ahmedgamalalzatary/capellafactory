@@ -1,3 +1,8 @@
+import type {
+  AdjustmentState,
+  AdjustmentType,
+  DocumentPaymentInput,
+} from "../payments/document-payment.types.js";
 import type { PaymentMethod, PaymentStatus } from "../payments/payment.types.js";
 
 export type SalesInvoiceLineInput = {
@@ -9,9 +14,13 @@ export type SalesInvoiceLineInput = {
 export type SalesInvoiceInput = {
   occurredAt: string;
   buyerId: number;
-  paidAmount: number;
-  paymentMethod?: PaymentMethod;
-  paidAt?: string;
+  taxState: AdjustmentState;
+  taxType?: AdjustmentType;
+  taxValue: number;
+  discountState: AdjustmentState;
+  discountType?: AdjustmentType;
+  discountValue: number;
+  payments: DocumentPaymentInput[];
   notes?: string;
   lines: SalesInvoiceLineInput[];
 };
@@ -27,6 +36,17 @@ export type SalesInvoice = {
   id: number;
   invoiceCode: string;
   occurredAt: string;
+  baseTotal: number;
+  taxState: AdjustmentState;
+  taxType?: AdjustmentType;
+  taxValue: number;
+  taxAmount: number;
+  totalAfterTax: number;
+  discountState: AdjustmentState;
+  discountType?: AdjustmentType;
+  discountValue: number;
+  discountAmount: number;
+  finalTotal: number;
   buyerId: number;
   subtotal: number;
   paidAmount: number;

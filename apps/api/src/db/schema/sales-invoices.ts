@@ -21,6 +21,17 @@ export const salesInvoicesTable = mysqlTable(
     buyerId: int("buyer_id")
       .notNull()
       .references(() => buyersTable.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    baseTotal: decimal("base_total", { precision: 14, scale: 3 }).notNull(),
+    taxState: mysqlEnum("tax_state", ["active", "inactive"]).notNull(),
+    taxType: mysqlEnum("tax_type", ["amount", "percentage"]),
+    taxValue: decimal("tax_value", { precision: 14, scale: 3 }).notNull(),
+    taxAmount: decimal("tax_amount", { precision: 14, scale: 3 }).notNull(),
+    totalAfterTax: decimal("total_after_tax", { precision: 14, scale: 3 }).notNull(),
+    discountState: mysqlEnum("discount_state", ["active", "inactive"]).notNull(),
+    discountType: mysqlEnum("discount_type", ["amount", "percentage"]),
+    discountValue: decimal("discount_value", { precision: 14, scale: 3 }).notNull(),
+    discountAmount: decimal("discount_amount", { precision: 14, scale: 3 }).notNull(),
+    finalTotal: decimal("final_total", { precision: 14, scale: 3 }).notNull(),
     subtotal: decimal("subtotal", { precision: 14, scale: 3 }).notNull(),
     totalCost: decimal("total_cost", { precision: 14, scale: 3 }).notNull(),
     grossProfit: decimal("gross_profit", { precision: 14, scale: 3 }).notNull(),
@@ -32,6 +43,7 @@ export const salesInvoicesTable = mysqlTable(
       table.invoiceCode,
     ),
     occurredAtIndex: index("sales_invoices_occurred_at_index").on(table.occurredAt),
+    finalTotalIndex: index("sales_invoices_final_total_index").on(table.finalTotal),
     buyerIdIndex: index("sales_invoices_buyer_id_index").on(table.buyerId),
   }),
 );

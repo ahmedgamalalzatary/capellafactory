@@ -1,4 +1,5 @@
 import type { SalesInvoice, SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
+import { calculateDocumentTotals } from "@capella/shared/payments/document-payment.schema";
 import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
@@ -40,6 +41,17 @@ export async function listSalesInvoices(query?: string) {
       invoiceCode: salesInvoicesTable.invoiceCode,
       occurredAt: salesInvoicesTable.occurredAt,
       buyerId: salesInvoicesTable.buyerId,
+      baseTotal: salesInvoicesTable.baseTotal,
+      taxState: salesInvoicesTable.taxState,
+      taxType: salesInvoicesTable.taxType,
+      taxValue: salesInvoicesTable.taxValue,
+      taxAmount: salesInvoicesTable.taxAmount,
+      totalAfterTax: salesInvoicesTable.totalAfterTax,
+      discountState: salesInvoicesTable.discountState,
+      discountType: salesInvoicesTable.discountType,
+      discountValue: salesInvoicesTable.discountValue,
+      discountAmount: salesInvoicesTable.discountAmount,
+      finalTotal: salesInvoicesTable.finalTotal,
       subtotal: salesInvoicesTable.subtotal,
       totalCost: salesInvoicesTable.totalCost,
       grossProfit: salesInvoicesTable.grossProfit,
@@ -96,7 +108,7 @@ export async function getSalesInvoiceById(id: number) {
   return mapSalesInvoiceRowToSalesInvoice(
     row,
     lines,
-    paymentTotals.get(id) ?? Number(row.subtotal),
+    paymentTotals.get(id) ?? Number(row.finalTotal),
   );
 }
 
@@ -148,6 +160,17 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
           invoiceCode: "",
           occurredAt,
           buyerId: input.buyerId,
+          baseTotal: "0.000",
+          taxState: input.taxState,
+          taxType: input.taxType,
+          taxValue: input.taxValue.toFixed(3),
+          taxAmount: "0.000",
+          totalAfterTax: "0.000",
+          discountState: input.discountState,
+          discountType: input.discountType,
+          discountValue: input.discountValue.toFixed(3),
+          discountAmount: "0.000",
+          finalTotal: "0.000",
           subtotal: "0.000",
           totalCost: "0.000",
           grossProfit: "0.000",
@@ -249,22 +272,37 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
         totalCost += allocationResult.lineCost;
       }
 
+      const totals = calculateDocumentTotals(subtotal, input);
+
       await tx
         .update(salesInvoicesTable)
         .set({
+          baseTotal: totals.baseTotal.toFixed(3),
+          taxState: input.taxState,
+          taxType: input.taxType,
+          taxValue: input.taxValue.toFixed(3),
+          taxAmount: totals.taxAmount.toFixed(3),
+          totalAfterTax: totals.totalAfterTax.toFixed(3),
+          discountState: input.discountState,
+          discountType: input.discountType,
+          discountValue: input.discountValue.toFixed(3),
+          discountAmount: totals.discountAmount.toFixed(3),
+          finalTotal: totals.finalTotal.toFixed(3),
           subtotal: subtotal.toFixed(3),
           totalCost: totalCost.toFixed(3),
           grossProfit: (subtotal - totalCost).toFixed(3),
         })
         .where(eq(salesInvoicesTable.id, invoiceId));
 
-      if (input.paidAmount > 0 && input.paymentMethod && input.paidAt) {
-        await tx.insert(salesInvoicePaymentsTable).values({
-          invoiceId,
-          amount: input.paidAmount.toFixed(3),
-          paymentMethod: input.paymentMethod,
-          paidAt: new Date(input.paidAt),
-        });
+      if (input.payments.length > 0) {
+        await tx.insert(salesInvoicePaymentsTable).values(
+          input.payments.map((payment) => ({
+            invoiceId,
+            amount: payment.amount.toFixed(3),
+            paymentMethod: payment.paymentMethod,
+            paidAt: new Date(payment.paidAt),
+          })),
+        );
       }
 
       await recalculateStockBalances(tx);

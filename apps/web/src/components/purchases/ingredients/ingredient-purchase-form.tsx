@@ -7,7 +7,6 @@ import type {
   IngredientPurchaseInput,
   IngredientPurchaseUnit,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
-import type { PaymentMethod } from "@capella/shared/payments/payment.types";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { createIngredientPurchase } from "@/lib/api/ingredient-purchases";
 import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
@@ -24,6 +23,14 @@ import {
   getLocalTimeInputValue,
   PurchaseDateTimeFields,
 } from "../datetime-fields";
+import {
+  buildPaymentInputs,
+  createEmptyPaymentRow,
+  createInactiveAdjustment,
+  DocumentFinancialSection,
+  type DraftAdjustment,
+  type DraftPaymentRow,
+} from "../document-financial-section";
 
 type IngredientPurchaseFormProps = {
   suppliers: Supplier[];
@@ -43,9 +50,10 @@ type IngredientPurchaseDraft = {
   occurredAtDate: string;
   occurredAtTime: string;
   supplierId: string;
-  paidAmount: string;
-  paymentMethod: PaymentMethod;
   notes: string;
+  tax: DraftAdjustment;
+  discount: DraftAdjustment;
+  payments: DraftPaymentRow[];
   lines: DraftLine[];
 };
 
@@ -56,13 +64,6 @@ const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUn
   volume: ["L", "ml"],
   count: ["piece"],
 };
-
-const paymentMethodOptions: Array<{ value: PaymentMethod; label: string }> = [
-  { value: "visa", label: "Visa" },
-  { value: "vodafone_cash", label: "Vodafone Cash" },
-  { value: "cod", label: "COD" },
-  { value: "instapay", label: "Instapay" },
-];
 
 function isDraftLine(value: unknown): value is DraftLine {
   const candidate = value as Partial<DraftLine> | null;
@@ -90,16 +91,38 @@ function isIngredientPurchaseDraft(value: unknown): value is IngredientPurchaseD
     typeof candidate?.occurredAtDate === "string" &&
     typeof candidate.occurredAtTime === "string" &&
     typeof candidate.supplierId === "string" &&
-    typeof candidate.paidAmount === "string" &&
-    isPaymentMethod(candidate.paymentMethod) &&
     typeof candidate.notes === "string" &&
+    isDraftAdjustment(candidate.tax) &&
+    isDraftAdjustment(candidate.discount) &&
+    Array.isArray(candidate.payments) &&
+    candidate.payments.every(isDraftPaymentRow) &&
     Array.isArray(candidate.lines) &&
     candidate.lines.every(isDraftLine)
   );
 }
 
-function isPaymentMethod(value: unknown): value is PaymentMethod {
-  return value === "visa" || value === "vodafone_cash" || value === "cod" || value === "instapay";
+function isDraftAdjustment(value: unknown): value is DraftAdjustment {
+  const candidate = value as Partial<DraftAdjustment> | null;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (candidate?.state === "active" || candidate?.state === "inactive") &&
+    (candidate?.type === "amount" || candidate?.type === "percentage") &&
+    typeof candidate?.value === "string"
+  );
+}
+
+function isDraftPaymentRow(value: unknown): value is DraftPaymentRow {
+  const candidate = value as Partial<DraftPaymentRow> | null;
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.amount === "string" &&
+    (candidate?.paymentMethod === "visa" ||
+      candidate?.paymentMethod === "vodafone_cash" ||
+      candidate?.paymentMethod === "cod" ||
+      candidate?.paymentMethod === "instapay")
+  );
 }
 
 function Field({
@@ -165,27 +188,28 @@ export function IngredientPurchaseForm({
     initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
   );
   const [supplierId, setSupplierId] = useState(initialDraft?.supplierId ?? String(suppliers[0]?.id ?? ""));
-  const [paidAmount, setPaidAmount] = useState(initialDraft?.paidAmount ?? "");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(
-    initialDraft?.paymentMethod ?? "cod",
-  );
   const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+  const [tax, setTax] = useState<DraftAdjustment>(initialDraft?.tax ?? createInactiveAdjustment());
+  const [discount, setDiscount] = useState<DraftAdjustment>(
+    initialDraft?.discount ?? createInactiveAdjustment(),
+  );
+  const [payments, setPayments] = useState<DraftPaymentRow[]>(
+    initialDraft?.payments.length ? initialDraft.payments : [createEmptyPaymentRow()],
+  );
   const invoiceTotal = lines.reduce((sum, line) => sum + (Number(line.lineTotal) || 0), 0);
-  const paidAmountValue = Number(paidAmount || 0);
-  const remainingAmount = Math.max(invoiceTotal - paidAmountValue, 0);
-  const hasPayment = paidAmountValue > 0;
 
   useEffect(() => {
     saveLocalDraft<IngredientPurchaseDraft>(ingredientPurchaseDraftKey, {
       occurredAtDate,
       occurredAtTime,
       supplierId,
-      paidAmount,
-      paymentMethod,
       notes,
+      tax,
+      discount,
+      payments,
       lines,
     });
-  }, [lines, notes, occurredAtDate, occurredAtTime, paidAmount, paymentMethod, supplierId]);
+  }, [discount, lines, notes, occurredAtDate, occurredAtTime, payments, supplierId, tax]);
 
   function resetForm(clearDraft = false) {
     const next = new Date();
@@ -193,9 +217,10 @@ export function IngredientPurchaseForm({
     setOccurredAtDate(getLocalDateInputValue(next));
     setOccurredAtTime(getLocalTimeInputValue(next));
     setSupplierId(String(suppliers[0]?.id ?? ""));
-    setPaidAmount("");
-    setPaymentMethod("cod");
     setNotes("");
+    setTax(createInactiveAdjustment());
+    setDiscount(createInactiveAdjustment());
+    setPayments([createEmptyPaymentRow()]);
 
     if (clearDraft) {
       clearLocalDraft(ingredientPurchaseDraftKey);
@@ -254,9 +279,16 @@ export function IngredientPurchaseForm({
         const payload: IngredientPurchaseInput = {
           occurredAt: buildIsoDateTime(occurredAtDate, occurredAtTime),
           supplierId: parsedSupplierId,
-          paidAmount: paidAmountValue,
-          paymentMethod: hasPayment ? paymentMethod : undefined,
-          paidAt: hasPayment ? buildIsoDateTime(occurredAtDate, occurredAtTime) : undefined,
+          taxState: tax.state,
+          taxType: tax.state === "active" ? tax.type : undefined,
+          taxValue: Number(tax.value) || 0,
+          discountState: discount.state,
+          discountType: discount.state === "active" ? discount.type : undefined,
+          discountValue: Number(discount.value) || 0,
+          payments: buildPaymentInputs(
+            payments,
+            buildIsoDateTime(occurredAtDate, occurredAtTime),
+          ),
           notes: notes.trim() || undefined,
           lines: parsedLines,
         };
@@ -408,57 +440,16 @@ export function IngredientPurchaseForm({
           );
         })}
 
-        <div className="flex items-center justify-between rounded-lg border border-dashed bg-muted/30 px-4 py-3 text-sm">
-          <span className="font-medium text-muted-foreground">إجمالي الفاتورة</span>
-          <span className="font-semibold tabular-nums text-foreground">
-            {invoiceTotal.toFixed(3)}
-          </span>
-        </div>
-
-        <div className="grid gap-3 rounded-lg border bg-muted/20 p-3">
-          <Field
-            id="paidAmount"
-            label="المدفوع"
-            required
-            hint="يمكن أن يكون صفر إذا لم يتم دفع أي مبلغ عند تسجيل الفاتورة."
-          >
-            <Input
-              id="paidAmount"
-              name="paidAmount"
-              type="number"
-              min="0"
-              max={invoiceTotal || undefined}
-              step="0.001"
-              value={paidAmount}
-              onChange={(event) => setPaidAmount(event.target.value)}
-              required
-            />
-          </Field>
-
-          <div className="rounded-md bg-background px-3 py-2 text-sm">
-            <span className="text-muted-foreground">المتبقي: </span>
-            <span className="font-semibold tabular-nums">{remainingAmount.toFixed(3)}</span>
-          </div>
-
-          {hasPayment ? (
-            <Field id="paymentMethod" label="طريقة الدفع" required>
-              <select
-                id="paymentMethod"
-                name="paymentMethod"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-                required
-              >
-                {paymentMethodOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
-        </div>
+        <DocumentFinancialSection
+          baseTotal={invoiceTotal}
+          totalLabel="إجمالي الفاتورة"
+          tax={tax}
+          discount={discount}
+          payments={payments}
+          onTaxChange={setTax}
+          onDiscountChange={setDiscount}
+          onPaymentsChange={setPayments}
+        />
       </div>
 
       <Field id="notes" label="ملاحظات">

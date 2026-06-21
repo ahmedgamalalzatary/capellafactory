@@ -89,6 +89,14 @@
       "types": "./dist/payments/payment.schema.d.ts",
       "default": "./dist/payments/payment.schema.js"
     },
+    "./payments/document-payment.types": {
+      "types": "./dist/payments/document-payment.types.d.ts",
+      "default": "./dist/payments/document-payment.types.js"
+    },
+    "./payments/document-payment.schema": {
+      "types": "./dist/payments/document-payment.schema.d.ts",
+      "default": "./dist/payments/document-payment.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
