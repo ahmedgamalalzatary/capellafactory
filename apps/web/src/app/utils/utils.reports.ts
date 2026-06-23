@@ -1,4 +1,8 @@
-import type { ReportsData, ReportsRangeKey, ReportsTabKey } from "@/app/types/types.reports";
+import type {
+  ReportsData,
+  ReportsDateFilter,
+  ReportsTabKey,
+} from "@/app/types/types.reports";
 
 type ReportTab = {
   key: ReportsTabKey;
@@ -16,39 +20,23 @@ const reportTabs: readonly ReportTab[] = [
   { key: "buyer-debts", label: "ديون المشترين" },
 ] as const;
 
-type ReportRange = {
-  key: ReportsRangeKey;
-  label: string;
-};
-
-const reportRanges: readonly ReportRange[] = [
-  { key: "all", label: "كل الوقت" },
-  { key: "last-30-days", label: "آخر 30 يوم" },
-  { key: "last-7-days", label: "آخر 7 أيام" },
-  { key: "last-day", label: "آخر يوم" },
-] as const;
-
 export function getReportTabs() {
   return reportTabs;
-}
-
-export function getReportRanges() {
-  return reportRanges;
 }
 
 export function normalizeReportsTab(value?: string): ReportsTabKey {
   return reportTabs.some((tab) => tab.key === value) ? (value as ReportsTabKey) : "overview";
 }
 
-export function normalizeReportsRange(value?: string): ReportsRangeKey {
-  return reportRanges.some((range) => range.key === value) ? (value as ReportsRangeKey) : "all";
-}
-
-export function buildReportsHref(tab: ReportsTabKey, range: ReportsRangeKey = "all") {
+export function buildReportsHref(tab: ReportsTabKey, dates?: ReportsDateFilter) {
   const params = new URLSearchParams({ tab });
 
-  if (range !== "all") {
-    params.set("range", range);
+  if (dates?.from) {
+    params.set("from", dates.from);
+  }
+
+  if (dates?.to) {
+    params.set("to", dates.to);
   }
 
   return `/reports?${params.toString()}`;
@@ -108,45 +96,98 @@ export function summarizeReports(data: ReportsData) {
   };
 }
 
+export function normalizeReportsDateFilter(
+  params: {
+    from?: string;
+    to?: string;
+  },
+  now = new Date(),
+): ReportsDateFilter {
+  const today = toDateInputValue(now);
+  const from = normalizeDateInput(params.from);
+  const to = normalizeDateInput(params.to);
+
+  if (!from && !to) {
+    return {};
+  }
+
+  let normalizedFrom = from;
+  let normalizedTo = to;
+
+  if (normalizedFrom && !normalizedTo) {
+    normalizedTo = today;
+  } else if (!normalizedFrom && normalizedTo) {
+    normalizedFrom = normalizedTo;
+  }
+
+  if (normalizedFrom && normalizedTo && normalizedFrom > normalizedTo) {
+    return {
+      from: normalizedTo,
+      to: normalizedFrom,
+    };
+  }
+
+  return {
+    from: normalizedFrom,
+    to: normalizedTo,
+  };
+}
+
 export function filterReportsDataByCreatedAt(
   data: ReportsData,
-  range: ReportsRangeKey,
-  now = new Date(),
+  filter: ReportsDateFilter,
 ): ReportsData {
-  if (range === "all") {
+  if (!filter.from || !filter.to) {
     return data;
   }
 
-  const cutoff = new Date(now);
+  const cutoff = new Date(`${filter.from}T00:00:00.000Z`);
+  const end = new Date(`${filter.to}T23:59:59.999Z`);
 
-  if (range === "last-day") {
-    cutoff.setDate(cutoff.getDate() - 1);
-  } else if (range === "last-7-days") {
-    cutoff.setDate(cutoff.getDate() - 7);
-  } else {
-    cutoff.setDate(cutoff.getDate() - 30);
-  }
-
-  const isInRange = (row: { createdAt?: string }) => {
-    if (!row.createdAt) {
+  const isInRange = (value?: string) => {
+    if (!value) {
       return false;
     }
 
-    const createdAt = new Date(row.createdAt);
-    return createdAt >= cutoff && createdAt <= now;
+    const date = new Date(value);
+    return date >= cutoff && date <= end;
   };
 
   return {
-    buyers: data.buyers.filter(isInRange),
-    suppliers: data.suppliers.filter(isInRange),
-    ingredients: data.ingredients.filter(isInRange),
-    products: data.products.filter(isInRange),
-    expenses: data.expenses.filter(isInRange),
-    ingredientPurchases: data.ingredientPurchases.filter(isInRange),
-    purchaseCorrections: data.purchaseCorrections.filter(isInRange),
-    productionBatches: data.productionBatches.filter(isInRange),
-    salesInvoices: data.salesInvoices.filter(isInRange),
+    buyers: data.buyers.filter((row) => isInRange(row.createdAt)),
+    suppliers: data.suppliers.filter((row) => isInRange(row.createdAt)),
+    ingredients: data.ingredients.filter((row) => isInRange(row.createdAt)),
+    products: data.products.filter((row) => isInRange(row.createdAt)),
+    expenses: data.expenses.filter((row) => isInRange(row.occurredAt)),
+    ingredientPurchases: data.ingredientPurchases.filter((row) => isInRange(row.occurredAt)),
+    purchaseCorrections: data.purchaseCorrections.filter((row) => isInRange(row.createdAt)),
+    productionBatches: data.productionBatches.filter((row) => isInRange(row.occurredAt)),
+    salesInvoices: data.salesInvoices.filter((row) => isInRange(row.occurredAt)),
   };
+}
+
+function normalizeDateInput(value?: string) {
+  if (!value) {
+    return undefined;
+  }
+
+  const trimmed = value.trim();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return undefined;
+  }
+
+  const date = new Date(`${trimmed}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return trimmed;
+}
+
+function toDateInputValue(value: Date) {
+  return value.toISOString().slice(0, 10);
 }
 
 export function formatReportAmount(value: number) {

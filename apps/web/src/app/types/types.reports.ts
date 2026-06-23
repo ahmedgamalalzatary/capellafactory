@@ -18,7 +18,10 @@ export type ReportsTabKey =
   | "supplier-debts"
   | "buyer-debts";
 
-export type ReportsRangeKey = "all" | "last-day" | "last-7-days" | "last-30-days";
+export type ReportsDateFilter = {
+  from?: string;
+  to?: string;
+};
 
 export type ReportsData = {
   buyers: Buyer[];
@@ -35,6 +38,7 @@ export type ReportsData = {
 export type ReportsPageProps = {
   searchParams?: Promise<{
     tab?: string;
-    range?: string;
+    from?: string;
+    to?: string;
   }>;
 };

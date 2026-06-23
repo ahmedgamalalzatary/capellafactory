@@ -1,7 +1,7 @@
 import type { ReportsPageProps } from "@/app/types/types.reports";
 import {
   filterReportsDataByCreatedAt,
-  normalizeReportsRange,
+  normalizeReportsDateFilter,
   normalizeReportsTab,
 } from "@/app/utils/utils.reports";
 import { ReportsWorkspace } from "@/components/reports/reports-workspace";
@@ -19,7 +19,7 @@ import { getSuppliers } from "@/lib/api/suppliers";
 export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   const params = (await searchParams) ?? {};
   const activeTab = normalizeReportsTab(params.tab);
-  const activeRange = normalizeReportsRange(params.range);
+  const activeDateFilter = normalizeReportsDateFilter(params);
   const cookieHeader = await getServerCookieHeader();
   const [
     buyers,
@@ -55,13 +55,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
       productionBatches,
       salesInvoices,
     },
-    activeRange,
+    activeDateFilter,
   );
 
   return (
     <ReportsWorkspace
       activeTab={activeTab}
-      activeRange={activeRange}
+      activeFrom={activeDateFilter.from}
+      activeTo={activeDateFilter.to}
       data={data}
     />
   );

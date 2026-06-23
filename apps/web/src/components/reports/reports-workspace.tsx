@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { expenseTypeLabels } from "@capella/shared/expenses/expense.constants";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -11,14 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { ReportsData, ReportsRangeKey, ReportsTabKey } from "@/app/types/types.reports";
+import type { ReportsData, ReportsTabKey } from "@/app/types/types.reports";
 import {
   buildReportDownloadName,
   buildReportsHref,
   formatReportAmount,
   formatReportDateTime,
   formatReportQuantity,
-  getReportRanges,
   getReportTabs,
   summarizeReports,
 } from "@/app/utils/utils.reports";
@@ -28,18 +28,21 @@ import { ReportPdfDownloadButton } from "./report-pdf-download-button";
 type ReportsWorkspaceProps = {
   data: ReportsData;
   activeTab: ReportsTabKey;
-  activeRange?: ReportsRangeKey;
+  activeFrom?: string;
+  activeTo?: string;
 };
 
 export function ReportsWorkspace({
   data,
   activeTab,
-  activeRange = "all",
+  activeFrom,
+  activeTo,
 }: ReportsWorkspaceProps) {
   const summary = useMemo(() => summarizeReports(data), [data]);
   const activeLabel =
     getReportTabs().find((tab) => tab.key === activeTab)?.label ?? "نظرة عامة";
   const tableId = `report-table-${activeTab}`;
+  const dateFilter = { from: activeFrom, to: activeTo };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
@@ -79,7 +82,7 @@ export function ReportsWorkspace({
             {getReportTabs().map((tab) => (
               <Link
                 key={tab.key}
-                href={buildReportsHref(tab.key, activeRange)}
+                href={buildReportsHref(tab.key, dateFilter)}
                 className={`inline-flex h-10 shrink-0 items-center rounded-full px-4 text-sm font-semibold transition ${
                   tab.key === activeTab
                     ? "bg-slate-950 text-white"
@@ -91,21 +94,23 @@ export function ReportsWorkspace({
             ))}
           </nav>
 
-          <nav className="flex flex-wrap gap-2" aria-label="Report date ranges">
-            {getReportRanges().map((range) => (
-              <Link
-                key={range.key}
-                href={buildReportsHref(activeTab, range.key)}
-                className={`inline-flex h-9 items-center rounded-full border px-3 text-[13px] font-semibold transition ${
-                  range.key === activeRange
-                    ? "border-slate-950 bg-slate-950 text-white"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                {range.label}
-              </Link>
-            ))}
-          </nav>
+          <form action="/reports" className="grid gap-3 rounded-2xl border bg-slate-50/70 p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <input type="hidden" name="tab" value={activeTab} />
+            <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+              <span>من تاريخ</span>
+              <Input name="from" type="date" defaultValue={activeFrom} />
+            </label>
+            <label className="grid gap-1.5 text-sm font-medium text-slate-700">
+              <span>إلى تاريخ</span>
+              <Input name="to" type="date" defaultValue={activeTo} />
+            </label>
+            <button
+              type="submit"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              تطبيق
+            </button>
+          </form>
 
           <div className="flex items-center justify-between gap-3">
             <div>

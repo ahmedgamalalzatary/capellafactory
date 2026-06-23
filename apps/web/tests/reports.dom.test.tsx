@@ -138,24 +138,48 @@ describe("ReportsWorkspace", () => {
     expect(screen.queryByRole("link", { name: "الموردون" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "الخامات" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "المنتجات" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "آخر 7 أيام" })).toHaveAttribute(
-      "href",
-      "/reports?tab=overview&range=last-7-days",
-    );
+    expect(screen.getByLabelText("من تاريخ")).toHaveValue("");
+    expect(screen.getByLabelText("إلى تاريخ")).toHaveValue("");
+    expect(screen.queryByRole("link", { name: "آخر 7 أيام" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "آخر 30 يوم" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "آخر يوم" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "كل الوقت" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "تحميل PDF" })).toBeInTheDocument();
   });
 
-  test("preserves the selected date range when switching report tabs", () => {
-    render(<ReportsWorkspace data={baseData} activeTab="sales" activeRange="last-30-days" />);
+  test("preserves the selected custom date range when switching report tabs", () => {
+    render(
+      <ReportsWorkspace
+        data={baseData}
+        activeTab="sales"
+        activeFrom="2026-06-01"
+        activeTo="2026-06-21"
+      />,
+    );
 
     expect(screen.getByRole("link", { name: "فواتير الخامات" })).toHaveAttribute(
       "href",
-      "/reports?tab=ingredient-purchases&range=last-30-days",
+      "/reports?tab=ingredient-purchases&from=2026-06-01&to=2026-06-21",
     );
-    expect(screen.getByRole("link", { name: "آخر 30 يوم" })).toHaveAttribute(
+  });
+
+  test("renders the custom date form and preserves dates when switching report tabs", () => {
+    render(
+      <ReportsWorkspace
+        data={baseData}
+        activeTab="sales"
+        activeFrom="2026-06-01"
+        activeTo="2026-06-21"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "فواتير الخامات" })).toHaveAttribute(
       "href",
-      "/reports?tab=sales&range=last-30-days",
+      "/reports?tab=ingredient-purchases&from=2026-06-01&to=2026-06-21",
     );
+    expect(screen.getByLabelText("من تاريخ")).toHaveValue("2026-06-01");
+    expect(screen.getByLabelText("إلى تاريخ")).toHaveValue("2026-06-21");
+    expect(screen.getByRole("button", { name: "تطبيق" })).toBeInTheDocument();
   });
 
   test("links transaction rows to their existing detail routes", () => {

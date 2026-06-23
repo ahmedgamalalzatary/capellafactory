@@ -7,7 +7,6 @@ import {
   buildReportsHref,
   formatReportAmount,
   formatReportDateTime,
-  getReportRanges,
 } from "@/app/utils/utils.reports";
 
 export type AccountInvoice = {
@@ -31,20 +30,17 @@ export function AccountInvoicesTable({
   invoices: AccountInvoice[];
 }) {
   const [query, setQuery] = useState("");
-  const [rangeKey, setRangeKey] = useState("all");
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    const cutoff = getCutoff(rangeKey);
 
     return invoices.filter((invoice) => {
       const matchesCode = normalized
         ? invoice.invoiceCode.toLowerCase().includes(normalized)
         : true;
-      const matchesDate = cutoff ? new Date(invoice.occurredAt) >= cutoff : true;
 
-      return matchesCode && matchesDate;
+      return matchesCode;
     });
-  }, [invoices, query, rangeKey]);
+  }, [invoices, query]);
   const totalRemaining = filtered.reduce((sum, invoice) => sum + invoice.remainingAmount, 0);
 
   return (
@@ -67,18 +63,6 @@ export function AccountInvoicesTable({
           onChange={(event) => setQuery(event.target.value)}
         />
         <div className="flex flex-wrap gap-2">
-          {getReportRanges().map((range) => (
-            <button
-              key={range.key}
-              type="button"
-              className={`rounded-full border px-3 py-2 text-sm font-semibold ${
-                range.key === rangeKey ? "bg-slate-950 text-white" : "bg-white text-slate-700"
-              }`}
-              onClick={() => setRangeKey(range.key)}
-            >
-              {range.label}
-            </button>
-          ))}
           <Link className="ms-auto text-sm font-semibold text-slate-600" href={buildReportsHref("overview")}>
             التقارير
           </Link>
@@ -128,14 +112,4 @@ export function AccountInvoicesTable({
       </div>
     </section>
   );
-}
-
-function getCutoff(rangeKey: string) {
-  if (rangeKey === "all") {
-    return null;
-  }
-
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - (rangeKey === "last-day" ? 1 : rangeKey === "last-7-days" ? 7 : 30));
-  return cutoff;
 }

@@ -12,6 +12,7 @@ import {
   buildReportsHref,
   filterReportsDataByCreatedAt,
   getReportTabs,
+  normalizeReportsDateFilter,
   summarizeReports,
 } from "@/app/utils/utils.reports";
 
@@ -31,16 +32,48 @@ describe("reports helpers", () => {
 
   test("builds a stable report tab href and pdf filename", () => {
     expect(buildReportsHref("sales")).toBe("/reports?tab=sales");
-    expect(buildReportsHref("sales", "last-7-days")).toBe(
-      "/reports?tab=sales&range=last-7-days",
-    );
+    expect(
+      buildReportsHref("sales", { from: "2026-06-01", to: "2026-06-21" }),
+    ).toBe("/reports?tab=sales&from=2026-06-01&to=2026-06-21");
     expect(buildReportDownloadName("ingredient-purchases")).toBe(
       "capella-ingredient-purchases-report.pdf",
     );
     expect(buildReportsHref("supplier-debts")).toBe("/reports?tab=supplier-debts");
   });
 
-  test("filters every reports collection by createdAt for selected date ranges", () => {
+  test("normalizes custom report dates and fills missing sides", () => {
+    expect(
+      normalizeReportsDateFilter(
+        { from: "2026-06-05" },
+        new Date("2026-06-21T12:00:00.000Z"),
+      ),
+    ).toEqual({
+      from: "2026-06-05",
+      to: "2026-06-21",
+    });
+
+    expect(
+      normalizeReportsDateFilter(
+        { to: "2026-06-05" },
+        new Date("2026-06-21T12:00:00.000Z"),
+      ),
+    ).toEqual({
+      from: "2026-06-05",
+      to: "2026-06-05",
+    });
+
+    expect(
+      normalizeReportsDateFilter(
+        { from: "2026-06-20", to: "2026-06-10" },
+        new Date("2026-06-21T12:00:00.000Z"),
+      ),
+    ).toEqual({
+      from: "2026-06-10",
+      to: "2026-06-20",
+    });
+  });
+
+  test("filters report collections by the active business time field for a custom date range", () => {
     const data = {
       buyers: [
         { id: 1, createdAt: "2026-06-15T12:00:00.000Z" } as Buyer,
@@ -87,21 +120,127 @@ describe("reports helpers", () => {
 
     const filtered = filterReportsDataByCreatedAt(
       data,
-      "last-7-days",
-      new Date("2026-06-16T12:00:00.000Z"),
+      { from: "2026-06-09", to: "2026-06-16" },
     );
 
     expect(filtered.buyers.map((buyer) => buyer.id)).toEqual([1]);
     expect(filtered.suppliers).toHaveLength(1);
-    expect(filtered.expenses.map((expense) => expense.id)).toEqual([1]);
+    expect(filtered.expenses.map((expense) => expense.id)).toEqual([2]);
     expect(filtered.productionBatches.map((batch) => batch.id)).toEqual([1]);
-    expect(filtered.salesInvoices.map((invoice) => invoice.id)).toEqual([1]);
+    expect(filtered.salesInvoices).toHaveLength(0);
 
     expect(
-      filterReportsDataByCreatedAt(data, "last-day", new Date("2026-06-16T12:00:00.000Z"))
+      filterReportsDataByCreatedAt(data, { from: "2026-06-16", to: "2026-06-16" })
         .productionBatches,
-    ).toHaveLength(0);
-    expect(filterReportsDataByCreatedAt(data, "all").buyers).toHaveLength(2);
+    ).toHaveLength(1);
+    expect(filterReportsDataByCreatedAt(data, {}).buyers).toHaveLength(2);
+  });
+
+  test("filters every reports collection inclusively for a custom date range", () => {
+    const data = {
+      buyers: [
+        { id: 1, createdAt: "2026-06-10T00:00:00.000Z" } as Buyer,
+        { id: 2, createdAt: "2026-06-12T23:59:59.999Z" } as Buyer,
+        { id: 3, createdAt: "2026-06-13T00:00:00.000Z" } as Buyer,
+      ],
+      suppliers: [],
+      ingredients: [],
+      products: [],
+      expenses: [],
+      ingredientPurchases: [],
+      purchaseCorrections: [],
+      productionBatches: [],
+      salesInvoices: [],
+    };
+
+    const filtered = filterReportsDataByCreatedAt(data, {
+      from: "2026-06-10",
+      to: "2026-06-12",
+    });
+
+    expect(filtered.buyers.map((buyer) => buyer.id)).toEqual([1, 2]);
+  });
+
+  test("uses the business time field for each report collection", () => {
+    const data = {
+      buyers: [{ id: 1, createdAt: "2026-06-15T12:00:00.000Z" } as Buyer],
+      suppliers: [{ id: 1, createdAt: "2026-06-15T12:00:00.000Z" }] as never,
+      ingredients: [],
+      products: [],
+      expenses: [
+        {
+          id: 1,
+          amount: 10,
+          createdAt: "2026-06-01T10:00:00.000Z",
+          occurredAt: "2026-06-16T10:00:00.000Z",
+        } as Expense,
+      ],
+      ingredientPurchases: [
+        {
+          id: 1,
+          invoiceCode: "PUR-001",
+          createdAt: "2026-06-01T10:00:00.000Z",
+          occurredAt: "2026-06-16T10:00:00.000Z",
+          baseTotal: 0,
+          taxState: "inactive",
+          taxValue: 0,
+          taxAmount: 0,
+          totalAfterTax: 0,
+          discountState: "inactive",
+          discountValue: 0,
+          discountAmount: 0,
+          finalTotal: 0,
+          lines: [],
+          totalAmount: 0,
+          paidAmount: 0,
+          remainingAmount: 0,
+          paymentStatus: "paid",
+          payments: [],
+        } as IngredientPurchase,
+      ],
+      purchaseCorrections: [
+        {
+          id: 1,
+          sourcePurchaseId: 1,
+          reason: "test",
+          createdAt: "2026-06-16T10:00:00.000Z",
+          lines: [],
+        } as PurchaseCorrection,
+      ],
+      productionBatches: [
+        {
+          id: 1,
+          createdAt: "2026-06-01T10:00:00.000Z",
+          occurredAt: "2026-06-16T10:00:00.000Z",
+          totalCost: 80,
+        } as ProductionBatch,
+      ],
+      salesInvoices: [
+        {
+          id: 1,
+          createdAt: "2026-06-01T10:00:00.000Z",
+          occurredAt: "2026-06-16T10:00:00.000Z",
+          subtotal: 200,
+          grossProfit: 80,
+          totalCost: 120,
+          paidAmount: 200,
+          remainingAmount: 0,
+        } as SalesInvoice,
+      ],
+    };
+
+    const filtered = filterReportsDataByCreatedAt(
+      data,
+      { from: "2026-06-15", to: "2026-06-16" },
+    );
+
+    expect(filtered.buyers).toHaveLength(1);
+    expect(filtered.suppliers).toHaveLength(1);
+    expect(filtered.expenses.map((expense) => expense.id)).toEqual([1]);
+    expect(filtered.ingredientPurchases.map((purchase) => purchase.id)).toEqual([1]);
+    expect(filtered.purchaseCorrections.map((correction) => correction.id)).toEqual([1]);
+    expect(filtered.productionBatches.map((batch) => batch.id)).toEqual([1]);
+    expect(filtered.salesInvoices.map((invoice) => invoice.id)).toEqual([1]);
   });
 
   test("summarizes counts and financial totals from report rows", () => {
