@@ -4,7 +4,7 @@ import {
   isSidebarItemActive,
   sidebarItems,
 } from "../src/components/shell/sidebar-nav.js";
-import { middleware } from "../src/middleware.js";
+import { config, proxy } from "../src/proxy.js";
 
 test("all navigation items are real routes", () => {
   expect(sidebarItems).toEqual([
@@ -37,17 +37,17 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-test("middleware allows the login page even when a session cookie exists", async () => {
+test("proxy allows the login page even when a session cookie exists", async () => {
   const request = new NextRequest("http://localhost:3000/login", {
     headers: { Cookie: "capella_session=stale-token" },
   });
 
-  const response = await middleware(request);
+  const response = await proxy(request);
 
   expect(response.status).toBe(200);
 });
 
-test("middleware redirects stale session cookies to login", async () => {
+test("proxy redirects stale session cookies to login", async () => {
   global.fetch = vi.fn().mockResolvedValue(
     new Response(null, {
       status: 401,
@@ -58,7 +58,7 @@ test("middleware redirects stale session cookies to login", async () => {
     headers: { Cookie: "capella_session=stale-token" },
   });
 
-  const response = await middleware(request);
+  const response = await proxy(request);
 
   expect(global.fetch).toHaveBeenCalledWith(
     "http://localhost:4000/auth/me",
@@ -71,4 +71,42 @@ test("middleware redirects stale session cookies to login", async () => {
   );
   expect(response.status).toBe(307);
   expect(response.headers.get("location")).toBe("http://localhost:3000/login");
+});
+
+test("proxy redirects non-ok auth responses to login", async () => {
+  global.fetch = vi.fn().mockResolvedValue(
+    new Response(null, {
+      status: 403,
+    }),
+  );
+
+  const request = new NextRequest("http://localhost:3000/products", {
+    headers: { Cookie: "capella_session=stale-token" },
+  });
+
+  const response = await proxy(request);
+
+  expect(response.status).toBe(307);
+  expect(response.headers.get("location")).toBe("http://localhost:3000/login");
+});
+
+test("proxy verifies auth with a timeout signal", async () => {
+  global.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+
+  const request = new NextRequest("http://localhost:3000/products", {
+    headers: { Cookie: "capella_session=stale-token" },
+  });
+
+  await proxy(request);
+
+  expect(global.fetch).toHaveBeenCalledWith(
+    "http://localhost:4000/auth/me",
+    expect.objectContaining({
+      signal: expect.any(AbortSignal),
+    }),
+  );
+});
+
+test("proxy matcher keeps dot-extension routes excluded via an escaped dot", () => {
+  expect(config.matcher).toContain("/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)");
 });

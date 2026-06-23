@@ -9,10 +9,18 @@ import type {
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { Supplier } from "@capella/shared/suppliers/supplier.types";
 import { createIngredientPurchase } from "@/lib/api/ingredient-purchases";
-import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
+import { removeLocalDraftEntry, saveLocalDraftEntry } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +43,10 @@ import {
 type IngredientPurchaseFormProps = {
   suppliers: Supplier[];
   ingredients: Ingredient[];
+  draftId?: string | null;
+  initialDraft?: IngredientPurchaseDraft | null;
+  draftStorageKey?: string;
+  onDraftsChange?: () => void;
   onCancel?: () => void;
   onSuccess?: () => void;
 };
@@ -46,7 +58,7 @@ type DraftLine = {
   lineTotal: string;
 };
 
-type IngredientPurchaseDraft = {
+export type IngredientPurchaseDraft = {
   occurredAtDate: string;
   occurredAtTime: string;
   supplierId: string;
@@ -57,7 +69,7 @@ type IngredientPurchaseDraft = {
   lines: DraftLine[];
 };
 
-const ingredientPurchaseDraftKey = "capella:draft:ingredient-purchase";
+export const ingredientPurchaseDraftStorageKey = "capella:drafts:ingredient-purchase";
 
 const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
   weight: ["kg", "g"],
@@ -82,7 +94,7 @@ function isDraftLine(value: unknown): value is DraftLine {
   );
 }
 
-function isIngredientPurchaseDraft(value: unknown): value is IngredientPurchaseDraft {
+export function isIngredientPurchaseDraft(value: unknown): value is IngredientPurchaseDraft {
   const candidate = value as Partial<IngredientPurchaseDraft> | null;
 
   return (
@@ -164,42 +176,88 @@ function createEmptyLine(ingredients: Ingredient[]): DraftLine {
   };
 }
 
+export function createEmptyIngredientPurchaseDraft(ingredients: Ingredient[], suppliers: Supplier[], now = new Date()): IngredientPurchaseDraft {
+  return {
+    occurredAtDate: getLocalDateInputValue(now),
+    occurredAtTime: getLocalTimeInputValue(now),
+    supplierId: String(suppliers[0]?.id ?? ""),
+    notes: "",
+    tax: createInactiveAdjustment(),
+    discount: createInactiveAdjustment(),
+    payments: [createEmptyPaymentRow()],
+    lines: [createEmptyLine(ingredients)],
+  };
+}
+
+export function isIngredientPurchaseDraftEmpty(
+  draft: IngredientPurchaseDraft,
+  ingredients: Ingredient[],
+  suppliers: Supplier[],
+) {
+  const emptyDraft = createEmptyIngredientPurchaseDraft(ingredients, suppliers, new Date("2024-01-01T00:00:00Z"));
+  const line = draft.lines[0];
+  const emptyLine = emptyDraft.lines[0];
+
+  return (
+    draft.occurredAtDate.length > 0 &&
+    draft.occurredAtTime.length > 0 &&
+    draft.supplierId === emptyDraft.supplierId &&
+    draft.notes === "" &&
+    draft.tax.state === "inactive" &&
+    draft.discount.state === "inactive" &&
+    draft.payments.length === 1 &&
+    draft.payments[0]?.amount === "" &&
+    draft.payments[0]?.paymentMethod === "cod" &&
+    draft.lines.length === 1 &&
+    line?.ingredientId === emptyLine?.ingredientId &&
+    line?.quantity === "" &&
+    line?.unit === emptyLine?.unit &&
+    line?.lineTotal === ""
+  );
+}
+
+export function getIngredientPurchaseDraftLabel(
+  draft: IngredientPurchaseDraft,
+  suppliers: Supplier[],
+) {
+  return suppliers.find((supplier) => String(supplier.id) === draft.supplierId)?.name ?? "مسودة فاتورة خامات";
+}
+
 export function IngredientPurchaseForm({
   suppliers,
   ingredients,
+  draftId = null,
+  initialDraft,
+  draftStorageKey = ingredientPurchaseDraftStorageKey,
+  onDraftsChange,
   onCancel,
   onSuccess,
 }: IngredientPurchaseFormProps) {
   const router = useRouter();
   const now = new Date();
-  const initialDraft = loadLocalDraft<IngredientPurchaseDraft>(
-    ingredientPurchaseDraftKey,
-    isIngredientPurchaseDraft,
-  );
   const submitLock = useRef(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const seedDraft = initialDraft ?? createEmptyIngredientPurchaseDraft(ingredients, suppliers, now);
   const [lines, setLines] = useState<DraftLine[]>(
-    initialDraft?.lines.length ? initialDraft.lines : [createEmptyLine(ingredients)],
+    seedDraft.lines.length ? seedDraft.lines : [createEmptyLine(ingredients)],
   );
-  const [occurredAtDate, setOccurredAtDate] = useState(
-    initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
-  );
-  const [occurredAtTime, setOccurredAtTime] = useState(
-    initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
-  );
-  const [supplierId, setSupplierId] = useState(initialDraft?.supplierId ?? String(suppliers[0]?.id ?? ""));
-  const [notes, setNotes] = useState(initialDraft?.notes ?? "");
-  const [tax, setTax] = useState<DraftAdjustment>(initialDraft?.tax ?? createInactiveAdjustment());
+  const [occurredAtDate, setOccurredAtDate] = useState(seedDraft.occurredAtDate);
+  const [occurredAtTime, setOccurredAtTime] = useState(seedDraft.occurredAtTime);
+  const [supplierId, setSupplierId] = useState(seedDraft.supplierId);
+  const [notes, setNotes] = useState(seedDraft.notes);
+  const [tax, setTax] = useState<DraftAdjustment>(seedDraft.tax);
   const [discount, setDiscount] = useState<DraftAdjustment>(
-    initialDraft?.discount ?? createInactiveAdjustment(),
+    seedDraft.discount,
   );
   const [payments, setPayments] = useState<DraftPaymentRow[]>(
-    initialDraft?.payments.length ? initialDraft.payments : [createEmptyPaymentRow()],
+    seedDraft.payments.length ? seedDraft.payments : [createEmptyPaymentRow()],
   );
   const invoiceTotal = lines.reduce((sum, line) => sum + (Number(line.lineTotal) || 0), 0);
 
   useEffect(() => {
-    saveLocalDraft<IngredientPurchaseDraft>(ingredientPurchaseDraftKey, {
+    const currentDraft: IngredientPurchaseDraft = {
       occurredAtDate,
       occurredAtTime,
       supplierId,
@@ -208,27 +266,75 @@ export function IngredientPurchaseForm({
       discount,
       payments,
       lines,
-    });
-  }, [discount, lines, notes, occurredAtDate, occurredAtTime, payments, supplierId, tax]);
+    };
 
-  function resetForm(clearDraft = false) {
-    const next = new Date();
-    setLines([createEmptyLine(ingredients)]);
-    setOccurredAtDate(getLocalDateInputValue(next));
-    setOccurredAtTime(getLocalTimeInputValue(next));
-    setSupplierId(String(suppliers[0]?.id ?? ""));
-    setNotes("");
-    setTax(createInactiveAdjustment());
-    setDiscount(createInactiveAdjustment());
-    setPayments([createEmptyPaymentRow()]);
-
-    if (clearDraft) {
-      clearLocalDraft(ingredientPurchaseDraftKey);
+    if (isIngredientPurchaseDraftEmpty(currentDraft, ingredients, suppliers)) {
+      return;
     }
+
+    const entry = saveLocalDraftEntry<IngredientPurchaseDraft>(
+      draftStorageKey,
+      currentDraft,
+      currentDraftId ?? undefined,
+    );
+
+    if (entry.id !== currentDraftId) {
+      setCurrentDraftId(entry.id);
+    }
+
+    onDraftsChange?.();
+  }, [
+    currentDraftId,
+    discount,
+    draftStorageKey,
+    ingredients,
+    lines,
+    notes,
+    occurredAtDate,
+    occurredAtTime,
+    onDraftsChange,
+    payments,
+    supplierId,
+    suppliers,
+    tax,
+  ]);
+
+  function removeCurrentDraft() {
+    if (!currentDraftId) {
+      return;
+    }
+
+    removeLocalDraftEntry(draftStorageKey, currentDraftId);
+    onDraftsChange?.();
+  }
+
+  function resetForm() {
+    const nextDraft = createEmptyIngredientPurchaseDraft(ingredients, suppliers);
+    setCurrentDraftId(null);
+    setLines(nextDraft.lines);
+    setOccurredAtDate(nextDraft.occurredAtDate);
+    setOccurredAtTime(nextDraft.occurredAtTime);
+    setSupplierId(nextDraft.supplierId);
+    setNotes(nextDraft.notes);
+    setTax(nextDraft.tax);
+    setDiscount(nextDraft.discount);
+    setPayments(nextDraft.payments);
   }
 
   function handleCancel() {
-    resetForm(true);
+    if (currentDraftId) {
+      setCancelDialogOpen(true);
+      return;
+    }
+
+    resetForm();
+    onCancel?.();
+  }
+
+  function confirmCancel() {
+    removeCurrentDraft();
+    resetForm();
+    setCancelDialogOpen(false);
     onCancel?.();
   }
 
@@ -295,7 +401,8 @@ export function IngredientPurchaseForm({
 
         await createIngredientPurchase(payload);
         toast.success("تم حفظ فاتورة شراء الخامات");
-        resetForm(true);
+        removeCurrentDraft();
+        resetForm();
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -305,7 +412,8 @@ export function IngredientPurchaseForm({
   }
 
   return (
-    <form action={onSubmit} className="grid gap-5">
+    <>
+      <form action={onSubmit} className="grid gap-5">
       <PurchaseDateTimeFields
         dateId="occurredAtDate"
         timeId="occurredAtTime"
@@ -463,19 +571,39 @@ export function IngredientPurchaseForm({
         />
       </Field>
 
-      <div className="mt-2 flex items-center justify-between border-t pt-4">
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">*</span> حقول مطلوبة
-        </p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
-            إلغاء
-          </Button>
-          <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? "جارٍ الحفظ…" : "حفظ الفاتورة"}
-          </Button>
+        <div className="mt-2 flex items-center justify-between border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            <span className="text-destructive">*</span> حقول مطلوبة
+          </p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
+              إلغاء
+            </Button>
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? "جارٍ الحفظ…" : "حفظ الفاتورة"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف المسودة الحالية</DialogTitle>
+            <DialogDescription>
+              سيتم حذف هذه المسودة المحلية وإغلاق النموذج. لا يمكن التراجع عن هذه العملية.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              رجوع
+            </Button>
+            <Button variant="destructive" onClick={confirmCancel}>
+              حذف المسودة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

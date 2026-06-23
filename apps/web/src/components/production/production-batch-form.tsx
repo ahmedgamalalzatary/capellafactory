@@ -7,10 +7,18 @@ import type { IngredientPurchaseUnit } from "@capella/shared/ingredient-purchase
 import type { Product } from "@capella/shared/products/product.types";
 import type { ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
 import { createProductionBatch } from "@/lib/api/production-batches";
-import { clearLocalDraft, loadLocalDraft, saveLocalDraft } from "@/lib/local-drafts";
+import { removeLocalDraftEntry, saveLocalDraftEntry } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +33,10 @@ import {
 type ProductionBatchFormProps = {
   products: Product[];
   ingredients: Ingredient[];
+  draftId?: string | null;
+  initialDraft?: ProductionBatchDraft | null;
+  draftStorageKey?: string;
+  onDraftsChange?: () => void;
   onCancel?: () => void;
   onSuccess?: () => void;
 };
@@ -35,7 +47,7 @@ type DraftLine = {
   unit: IngredientPurchaseUnit;
 };
 
-type ProductionBatchDraft = {
+export type ProductionBatchDraft = {
   occurredAtDate: string;
   occurredAtTime: string;
   productId: string;
@@ -44,7 +56,7 @@ type ProductionBatchDraft = {
   lines: DraftLine[];
 };
 
-const productionBatchDraftKey = "capella:draft:production-batch";
+export const productionBatchDraftStorageKey = "capella:drafts:production-batch";
 
 const unitOptionsByFamily: Record<Ingredient["unitFamily"], IngredientPurchaseUnit[]> = {
   weight: ["kg", "g"],
@@ -68,7 +80,7 @@ function isDraftLine(value: unknown): value is DraftLine {
   );
 }
 
-function isProductionBatchDraft(value: unknown): value is ProductionBatchDraft {
+export function isProductionBatchDraft(value: unknown): value is ProductionBatchDraft {
   const candidate = value as Partial<ProductionBatchDraft> | null;
 
   return (
@@ -120,62 +132,150 @@ function createEmptyLine(ingredients: Ingredient[], usedIngredientIds: number[] 
   };
 }
 
+export function createEmptyProductionBatchDraft(
+  products: Product[],
+  ingredients: Ingredient[],
+  now = new Date(),
+): ProductionBatchDraft {
+  return {
+    occurredAtDate: getLocalDateInputValue(now),
+    occurredAtTime: getLocalTimeInputValue(now),
+    productId: String(products[0]?.id ?? ""),
+    producedQuantity: "",
+    notes: "",
+    lines: [createEmptyLine(ingredients)],
+  };
+}
+
+export function isProductionBatchDraftEmpty(
+  draft: ProductionBatchDraft,
+  products: Product[],
+  ingredients: Ingredient[],
+) {
+  const emptyDraft = createEmptyProductionBatchDraft(
+    products,
+    ingredients,
+    new Date("2024-01-01T00:00:00Z"),
+  );
+  const line = draft.lines[0];
+  const emptyLine = emptyDraft.lines[0];
+
+  return (
+    draft.occurredAtDate.length > 0 &&
+    draft.occurredAtTime.length > 0 &&
+    draft.productId === emptyDraft.productId &&
+    draft.producedQuantity === "" &&
+    draft.notes === "" &&
+    draft.lines.length === 1 &&
+    line?.ingredientId === emptyLine?.ingredientId &&
+    line?.quantity === "" &&
+    line?.unit === emptyLine?.unit
+  );
+}
+
+export function getProductionBatchDraftLabel(draft: ProductionBatchDraft, products: Product[]) {
+  return products.find((product) => String(product.id) === draft.productId)?.name ?? "مسودة تشغيلة";
+}
+
 export function ProductionBatchForm({
   products,
   ingredients,
+  draftId = null,
+  initialDraft,
+  draftStorageKey = productionBatchDraftStorageKey,
+  onDraftsChange,
   onCancel,
   onSuccess,
 }: ProductionBatchFormProps) {
   const router = useRouter();
   const now = new Date();
-  const initialDraft = loadLocalDraft<ProductionBatchDraft>(
-    productionBatchDraftKey,
-    isProductionBatchDraft,
-  );
   const submitLock = useRef(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const seedDraft = initialDraft ?? createEmptyProductionBatchDraft(products, ingredients, now);
   const [lines, setLines] = useState<DraftLine[]>(
-    initialDraft?.lines.length ? initialDraft.lines : [createEmptyLine(ingredients)],
+    seedDraft.lines.length ? seedDraft.lines : [createEmptyLine(ingredients)],
   );
-  const [occurredAtDate, setOccurredAtDate] = useState(
-    initialDraft?.occurredAtDate ?? getLocalDateInputValue(now),
-  );
-  const [occurredAtTime, setOccurredAtTime] = useState(
-    initialDraft?.occurredAtTime ?? getLocalTimeInputValue(now),
-  );
-  const [productId, setProductId] = useState(initialDraft?.productId ?? String(products[0]?.id ?? ""));
-  const [producedQuantity, setProducedQuantity] = useState(initialDraft?.producedQuantity ?? "");
-  const [notes, setNotes] = useState(initialDraft?.notes ?? "");
+  const [occurredAtDate, setOccurredAtDate] = useState(seedDraft.occurredAtDate);
+  const [occurredAtTime, setOccurredAtTime] = useState(seedDraft.occurredAtTime);
+  const [productId, setProductId] = useState(seedDraft.productId);
+  const [producedQuantity, setProducedQuantity] = useState(seedDraft.producedQuantity);
+  const [notes, setNotes] = useState(seedDraft.notes);
 
   useEffect(() => {
-    saveLocalDraft<ProductionBatchDraft>(productionBatchDraftKey, {
+    const currentDraft: ProductionBatchDraft = {
       occurredAtDate,
       occurredAtTime,
       productId,
       producedQuantity,
       notes,
       lines,
-    });
-  }, [lines, notes, occurredAtDate, occurredAtTime, productId, producedQuantity]);
+    };
 
-  // Cleared only after a successful save. On a rejected submit we deliberately
-  // leave every field untouched so the user can fix the problem and retry.
-  function resetForm(clearDraft = false) {
-    const next = new Date();
-    setLines([createEmptyLine(ingredients)]);
-    setOccurredAtDate(getLocalDateInputValue(next));
-    setOccurredAtTime(getLocalTimeInputValue(next));
-    setProductId(String(products[0]?.id ?? ""));
-    setProducedQuantity("");
-    setNotes("");
-
-    if (clearDraft) {
-      clearLocalDraft(productionBatchDraftKey);
+    if (isProductionBatchDraftEmpty(currentDraft, products, ingredients)) {
+      return;
     }
+
+    const entry = saveLocalDraftEntry<ProductionBatchDraft>(
+      draftStorageKey,
+      currentDraft,
+      currentDraftId ?? undefined,
+    );
+
+    if (entry.id !== currentDraftId) {
+      setCurrentDraftId(entry.id);
+    }
+
+    onDraftsChange?.();
+  }, [
+    currentDraftId,
+    draftStorageKey,
+    ingredients,
+    lines,
+    notes,
+    occurredAtDate,
+    occurredAtTime,
+    onDraftsChange,
+    productId,
+    producedQuantity,
+    products,
+  ]);
+
+  function removeCurrentDraft() {
+    if (!currentDraftId) {
+      return;
+    }
+
+    removeLocalDraftEntry(draftStorageKey, currentDraftId);
+    onDraftsChange?.();
+  }
+
+  function resetForm() {
+    const nextDraft = createEmptyProductionBatchDraft(products, ingredients);
+    setCurrentDraftId(null);
+    setLines(nextDraft.lines);
+    setOccurredAtDate(nextDraft.occurredAtDate);
+    setOccurredAtTime(nextDraft.occurredAtTime);
+    setProductId(nextDraft.productId);
+    setProducedQuantity(nextDraft.producedQuantity);
+    setNotes(nextDraft.notes);
   }
 
   function handleCancel() {
-    resetForm(true);
+    if (currentDraftId) {
+      setCancelDialogOpen(true);
+      return;
+    }
+
+    resetForm();
+    onCancel?.();
+  }
+
+  function confirmCancel() {
+    removeCurrentDraft();
+    resetForm();
+    setCancelDialogOpen(false);
     onCancel?.();
   }
 
@@ -214,7 +314,8 @@ export function ProductionBatchForm({
 
         await createProductionBatch(payload);
         toast.success("تم حفظ تشغيلة الإنتاج");
-        resetForm(true);
+        removeCurrentDraft();
+        resetForm();
         router.refresh();
         onSuccess?.();
       } catch (error) {
@@ -224,7 +325,8 @@ export function ProductionBatchForm({
   }
 
   return (
-    <form action={onSubmit} className="grid gap-5">
+    <>
+      <form action={onSubmit} className="grid gap-5">
       <PurchaseDateTimeFields
         dateId="occurredAtDate"
         timeId="occurredAtTime"
@@ -237,7 +339,7 @@ export function ProductionBatchForm({
         onTimeChange={setOccurredAtTime}
       />
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-1">
         <Field id="productId" label="المنتج النهائي" required>
           <SearchableSelect
             value={productId}
@@ -365,19 +467,39 @@ export function ProductionBatchForm({
         />
       </Field>
 
-      <div className="mt-2 flex items-center justify-between border-t pt-4">
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">*</span> حقول مطلوبة
-        </p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
-            إلغاء
-          </Button>
-          <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? "جارٍ الحفظ…" : "حفظ التشغيلة"}
-          </Button>
+        <div className="mt-2 flex items-center justify-between border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            <span className="text-destructive">*</span> حقول مطلوبة
+          </p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
+              إلغاء
+            </Button>
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? "جارٍ الحفظ…" : "حفظ التشغيلة"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف المسودة الحالية</DialogTitle>
+            <DialogDescription>
+              سيتم حذف هذه المسودة المحلية وإغلاق النموذج. لا يمكن التراجع عن هذه العملية.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              رجوع
+            </Button>
+            <Button variant="destructive" onClick={confirmCancel}>
+              حذف المسودة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const SESSION_COOKIE_NAME = "capella_session";
 const AUTH_ME_URL = `${process.env.API_URL ?? "http://localhost:4000"}/auth/me`;
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const hasSession = request.cookies.has(SESSION_COOKIE_NAME);
   const { pathname } = request.nextUrl;
 
@@ -24,9 +24,10 @@ export async function middleware(request: NextRequest) {
         headers: {
           Cookie: cookieHeader,
         },
+        signal: AbortSignal.timeout(5000),
       });
 
-      if (response.status === 401) {
+      if (!response.ok) {
         return NextResponse.redirect(new URL("/login", request.url));
       }
     } catch {
@@ -38,5 +39,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\..*).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)"],
 };

@@ -21,7 +21,7 @@ vi.mock("sonner", () => ({
   toast: { success: (...a: unknown[]) => toastSuccess(...a), error: (...a: unknown[]) => toastError(...a) },
 }));
 
-import { SalesInvoiceForm } from "@/components/sales/sales-invoice-form";
+import { SalesInvoiceForm, type SalesInvoiceDraft } from "@/components/sales/sales-invoice-form";
 
 const buyers: Buyer[] = [
   { id: 7, name: "شركة النيل", phone: "0100" } as Buyer,
@@ -156,6 +156,30 @@ describe("SalesInvoiceForm (behavioral)", () => {
         }),
       ],
     });
+  });
+
+  test("restored drafts with empty arrays still render one line row and one payment row", () => {
+    const draft: SalesInvoiceDraft = {
+      occurredAtDate: "2026-06-23",
+      occurredAtTime: "10:00",
+      buyerId: String(buyers[0].id),
+      notes: "",
+      tax: { state: "inactive", type: "percentage", value: "" },
+      discount: { state: "inactive", type: "percentage", value: "" },
+      payments: [],
+      lines: [],
+    };
+
+    render(
+      <SalesInvoiceForm
+        buyers={buyers}
+        products={products}
+        initialDraft={draft}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /كيك - متاح 12/ })).toBeInTheDocument();
+    expect(screen.getByLabelText(/المدفوع/)).toBeInTheDocument();
   });
 
   test("applies tax then discount and submits multiple payments", async () => {

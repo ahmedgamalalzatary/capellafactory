@@ -88,7 +88,7 @@ export function DocumentFinancialSection({
 
   return (
     <div className="grid gap-4 rounded-xl border p-4">
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-1">
         <AdjustmentEditor
           title="الضريبة"
           checkboxLabel="تفعيل الضريبة"
@@ -214,7 +214,7 @@ function AdjustmentEditor({
       </label>
 
       {isActive ? (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-1">
           <div className="grid gap-1.5">
             <Label>{typeLabel}</Label>
             <select

@@ -1,14 +1,23 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
 import type { Product } from "@capella/shared/products/product.types";
 import type { SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
 import { createSalesInvoice } from "@/lib/api/sales-invoices";
+import { removeLocalDraftEntry, saveLocalDraftEntry } from "@/lib/local-drafts";
 import { runWithSubmitLock } from "@/lib/submit-lock";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +41,10 @@ import {
 type SalesInvoiceFormProps = {
   buyers: Buyer[];
   products: Product[];
+  draftId?: string | null;
+  initialDraft?: SalesInvoiceDraft | null;
+  draftStorageKey?: string;
+  onDraftsChange?: () => void;
   onCancel?: () => void;
   onSuccess?: () => void;
 };
@@ -41,6 +54,19 @@ type DraftLine = {
   quantity: string;
   sellingUnitPrice: string;
 };
+
+export type SalesInvoiceDraft = {
+  occurredAtDate: string;
+  occurredAtTime: string;
+  buyerId: string;
+  notes: string;
+  tax: DraftAdjustment;
+  discount: DraftAdjustment;
+  payments: DraftPaymentRow[];
+  lines: DraftLine[];
+};
+
+export const salesInvoiceDraftStorageKey = "capella:drafts:sales-invoice";
 
 function Field({
   id,
@@ -77,30 +103,161 @@ function createEmptyLine(products: Product[], usedProductIds: number[] = []): Dr
   };
 }
 
-export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: SalesInvoiceFormProps) {
+export function isSalesInvoiceDraft(value: unknown): value is SalesInvoiceDraft {
+  const candidate = value as Partial<SalesInvoiceDraft> | null;
+
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof candidate?.occurredAtDate === "string" &&
+    typeof candidate.occurredAtTime === "string" &&
+    typeof candidate.buyerId === "string" &&
+    typeof candidate.notes === "string" &&
+    typeof candidate.tax === "object" &&
+    candidate.tax !== null &&
+    typeof candidate.discount === "object" &&
+    candidate.discount !== null &&
+    Array.isArray(candidate.payments) &&
+    Array.isArray(candidate.lines)
+  );
+}
+
+export function createEmptySalesInvoiceDraft(
+  products: Product[],
+  buyers: Buyer[],
+  now = new Date(),
+): SalesInvoiceDraft {
+  return {
+    occurredAtDate: getLocalDateInputValue(now),
+    occurredAtTime: getLocalTimeInputValue(now),
+    buyerId: String(buyers[0]?.id ?? ""),
+    notes: "",
+    tax: createInactiveAdjustment(),
+    discount: createInactiveAdjustment(),
+    payments: [createEmptyPaymentRow()],
+    lines: [createEmptyLine(products)],
+  };
+}
+
+export function isSalesInvoiceDraftEmpty(draft: SalesInvoiceDraft, products: Product[], buyers: Buyer[]) {
+  const emptyDraft = createEmptySalesInvoiceDraft(products, buyers, new Date("2024-01-01T00:00:00Z"));
+  const line = draft.lines[0];
+  const emptyLine = emptyDraft.lines[0];
+
+  return (
+    draft.occurredAtDate.length > 0 &&
+    draft.occurredAtTime.length > 0 &&
+    draft.buyerId === emptyDraft.buyerId &&
+    draft.notes === "" &&
+    draft.tax.state === "inactive" &&
+    draft.discount.state === "inactive" &&
+    draft.payments.length === 1 &&
+    draft.payments[0]?.amount === "" &&
+    draft.payments[0]?.paymentMethod === "cod" &&
+    draft.lines.length === 1 &&
+    line?.productId === emptyLine?.productId &&
+    line?.quantity === "" &&
+    line?.sellingUnitPrice === ""
+  );
+}
+
+export function getSalesInvoiceDraftLabel(draft: SalesInvoiceDraft, buyers: Buyer[]) {
+  return buyers.find((buyer) => String(buyer.id) === draft.buyerId)?.name ?? "مسودة فاتورة مبيعات";
+}
+
+export function SalesInvoiceForm({
+  buyers,
+  products,
+  draftId = null,
+  initialDraft,
+  draftStorageKey = salesInvoiceDraftStorageKey,
+  onDraftsChange,
+  onCancel,
+  onSuccess,
+}: SalesInvoiceFormProps) {
   const router = useRouter();
   const now = new Date();
   const submitLock = useRef(false);
+  const [currentDraftId, setCurrentDraftId] = useState<string | null>(draftId);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lines, setLines] = useState<DraftLine[]>([createEmptyLine(products)]);
-  const [occurredAtDate, setOccurredAtDate] = useState(getLocalDateInputValue(now));
-  const [occurredAtTime, setOccurredAtTime] = useState(getLocalTimeInputValue(now));
-  const [buyerId, setBuyerId] = useState(String(buyers[0]?.id ?? ""));
-  const [notes, setNotes] = useState("");
-  const [tax, setTax] = useState<DraftAdjustment>(createInactiveAdjustment());
-  const [discount, setDiscount] = useState<DraftAdjustment>(createInactiveAdjustment());
-  const [payments, setPayments] = useState<DraftPaymentRow[]>([createEmptyPaymentRow()]);
+  const seedDraft = initialDraft ?? createEmptySalesInvoiceDraft(products, buyers, now);
+  const [lines, setLines] = useState<DraftLine[]>(
+    seedDraft.lines.length ? seedDraft.lines : [createEmptyLine(products)],
+  );
+  const [occurredAtDate, setOccurredAtDate] = useState(seedDraft.occurredAtDate);
+  const [occurredAtTime, setOccurredAtTime] = useState(seedDraft.occurredAtTime);
+  const [buyerId, setBuyerId] = useState(seedDraft.buyerId);
+  const [notes, setNotes] = useState(seedDraft.notes);
+  const [tax, setTax] = useState<DraftAdjustment>(seedDraft.tax);
+  const [discount, setDiscount] = useState<DraftAdjustment>(seedDraft.discount);
+  const [payments, setPayments] = useState<DraftPaymentRow[]>(
+    seedDraft.payments.length ? seedDraft.payments : [createEmptyPaymentRow()],
+  );
+
+  useEffect(() => {
+    const currentDraft: SalesInvoiceDraft = {
+      occurredAtDate,
+      occurredAtTime,
+      buyerId,
+      notes,
+      tax,
+      discount,
+      payments,
+      lines,
+    };
+
+    if (isSalesInvoiceDraftEmpty(currentDraft, products, buyers)) {
+      return;
+    }
+
+    const entry = saveLocalDraftEntry<SalesInvoiceDraft>(
+      draftStorageKey,
+      currentDraft,
+      currentDraftId ?? undefined,
+    );
+
+    if (entry.id !== currentDraftId) {
+      setCurrentDraftId(entry.id);
+    }
+
+    onDraftsChange?.();
+  }, [
+    buyerId,
+    buyers,
+    currentDraftId,
+    discount,
+    draftStorageKey,
+    lines,
+    notes,
+    occurredAtDate,
+    occurredAtTime,
+    onDraftsChange,
+    payments,
+    products,
+    tax,
+  ]);
+
+  function removeCurrentDraft() {
+    if (!currentDraftId) {
+      return;
+    }
+
+    removeLocalDraftEntry(draftStorageKey, currentDraftId);
+    onDraftsChange?.();
+  }
 
   function resetForm() {
-    const next = new Date();
-    setLines([createEmptyLine(products)]);
-    setOccurredAtDate(getLocalDateInputValue(next));
-    setOccurredAtTime(getLocalTimeInputValue(next));
-    setBuyerId(String(buyers[0]?.id ?? ""));
-    setNotes("");
-    setTax(createInactiveAdjustment());
-    setDiscount(createInactiveAdjustment());
-    setPayments([createEmptyPaymentRow()]);
+    const nextDraft = createEmptySalesInvoiceDraft(products, buyers);
+    setCurrentDraftId(null);
+    setLines(nextDraft.lines);
+    setOccurredAtDate(nextDraft.occurredAtDate);
+    setOccurredAtTime(nextDraft.occurredAtTime);
+    setBuyerId(nextDraft.buyerId);
+    setNotes(nextDraft.notes);
+    setTax(nextDraft.tax);
+    setDiscount(nextDraft.discount);
+    setPayments(nextDraft.payments);
   }
 
   function updateLine(index: number, updater: (line: DraftLine) => DraftLine) {
@@ -119,6 +276,23 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
 
   function removeLine(index: number) {
     setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
+  }
+
+  function handleCancel() {
+    if (currentDraftId) {
+      setCancelDialogOpen(true);
+      return;
+    }
+
+    resetForm();
+    onCancel?.();
+  }
+
+  function confirmCancel() {
+    removeCurrentDraft();
+    resetForm();
+    setCancelDialogOpen(false);
+    onCancel?.();
   }
 
   async function onSubmit() {
@@ -147,6 +321,7 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
 
         await createSalesInvoice(payload);
         toast.success("تم حفظ فاتورة المبيعات");
+        removeCurrentDraft();
         resetForm();
         router.refresh();
         onSuccess?.();
@@ -163,7 +338,8 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
   }, 0);
 
   return (
-    <form action={onSubmit} className="grid gap-5">
+    <>
+      <form action={onSubmit} className="grid gap-5">
       <PurchaseDateTimeFields
         dateId="occurredAtDate"
         timeId="occurredAtTime"
@@ -304,19 +480,39 @@ export function SalesInvoiceForm({ buyers, products, onCancel, onSuccess }: Sale
         onPaymentsChange={setPayments}
       />
 
-      <div className="mt-2 flex items-center justify-between border-t pt-4">
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive">*</span> حقول مطلوبة
-        </p>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
-            إلغاء
-          </Button>
-          <Button type="submit" size="sm" disabled={isSubmitting}>
-            {isSubmitting ? "جارٍ الحفظ…" : "حفظ الفاتورة"}
-          </Button>
+        <div className="mt-2 flex items-center justify-between border-t pt-4">
+          <p className="text-xs text-muted-foreground">
+            <span className="text-destructive">*</span> حقول مطلوبة
+          </p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={handleCancel}>
+              إلغاء
+            </Button>
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              {isSubmitting ? "جارٍ الحفظ…" : "حفظ الفاتورة"}
+            </Button>
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>حذف المسودة الحالية</DialogTitle>
+            <DialogDescription>
+              سيتم حذف هذه المسودة المحلية وإغلاق النموذج. لا يمكن التراجع عن هذه العملية.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              رجوع
+            </Button>
+            <Button variant="destructive" onClick={confirmCancel}>
+              حذف المسودة
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
