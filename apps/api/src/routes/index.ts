@@ -9,6 +9,7 @@ import { productionBatchesRouter } from "../modules/production-batches/productio
 import { productsRouter } from "../modules/products/products.routes.js";
 import { purchaseCorrectionsRouter } from "../modules/purchase-corrections/purchase-corrections.routes.js";
 import { salesInvoicesRouter } from "../modules/sales-invoices/sales-invoices.routes.js";
+import { solidAssetsRouter } from "../modules/solid-assets/solid-assets.routes.js";
 import { suppliersRouter } from "../modules/suppliers/suppliers.routes.js";
 
 export function registerRoutes(app: Express) {
@@ -27,5 +28,6 @@ export function registerRoutes(app: Express) {
   app.use("/production-batches", productionBatchesRouter);
   app.use("/products", productsRouter);
   app.use("/sales-invoices", salesInvoicesRouter);
+  app.use("/solid-assets", solidAssetsRouter);
   app.use("/suppliers", suppliersRouter);
 }

@@ -147,7 +147,7 @@ export function createEmptyProductionBatchDraft(
   };
 }
 
-export function isProductionBatchDraftEmpty(
+function isProductionBatchDraftEmpty(
   draft: ProductionBatchDraft,
   products: Product[],
   ingredients: Ingredient[],

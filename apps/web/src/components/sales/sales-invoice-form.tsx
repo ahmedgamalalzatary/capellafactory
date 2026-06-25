@@ -139,7 +139,7 @@ export function createEmptySalesInvoiceDraft(
   };
 }
 
-export function isSalesInvoiceDraftEmpty(draft: SalesInvoiceDraft, products: Product[], buyers: Buyer[]) {
+function isSalesInvoiceDraftEmpty(draft: SalesInvoiceDraft, products: Product[], buyers: Buyer[]) {
   const emptyDraft = createEmptySalesInvoiceDraft(products, buyers, new Date("2024-01-01T00:00:00Z"));
   const line = draft.lines[0];
   const emptyLine = emptyDraft.lines[0];

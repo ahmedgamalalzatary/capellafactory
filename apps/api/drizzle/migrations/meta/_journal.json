@@ -113,6 +113,13 @@
       "when": 1782050000000,
       "tag": "0015_document_adjustments",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1782865200000,
+      "tag": "0016_solid_assets",
+      "breakpoints": true
     }
   ]
 }

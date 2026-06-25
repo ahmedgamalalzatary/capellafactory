@@ -22,4 +22,5 @@ export {
   salesInvoicesTable,
   salesInvoiceLinesTable,
 } from "./sales-invoices.js";
+export { solidAssetsTable } from "./solid-assets.js";
 export { stockLayersTable, stockLayerAllocationsTable } from "./stock-layers.js";

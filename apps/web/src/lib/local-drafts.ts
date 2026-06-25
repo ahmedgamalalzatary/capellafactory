@@ -131,7 +131,7 @@ export function saveLocalDraftEntry<T>(key: string, value: T, id?: string): Draf
   return entry;
 }
 
-export function clearLocalDraft(key: string) {
+function clearLocalDraft(key: string) {
   if (typeof window === "undefined") {
     return;
   }

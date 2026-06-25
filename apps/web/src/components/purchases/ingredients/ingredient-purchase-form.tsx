@@ -189,7 +189,7 @@ export function createEmptyIngredientPurchaseDraft(ingredients: Ingredient[], su
   };
 }
 
-export function isIngredientPurchaseDraftEmpty(
+function isIngredientPurchaseDraftEmpty(
   draft: IngredientPurchaseDraft,
   ingredients: Ingredient[],
   suppliers: Supplier[],

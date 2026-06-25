@@ -142,7 +142,7 @@ export function createEmptyExpenseDraft(now = new Date()): ExpenseDraft {
   };
 }
 
-export function isExpenseDraftEmpty(draft: ExpenseDraft) {
+function isExpenseDraftEmpty(draft: ExpenseDraft) {
   return (
     draft.type === "rent" &&
     draft.amount === "" &&

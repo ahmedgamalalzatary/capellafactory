@@ -11,6 +11,7 @@ test("all navigation items are real routes", () => {
     { label: "الموردون", href: "/suppliers" },
     { label: "المشترون", href: "/buyers" },
     { label: "المخزون", href: "/inventory" },
+    { label: "الأصول الثابتة", href: "/solid-assets" },
     { label: "المدفوعات", href: "/purchases" },
     { label: "التصنيع", href: "/products" },
     { label: "المبيعات", href: "/sales" },

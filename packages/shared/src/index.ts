@@ -21,3 +21,5 @@ export * from "./payments/payment.types.js";
 export * from "./payments/payment.schema.js";
 export * from "./payments/document-payment.types.js";
 export * from "./payments/document-payment.schema.js";
+export * from "./solid-assets/solid-asset.types.js";
+export * from "./solid-assets/solid-asset.schema.js";

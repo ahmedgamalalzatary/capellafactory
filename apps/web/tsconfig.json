@@ -9,6 +9,9 @@
       }
     ],
     "paths": {
+      "@capella/shared/*": [
+        "../../packages/shared/src/*"
+      ],
       "@/*": [
         "./src/*"
       ]

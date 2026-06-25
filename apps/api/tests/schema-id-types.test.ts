@@ -17,6 +17,7 @@ import {
   salesInvoicesTable,
   stockLayerAllocationsTable,
   stockLayersTable,
+  solidAssetsTable,
   suppliersTable,
 } from "../src/db/schema/index.js";
 
@@ -115,6 +116,15 @@ test("document header tables expose tax discount and final total columns", () =>
     assert.equal(table.discountAmount.getSQLType(), "decimal(14,3)");
     assert.equal(table.finalTotal.getSQLType(), "decimal(14,3)");
   }
+});
+
+test("solid assets table exposes constrained quantity and price columns", () => {
+  assert.equal(solidAssetsTable.qty.getSQLType(), "int");
+  assert.equal(solidAssetsTable.priceOfOne.getSQLType(), "decimal(14,3)");
+  assert.deepEqual(
+    getTableConfig(solidAssetsTable).checks.map((entry) => entry.name),
+    ["solid_assets_qty_check", "solid_assets_price_of_one_check"],
+  );
 });
 
 test("schema defines foreign keys for clear single-parent relationships", () => {

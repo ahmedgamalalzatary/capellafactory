@@ -97,6 +97,14 @@
       "types": "./dist/payments/document-payment.schema.d.ts",
       "default": "./dist/payments/document-payment.schema.js"
     },
+    "./solid-assets/solid-asset.types": {
+      "types": "./dist/solid-assets/solid-asset.types.d.ts",
+      "default": "./dist/solid-assets/solid-asset.types.js"
+    },
+    "./solid-assets/solid-asset.schema": {
+      "types": "./dist/solid-assets/solid-asset.schema.d.ts",
+      "default": "./dist/solid-assets/solid-asset.schema.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
