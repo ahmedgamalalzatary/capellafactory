@@ -72,12 +72,13 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
 }
 
 async function mutateBuyer(url: string, init: RequestInit) {
-  const response = await fetch(url, {
-    ...withApiCredentials({
-      headers: mergeJsonHeaders(init.headers),
+  const response = await fetch(
+    url,
+    withApiCredentials({
       ...init,
+      headers: mergeJsonHeaders(init.headers),
     }),
-  });
+  );
 
   await handleApiResponse(response, "Buyer request failed");
 

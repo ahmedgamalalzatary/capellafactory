@@ -15,14 +15,14 @@ export async function getPurchaseCorrectionHandler(request: Request, response: R
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid purchase correction id" });
+    response.status(400).json({ message: "معرّف تصحيح الشراء غير صالح" });
     return;
   }
 
   const correction = await getPurchaseCorrection(id);
 
   if (!correction) {
-    response.status(404).json({ message: "Purchase correction not found" });
+    response.status(404).json({ message: "تصحيح الشراء غير موجود" });
     return;
   }
 

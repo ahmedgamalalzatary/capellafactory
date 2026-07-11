@@ -69,7 +69,7 @@ export function mapSalesInvoiceLineRow(row: SalesInvoiceLineRow): SalesInvoiceLi
 export function mapSalesInvoiceRowToSalesInvoice(
   row: SalesInvoiceRow,
   lines: SalesInvoiceLineRow[],
-  paidAmount = Number(row.subtotal),
+  paidAmount = 0,
 ): SalesInvoice {
   const subtotal = Number(row.subtotal);
   const finalTotal = Number(row.finalTotal);
@@ -120,7 +120,7 @@ export function mapSalesInvoiceRowsToSalesInvoices(
     mapSalesInvoiceRowToSalesInvoice(
       row,
       linesByInvoiceId.get(row.id) ?? [],
-      paymentTotals.get(row.id) ?? Number(row.finalTotal),
+      paymentTotals.get(row.id) ?? 0,
     ),
   );
 }

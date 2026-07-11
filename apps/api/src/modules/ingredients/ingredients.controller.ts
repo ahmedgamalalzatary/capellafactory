@@ -25,14 +25,14 @@ export async function getIngredientHandler(request: Request, response: Response)
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient id" });
+    response.status(400).json({ message: "معرّف الخامة غير صالح" });
     return;
   }
 
   const ingredient = await getIngredient(id);
 
   if (!ingredient) {
-    response.status(404).json({ message: "Ingredient not found" });
+    response.status(404).json({ message: "الخامة غير موجودة" });
     return;
   }
 
@@ -57,7 +57,7 @@ export async function updateIngredientHandler(request: Request, response: Respon
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient id" });
+    response.status(400).json({ message: "معرّف الخامة غير صالح" });
     return;
   }
 
@@ -65,7 +65,7 @@ export async function updateIngredientHandler(request: Request, response: Respon
     const ingredient = await editIngredient(id, request.body);
 
     if (!ingredient) {
-      response.status(404).json({ message: "Ingredient not found" });
+      response.status(404).json({ message: "الخامة غير موجودة" });
       return;
     }
 
@@ -87,7 +87,7 @@ export async function archiveIngredientHandler(request: Request, response: Respo
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient id" });
+    response.status(400).json({ message: "معرّف الخامة غير صالح" });
     return;
   }
 
@@ -95,7 +95,7 @@ export async function archiveIngredientHandler(request: Request, response: Respo
     const ingredient = await archiveIngredientRecord(id);
 
     if (!ingredient) {
-      response.status(404).json({ message: "Ingredient not found" });
+      response.status(404).json({ message: "الخامة غير موجودة" });
       return;
     }
 
@@ -114,14 +114,14 @@ export async function reactivateIngredientHandler(request: Request, response: Re
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient id" });
+    response.status(400).json({ message: "معرّف الخامة غير صالح" });
     return;
   }
 
   const ingredient = await reactivateIngredientRecord(id);
 
   if (!ingredient) {
-    response.status(404).json({ message: "Ingredient not found" });
+    response.status(404).json({ message: "الخامة غير موجودة" });
     return;
   }
 
@@ -132,7 +132,7 @@ export async function deleteIngredientHandler(request: Request, response: Respon
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient id" });
+    response.status(400).json({ message: "معرّف الخامة غير صالح" });
     return;
   }
 
@@ -140,7 +140,7 @@ export async function deleteIngredientHandler(request: Request, response: Respon
     const deleted = await removeIngredient(id);
 
     if (!deleted) {
-      response.status(404).json({ message: "Ingredient not found" });
+      response.status(404).json({ message: "الخامة غير موجودة" });
       return;
     }
 

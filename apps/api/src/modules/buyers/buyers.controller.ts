@@ -17,14 +17,14 @@ export async function getBuyerHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid buyer id" });
+    response.status(400).json({ message: "معرّف العميل غير صالح" });
     return;
   }
 
   const buyer = await getBuyer(id);
 
   if (!buyer) {
-    response.status(404).json({ message: "Buyer not found" });
+    response.status(404).json({ message: "العميل غير موجود" });
     return;
   }
 
@@ -49,7 +49,7 @@ export async function updateBuyerHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid buyer id" });
+    response.status(400).json({ message: "معرّف العميل غير صالح" });
     return;
   }
 
@@ -57,7 +57,7 @@ export async function updateBuyerHandler(request: Request, response: Response) {
     const buyer = await editBuyer(id, request.body);
 
     if (!buyer) {
-      response.status(404).json({ message: "Buyer not found" });
+      response.status(404).json({ message: "العميل غير موجود" });
       return;
     }
 
@@ -76,7 +76,7 @@ export async function deleteBuyerHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid buyer id" });
+    response.status(400).json({ message: "معرّف العميل غير صالح" });
     return;
   }
 
@@ -84,7 +84,7 @@ export async function deleteBuyerHandler(request: Request, response: Response) {
     const deleted = await removeBuyer(id);
 
     if (!deleted) {
-      response.status(404).json({ message: "Buyer not found" });
+      response.status(404).json({ message: "العميل غير موجود" });
       return;
     }
 

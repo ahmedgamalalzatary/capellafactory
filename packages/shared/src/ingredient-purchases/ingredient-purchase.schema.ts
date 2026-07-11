@@ -19,18 +19,18 @@ const optionalTrimmedString = z
 export const ingredientPurchaseUnitSchema = z.enum(ingredientPurchaseUnits);
 
 export const ingredientPurchaseLineInputSchema = z.object({
-  ingredientId: z.coerce.number().int().positive("Ingredient is required"),
-  quantity: z.coerce.number().positive("Quantity must be greater than zero"),
+  ingredientId: z.coerce.number().int().positive("الخامة مطلوبة"),
+  quantity: z.coerce.number().positive("الكمية يجب أن تكون أكبر من صفر"),
   unit: ingredientPurchaseUnitSchema,
-  lineTotal: z.coerce.number().positive("Line total must be greater than zero"),
+  lineTotal: z.coerce.number().positive("إجمالي السطر يجب أن يكون أكبر من صفر"),
 }).strict();
 
 export const ingredientPurchaseInputSchema = z
   .object({
     occurredAt: z
       .string()
-      .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
-    supplierId: z.coerce.number().int().positive("Supplier is required"),
+      .datetime({ offset: true, message: "تاريخ المستند يجب أن يكون تاريخًا ووقتًا صالحين" }),
+    supplierId: z.coerce.number().int().positive("المورد مطلوب"),
     notes: optionalTrimmedString,
     taxState: adjustmentStateSchema,
     taxType: adjustmentTypeSchema.optional(),
@@ -41,7 +41,7 @@ export const ingredientPurchaseInputSchema = z
     payments: documentPaymentsInputSchema,
     lines: z
       .array(ingredientPurchaseLineInputSchema)
-      .min(1, "At least one ingredient line is required"),
+      .min(1, "يجب إدخال سطر خامة واحد على الأقل"),
   })
   .strict()
   .transform((value) => ({
@@ -59,7 +59,7 @@ export const ingredientPurchaseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["payments"],
-        message: "Paid amount cannot exceed total amount",
+        message: "المبلغ المدفوع لا يمكن أن يتجاوز الإجمالي",
       });
     }
 
@@ -67,7 +67,7 @@ export const ingredientPurchaseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["supplierName"],
-        message: "Ingredient purchases must use a saved supplier",
+        message: "يجب اختيار مورد مسجل للمشتريات",
       });
     }
 
@@ -78,7 +78,7 @@ export const ingredientPurchaseInputSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["lines", index, "ingredientId"],
-          message: "Ingredient cannot appear more than once in the same invoice",
+          message: "لا يمكن تكرار الخامة في نفس الفاتورة",
         });
         return;
       }
@@ -90,7 +90,7 @@ export const ingredientPurchaseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["discountValue"],
-        message: "Final total cannot be negative",
+        message: "الإجمالي النهائي لا يمكن أن يكون سالبًا",
       });
     }
   })

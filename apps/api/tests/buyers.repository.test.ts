@@ -61,7 +61,7 @@ test("maps mysql duplicate key errors to DuplicateBuyerPhoneError", () => {
   const error = toDatabaseError(mysqlError);
 
   assert.ok(error instanceof DuplicateBuyerPhoneError);
-  assert.equal(error.message, "Buyer phone must be unique");
+  assert.equal(error.message, "رقم هاتف العميل مستخدم بالفعل");
 });
 
 test("passes through unknown database errors", () => {
@@ -87,6 +87,6 @@ test("buyer locked error explains sales invoice history lock", () => {
 
   assert.equal(
     error.message,
-    "Buyer cannot be modified or deleted after it has sales invoice history",
+    "لا يمكن تعديل أو حذف العميل لوجود سجل فواتير بيع مرتبط به",
   );
 });

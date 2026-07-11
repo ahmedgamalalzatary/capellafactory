@@ -197,8 +197,8 @@ test("maps listed sales invoice headers with batched lines by invoice id", () =>
       paymentStatus: invoice.paymentStatus,
     })),
     [
-      { id: 9, notes: "urgent", lineIds: [11], paymentStatus: "paid" },
-      { id: 10, notes: undefined, lineIds: [13], paymentStatus: "paid" },
+      { id: 9, notes: "urgent", lineIds: [11], paymentStatus: "unpaid" },
+      { id: 10, notes: undefined, lineIds: [13], paymentStatus: "unpaid" },
     ],
   );
 });
@@ -354,7 +354,7 @@ test("sales invoices cannot be backdated", () => {
       ),
     (error: unknown) =>
       error instanceof SalesInvoiceValidationError &&
-      error.message === "Sales invoices cannot be backdated",
+      error.message === "لا يمكن إدخال فاتورة بيع بتاريخ سابق",
   );
 });
 

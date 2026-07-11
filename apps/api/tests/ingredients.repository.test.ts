@@ -70,7 +70,7 @@ test("maps mysql duplicate key errors to DuplicateIngredientNameError", () => {
   const error = toIngredientDatabaseError(mysqlError);
 
   assert.ok(error instanceof DuplicateIngredientNameError);
-  assert.equal(error.message, "Ingredient name must be unique");
+  assert.equal(error.message, "اسم الخامة مستخدم بالفعل");
 });
 
 test("normalizes ingredient search query", () => {

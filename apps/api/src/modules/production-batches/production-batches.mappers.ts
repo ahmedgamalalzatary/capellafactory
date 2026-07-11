@@ -57,6 +57,27 @@ export function mapProductionBatchRowToProductionBatch(
   };
 }
 
+export type ListedProductionBatchLineRow = ProductionBatchLineRow & {
+  batchId: number;
+};
+
+export function assembleProductionBatches(
+  rows: ProductionBatchRow[],
+  lines: ListedProductionBatchLineRow[],
+): ProductionBatch[] {
+  const linesByBatchId = new Map<number, ProductionBatchLineRow[]>();
+
+  for (const line of lines) {
+    const groupedLines = linesByBatchId.get(line.batchId) ?? [];
+    groupedLines.push(line);
+    linesByBatchId.set(line.batchId, groupedLines);
+  }
+
+  return rows.map((row) =>
+    mapProductionBatchRowToProductionBatch(row, linesByBatchId.get(row.id) ?? []),
+  );
+}
+
 export function normalizeProductionBatchSearchQuery(query?: string) {
   const normalized = query?.trim();
   return normalized ? normalized : undefined;

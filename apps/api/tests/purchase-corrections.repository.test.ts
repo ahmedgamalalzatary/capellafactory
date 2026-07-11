@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  buildPurchaseCorrectionAllocationRequest,
+  applyPurchaseCorrectionToLayer,
   buildPurchaseCorrectionAllocationRow,
   getRemainingPurchaseCorrectionQuantity,
   resolvePurchaseCorrectionLineAmounts,
 } from "../src/modules/purchase-corrections/purchase-corrections.allocation.js";
+import { StockLedgerConflictError } from "../src/utils/stock-ledger.js";
 import {
   assemblePurchaseCorrections,
   mapPurchaseCorrectionLineRow,
@@ -31,29 +32,6 @@ test("derives correction line amounts proportionally from the source purchase li
   );
 });
 
-test("builds a source-linked outbound allocation request for purchase correction lines", () => {
-  assert.deepEqual(
-    buildPurchaseCorrectionAllocationRequest({
-      ingredientId: 3,
-      correctionId: 9,
-      correctionLineId: 4,
-      sourcePurchaseLineId: 11,
-      normalizedQuantity: 2000,
-      occurredAt: new Date("2026-05-24T12:05:00.000Z"),
-    }),
-    {
-      domain: "ingredient",
-      itemId: 3,
-      outboundDocumentType: "purchase-correction",
-      outboundDocumentId: 9,
-      outboundLineId: 4,
-      sourceLineId: 11,
-      quantity: 2000,
-      occurredAt: new Date("2026-05-24T12:05:00.000Z"),
-    },
-  );
-});
-
 test("rejects purchase correction allocation rows with zero normalized quantity", () => {
   assert.throws(
     () =>
@@ -68,7 +46,7 @@ test("rejects purchase correction allocation rows with zero normalized quantity"
       }),
     (error: unknown) =>
       error instanceof PurchaseCorrectionValidationError &&
-      error.message === "Purchase correction line quantity must be greater than zero",
+      error.message === "كمية سطر تصحيح الشراء يجب أن تكون أكبر من صفر",
   );
 });
 
@@ -82,7 +60,7 @@ test("rejects amount derivation when the source quantity is zero", () => {
       }),
     (error: unknown) =>
       error instanceof PurchaseCorrectionValidationError &&
-      error.message === "Source purchase line quantity must be greater than zero",
+      error.message === "كمية سطر فاتورة الشراء المصدر يجب أن تكون أكبر من صفر",
   );
 });
 
@@ -245,6 +223,29 @@ test("normalizes purchase correction search query", () => {
 
 test("computes remaining reversible quantity from the source line quantity and prior corrections", () => {
   assert.equal(getRemainingPurchaseCorrectionQuantity(12, 5), 7);
+});
+
+test("applying a correction decrements the source stock layer remaining quantity", () => {
+  assert.deepEqual(
+    applyPurchaseCorrectionToLayer({
+      ingredientId: 3,
+      layerRemainingQuantity: 2500,
+      correctionQuantity: 2000,
+    }),
+    { nextRemainingQuantity: 500 },
+  );
+});
+
+test("applying a correction larger than the layer remainder raises a ledger conflict", () => {
+  assert.throws(
+    () =>
+      applyPurchaseCorrectionToLayer({
+        ingredientId: 3,
+        layerRemainingQuantity: 1500,
+        correctionQuantity: 2000,
+      }),
+    (error: unknown) => error instanceof StockLedgerConflictError,
+  );
 });
 
 test("rejects correction quantity that exceeds the remaining reversible quantity", () => {

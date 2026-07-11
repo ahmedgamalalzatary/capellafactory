@@ -15,14 +15,14 @@ export async function getProductionBatchHandler(request: Request, response: Resp
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid production batch id" });
+    response.status(400).json({ message: "معرّف التشغيلة غير صالح" });
     return;
   }
 
   const batch = await getProductionBatch(id);
 
   if (!batch) {
-    response.status(404).json({ message: "Production batch not found" });
+    response.status(404).json({ message: "التشغيلة غير موجودة" });
     return;
   }
 

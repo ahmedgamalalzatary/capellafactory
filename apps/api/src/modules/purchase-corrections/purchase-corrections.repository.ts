@@ -2,6 +2,7 @@ import type {
   PurchaseCorrectionInput,
 } from "@capella/shared/purchase-corrections/purchase-correction.types";
 import { and, asc, eq, like, or } from "drizzle-orm";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import {
   ingredientPurchaseLinesTable,
@@ -15,6 +16,7 @@ import { normalizeIngredientQuantity } from "../../utils/quantity-normalization.
 import { recalculateIngredientBalances } from "../../services/stock-costing.service.js";
 import { StockLedgerConflictError } from "../../utils/stock-ledger.js";
 import {
+  applyPurchaseCorrectionToLayer,
   buildPurchaseCorrectionAllocationRow,
   getRemainingPurchaseCorrectionQuantity,
   resolvePurchaseCorrectionLineAmounts,
@@ -48,8 +50,8 @@ export async function listPurchaseCorrections(query?: string) {
       and(
         normalizedQuery
           ? or(
-              like(purchaseCorrectionsTable.reason, `%${normalizedQuery}%`),
-              like(ingredientPurchasesTable.invoiceCode, `%${normalizedQuery}%`),
+              like(purchaseCorrectionsTable.reason, `%${escapeLike(normalizedQuery)}%`),
+              like(ingredientPurchasesTable.invoiceCode, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
       ),
@@ -106,7 +108,7 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
   });
 
   if (!sourcePurchase) {
-    throw new PurchaseCorrectionValidationError("Source purchase not found");
+    throw new PurchaseCorrectionValidationError("فاتورة الشراء المصدر غير موجودة");
   }
 
   const uniqueSourceLineIds = [...new Set(input.lines.map((line) => line.sourcePurchaseLineId))];
@@ -124,7 +126,7 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
   for (const line of input.lines) {
     const sourceLine = sourceLinesById.get(line.sourcePurchaseLineId);
     if (!sourceLine || sourceLine.purchaseId !== input.sourcePurchaseId) {
-      throw new PurchaseCorrectionValidationError("Correction lines must belong to the source purchase");
+      throw new PurchaseCorrectionValidationError("يجب أن تنتمي أسطر التصحيح إلى فاتورة الشراء المصدر");
     }
   }
 
@@ -148,7 +150,7 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
   const preparedLines = input.lines.map((line) => {
     const sourceLine = sourceLinesById.get(line.sourcePurchaseLineId);
     if (!sourceLine) {
-      throw new PurchaseCorrectionValidationError("One or more source purchase lines were not found");
+      throw new PurchaseCorrectionValidationError("سطر واحد أو أكثر من أسطر فاتورة الشراء المصدر غير موجود");
     }
 
     const remainingQuantity = getRemainingPurchaseCorrectionQuantity(
@@ -199,7 +201,7 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
 
       const createdId = inserted[0]?.id;
       if (!createdId) {
-        throw new Error("Failed to create purchase correction");
+        throw new Error("تعذر إنشاء تصحيح الشراء");
       }
 
       await tx.insert(purchaseCorrectionLinesTable).values(
@@ -232,10 +234,23 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
         });
 
         if (!sourceLayer) {
-          throw new Error(`Missing stock layer for purchase line ${line.sourcePurchaseLineId}`);
+          throw new Error(`طبقة المخزون لسطر الشراء ${line.sourcePurchaseLineId} غير موجودة`);
         }
 
         sourceLayerIdsByLineId.set(line.id, sourceLayer.id);
+
+        // Return the corrected quantity to the supplier: the source layer must
+        // shrink so stock balances and later FIFO allocations see the removal.
+        const { nextRemainingQuantity } = applyPurchaseCorrectionToLayer({
+          ingredientId: line.ingredientId,
+          layerRemainingQuantity: Number(sourceLayer.remainingQuantity),
+          correctionQuantity: Number(line.normalizedQuantity),
+        });
+
+        await tx
+          .update(stockLayersTable)
+          .set({ remainingQuantity: nextRemainingQuantity.toFixed(3) })
+          .where(eq(stockLayersTable.id, sourceLayer.id));
       }
 
       await tx.insert(stockLayerAllocationsTable).values(
@@ -259,7 +274,7 @@ export async function createPurchaseCorrection(input: PurchaseCorrectionInput) {
 
     const correction = await getPurchaseCorrectionById(correctionId);
     if (!correction) {
-      throw new Error(`Failed to load created purchase correction with id ${correctionId}`);
+      throw new Error(`تعذر تحميل تصحيح الشراء الذي تم إنشاؤه برقم ${correctionId}`);
     }
 
     return correction;

@@ -6,6 +6,7 @@ import {
   resolveIngredientPurchaseSupplierFields,
 } from "../src/modules/ingredient-purchases/ingredient-purchases.allocation.js";
 import {
+  assembleIngredientPurchases,
   createIngredientPurchasePaymentTotalLookup,
   compareIngredientPurchaseListOrder,
   mapIngredientPurchaseRowToIngredientPurchase,
@@ -16,6 +17,82 @@ import {
   IngredientPurchaseValidationError,
   validateIngredientPurchaseLineUnit,
 } from "../src/modules/ingredient-purchases/ingredient-purchases.validators.js";
+
+test("assembles ingredient purchases from batched rows, lines, payment totals, and payments", () => {
+  const baseRow = {
+    invoiceCode: "PUR-20260101-0001",
+    occurredAt: new Date("2026-01-01T10:00:00.000Z"),
+    baseTotal: "100.000",
+    taxState: "inactive" as const,
+    taxType: null,
+    taxValue: "0.000",
+    taxAmount: "0.000",
+    totalAfterTax: "100.000",
+    discountState: "inactive" as const,
+    discountType: null,
+    discountValue: "0.000",
+    discountAmount: "0.000",
+    finalTotal: "100.000",
+    totalAmount: "100.000",
+    supplierId: 4,
+    supplierName: "Cairo Mills",
+    notes: null,
+    createdAt: new Date("2026-01-01T10:05:00.000Z"),
+  };
+
+  const purchases = assembleIngredientPurchases(
+    [
+      { ...baseRow, id: 1 },
+      { ...baseRow, id: 2, invoiceCode: "PUR-20260102-0002" },
+    ],
+    [
+      {
+        purchaseId: 2,
+        id: 21,
+        ingredientId: 4,
+        quantity: "1.000",
+        unit: "kg",
+        unitPrice: "100.000",
+        lineTotal: "100.000",
+        normalizedQuantity: "1000.000",
+      },
+      {
+        purchaseId: 1,
+        id: 11,
+        ingredientId: 3,
+        quantity: "2.000",
+        unit: "kg",
+        unitPrice: "50.000",
+        lineTotal: "100.000",
+        normalizedQuantity: "2000.000",
+      },
+    ],
+    new Map([[1, 40]]),
+    [
+      {
+        purchaseId: 1,
+        id: 5,
+        amount: "40.000",
+        paymentMethod: "cod",
+        paidAt: new Date("2026-01-01T10:00:00.000Z"),
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    purchases.map((purchase) => ({
+      id: purchase.id,
+      lineIds: purchase.lines.map((line) => line.id),
+      paidAmount: purchase.paidAmount,
+      paymentStatus: purchase.paymentStatus,
+      paymentIds: purchase.payments.map((payment) => payment.id),
+    })),
+    [
+      { id: 1, lineIds: [11], paidAmount: 40, paymentStatus: "partial", paymentIds: [5] },
+      { id: 2, lineIds: [21], paidAmount: 0, paymentStatus: "unpaid", paymentIds: [] },
+    ],
+  );
+});
 
 test("maps ingredient purchase lines into shared line shape", () => {
   const line = mapIngredientPurchaseLineRow({
@@ -242,7 +319,7 @@ test("rejects ingredient purchase stock layers with zero normalized quantity", (
       }),
     (error: unknown) =>
       error instanceof IngredientPurchaseValidationError &&
-      error.message === "Ingredient purchase line quantity must be greater than zero",
+      error.message === "كمية سطر شراء الخامة يجب أن تكون أكبر من صفر",
   );
 });
 
@@ -255,6 +332,6 @@ test("rejects unit when it does not match ingredient family", () => {
     () => validateIngredientPurchaseLineUnit("count", "kg"),
     (error: unknown) =>
       error instanceof IngredientPurchaseValidationError &&
-      error.message === "Unit kg is not valid for ingredient family count",
+      error.message === "الوحدة kg غير صالحة لفئة الخامة العدد",
   );
 });

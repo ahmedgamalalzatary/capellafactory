@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   DuplicateSupplierPhoneError,
+  SupplierHasPurchaseHistoryError,
   mapSupplierRowToSupplier,
   normalizeSupplierSearchQuery,
   toDatabaseError,
@@ -60,7 +61,19 @@ test("maps mysql duplicate key errors to DuplicateSupplierPhoneError", () => {
   const error = toDatabaseError(mysqlError);
 
   assert.ok(error instanceof DuplicateSupplierPhoneError);
-  assert.equal(error.message, "Supplier phone must be unique");
+  assert.equal(error.message, "رقم هاتف المورد مستخدم بالفعل");
+});
+
+test("maps mysql restricted-delete errors to SupplierHasPurchaseHistoryError", () => {
+  const mysqlError = {
+    code: "ER_ROW_IS_REFERENCED_2",
+    sqlMessage:
+      "Cannot delete or update a parent row: a foreign key constraint fails (`capella`.`ingredient_purchases`, CONSTRAINT ...)",
+  } as unknown as NodeJS.ErrnoException;
+
+  const error = toDatabaseError(mysqlError);
+
+  assert.ok(error instanceof SupplierHasPurchaseHistoryError);
 });
 
 test("passes through unknown database errors", () => {

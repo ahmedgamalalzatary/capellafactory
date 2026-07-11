@@ -4,6 +4,7 @@ import type {
   IngredientBaseUnit,
   IngredientInput,
 } from "@capella/shared/ingredients/ingredient.types";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import { ingredientsTable } from "../../db/schema/ingredients.js";
 
@@ -12,25 +13,25 @@ type IngredientInsert = typeof ingredientsTable.$inferInsert;
 
 export class DuplicateIngredientNameError extends Error {
   constructor() {
-    super("Ingredient name must be unique");
+    super("اسم الخامة مستخدم بالفعل");
   }
 }
 
 export class IngredientLockedError extends Error {
   constructor() {
-    super("Ingredient cannot be edited after it has history");
+    super("لا يمكن تعديل الخامة لوجود سجل حركات مرتبط بها");
   }
 }
 
 export class IngredientArchiveConflictError extends Error {
   constructor() {
-    super("Ingredient can only be archived when stock is zero");
+    super("لا يمكن أرشفة الخامة إلا عندما يكون رصيدها صفرًا");
   }
 }
 
 export class IngredientDeleteConflictError extends Error {
   constructor() {
-    super("Ingredient can only be deleted when stock is zero and there is no history");
+    super("لا يمكن حذف الخامة إلا عندما يكون رصيدها صفرًا ولا توجد لها حركات");
   }
 }
 
@@ -74,7 +75,7 @@ export async function listIngredients(query?: string, includeArchived = false) {
     .where(
       and(
         includeArchived ? undefined : eq(ingredientsTable.isArchived, false),
-        normalizedQuery ? like(ingredientsTable.name, `%${normalizedQuery}%`) : undefined,
+        normalizedQuery ? like(ingredientsTable.name, `%${escapeLike(normalizedQuery)}%`) : undefined,
       ),
     )
     .orderBy(asc(ingredientsTable.id));
@@ -99,7 +100,7 @@ export async function createIngredient(input: IngredientInput) {
     const ingredient = await getIngredientById(inserted[0]?.id ?? 0);
 
     if (!ingredient) {
-      throw new Error("Failed to load created ingredient");
+      throw new Error("تعذر تحميل الخامة التي تم إنشاؤها");
     }
 
     return ingredient;

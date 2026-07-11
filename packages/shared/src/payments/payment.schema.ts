@@ -14,49 +14,11 @@ const amountSchema = z.coerce.number().min(0);
 
 export const paymentInputSchema = z
   .object({
-    amount: z.coerce.number().positive("Payment amount must be greater than zero"),
+    amount: z.coerce.number().positive("مبلغ الدفعة يجب أن يكون أكبر من صفر"),
     paymentMethod: paymentMethodSchema,
     paidAt: z.string().datetime({ offset: true }),
   })
   .strict() satisfies z.ZodType<AdditionalPaymentInput>;
-
-export const initialPaymentInputSchema = z
-  .object({
-    totalAmount: amountSchema,
-    paidAmount: amountSchema,
-    paymentMethod: paymentMethodSchema.optional(),
-    paidAt: z.string().datetime().optional(),
-  })
-  .superRefine((value, ctx) => {
-    if (value.paidAmount > value.totalAmount) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["paidAmount"],
-        message: "Paid amount cannot exceed total amount",
-      });
-    }
-
-    if (value.paidAmount > 0 && !value.paymentMethod) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["paymentMethod"],
-        message: "Payment method is required when paid amount is greater than zero",
-      });
-    }
-
-    if (value.paidAmount > 0 && !value.paidAt) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["paidAt"],
-        message: "Payment date is required when paid amount is greater than zero",
-      });
-    }
-  })
-  .transform((value) =>
-    value.paidAmount === 0
-      ? { totalAmount: value.totalAmount, paidAmount: value.paidAmount }
-      : value,
-  );
 
 export const additionalPaymentInputSchema = paymentInputSchema
   .extend({
@@ -67,7 +29,7 @@ export const additionalPaymentInputSchema = paymentInputSchema
       ctx.addIssue({
         code: "custom",
         path: ["amount"],
-        message: "Payment amount cannot exceed remaining amount",
+        message: "مبلغ الدفعة لا يمكن أن يتجاوز المبلغ المتبقي",
       });
     }
   });

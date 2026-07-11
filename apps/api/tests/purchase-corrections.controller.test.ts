@@ -41,5 +41,5 @@ test("getPurchaseCorrectionHandler rejects non-numeric ids", async () => {
   await getPurchaseCorrectionHandler(request as Request, result.response);
 
   assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.jsonBody, { message: "Invalid purchase correction id" });
+  assert.deepEqual(result.jsonBody, { message: "معرّف تصحيح الشراء غير صالح" });
 });

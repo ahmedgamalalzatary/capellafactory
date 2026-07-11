@@ -12,7 +12,7 @@ export async function requireAuth(
   const token = getSessionToken(request);
 
   if (!token) {
-    response.status(401).json({ message: "Unauthorized" });
+    response.status(401).json({ message: "غير مصرح لك" });
     return;
   }
 
@@ -20,7 +20,7 @@ export async function requireAuth(
   const session = await service.getSession(token);
 
   if (!session) {
-    response.status(401).json({ message: "Unauthorized" });
+    response.status(401).json({ message: "غير مصرح لك" });
     return;
   }
 

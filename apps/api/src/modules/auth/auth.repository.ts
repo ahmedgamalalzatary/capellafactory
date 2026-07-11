@@ -23,7 +23,7 @@ export const authRepository: AuthRepository = {
     const id = inserted[0]?.id;
 
     if (!id) {
-      throw new Error("Admin creation failed");
+      throw new Error("تعذر إنشاء حساب المدير");
     }
 
     return {
@@ -40,7 +40,7 @@ export const authRepository: AuthRepository = {
       .where(eq(adminsTable.id, id));
 
     if (result.affectedRows === 0) {
-      throw new Error("Admin not found");
+      throw new Error("حساب المدير غير موجود");
     }
 
     return { id, ...input };
@@ -65,7 +65,7 @@ export const authRepository: AuthRepository = {
     const id = inserted[0]?.id;
 
     if (!id) {
-      throw new Error("Session creation failed");
+      throw new Error("تعذر إنشاء الجلسة");
     }
 
     return {

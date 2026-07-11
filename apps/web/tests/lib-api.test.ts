@@ -354,6 +354,14 @@ describe("mutations", () => {
     await expect(deleteIngredient(5)).rejects.toThrow("in use");
   });
 
+  test("ingredient mutations throw AuthRequiredError on 401 like every other client", async () => {
+    fetchMock.mockResolvedValue(jsonResponse(null, { status: 401 }));
+    await expect(updateIngredient(2, { name: "x" })).rejects.toBeInstanceOf(
+      AuthRequiredError,
+    );
+    await expect(deleteIngredient(5)).rejects.toBeInstanceOf(AuthRequiredError);
+  });
+
   test("createIngredient surfaces a mutate error message", async () => {
     fetchMock.mockResolvedValue(
       jsonResponse({ message: "dup name" }, { status: 409 }),

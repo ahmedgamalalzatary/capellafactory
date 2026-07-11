@@ -1,11 +1,11 @@
 import type {
-  IngredientPurchase,
   IngredientPurchaseInput,
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import { calculateDocumentTotals } from "@capella/shared/payments/document-payment.schema";
 import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import {
   ingredientPurchaseLinesTable,
@@ -24,6 +24,7 @@ import {
   resolveIngredientPurchaseSupplierFields,
 } from "./ingredient-purchases.allocation.js";
 import {
+  assembleIngredientPurchases,
   compareIngredientPurchaseListOrder,
   createIngredientPurchasePaymentTotalLookup,
   mapIngredientPurchaseRowToIngredientPurchase,
@@ -43,20 +44,44 @@ export async function listIngredientPurchases(query?: string) {
       and(
         normalizedQuery
           ? or(
-              like(ingredientPurchasesTable.invoiceCode, `%${normalizedQuery}%`),
-              like(ingredientPurchasesTable.supplierName, `%${normalizedQuery}%`),
-              like(ingredientPurchasesTable.notes, `%${normalizedQuery}%`),
+              like(ingredientPurchasesTable.invoiceCode, `%${escapeLike(normalizedQuery)}%`),
+              like(ingredientPurchasesTable.supplierName, `%${escapeLike(normalizedQuery)}%`),
+              like(ingredientPurchasesTable.notes, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
       ),
     )
     .orderBy(asc(ingredientPurchasesTable.occurredAt), asc(ingredientPurchasesTable.id));
 
-  const purchases = (await Promise.all(
-    rows.map((row) => getIngredientPurchaseById(row.id)),
-  )) as IngredientPurchase[];
+  if (rows.length === 0) {
+    return [];
+  }
 
-  return purchases.sort(compareIngredientPurchaseListOrder);
+  const purchaseIds = rows.map((row) => row.id);
+
+  const lines = await db
+    .select()
+    .from(ingredientPurchaseLinesTable)
+    .where(inArray(ingredientPurchaseLinesTable.purchaseId, purchaseIds))
+    .orderBy(asc(ingredientPurchaseLinesTable.purchaseId), asc(ingredientPurchaseLinesTable.id));
+
+  const paymentTotals = await getIngredientPurchasePaymentTotals(purchaseIds);
+
+  const payments = await db
+    .select({
+      purchaseId: ingredientPurchasePaymentsTable.purchaseId,
+      id: ingredientPurchasePaymentsTable.id,
+      amount: ingredientPurchasePaymentsTable.amount,
+      paymentMethod: ingredientPurchasePaymentsTable.paymentMethod,
+      paidAt: ingredientPurchasePaymentsTable.paidAt,
+    })
+    .from(ingredientPurchasePaymentsTable)
+    .where(inArray(ingredientPurchasePaymentsTable.purchaseId, purchaseIds))
+    .orderBy(asc(ingredientPurchasePaymentsTable.paidAt), asc(ingredientPurchasePaymentsTable.id));
+
+  return assembleIngredientPurchases(rows, lines, paymentTotals, payments).sort(
+    compareIngredientPurchaseListOrder,
+  );
 }
 
 export async function getIngredientPurchaseById(id: number) {
@@ -80,7 +105,7 @@ export async function getIngredientPurchaseById(id: number) {
   return mapIngredientPurchaseRowToIngredientPurchase(
     row,
     lines,
-    paymentTotals.get(id) ?? Number(row.finalTotal),
+    paymentTotals.get(id) ?? 0,
     payments,
   );
 }
@@ -123,7 +148,7 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
     const purchaseId = inserted[0]?.id;
 
     if (!purchaseId) {
-      throw new Error("Failed to create ingredient purchase");
+      throw new Error("تعذر إنشاء فاتورة الشراء");
     }
 
     await tx
@@ -138,7 +163,7 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
         const ingredient = relationState.ingredientsById.get(line.ingredientId);
 
         if (!ingredient) {
-          throw new Error(`Ingredient ${line.ingredientId} not found`);
+          throw new Error(`الخامة ${line.ingredientId} غير موجودة`);
         }
 
         validateIngredientPurchaseLineUnit(ingredient.unitFamily, line.unit);
@@ -198,7 +223,7 @@ export async function createIngredientPurchase(input: IngredientPurchaseInput) {
   const purchase = await getIngredientPurchaseById(insertedId);
 
   if (!purchase) {
-    throw new Error(`Failed to load created ingredient purchase with id ${insertedId}`);
+    throw new Error(`تعذر تحميل فاتورة الشراء التي تم إنشاؤها برقم ${insertedId}`);
   }
 
   return purchase;
@@ -217,7 +242,7 @@ export async function addIngredientPurchasePayment(id: number, input: Additional
   });
 
   if (!result.success) {
-    throw new IngredientPurchaseValidationError(result.error.issues[0]?.message ?? "Invalid payment");
+    throw new IngredientPurchaseValidationError(result.error.issues[0]?.message ?? "بيانات الدفعة غير صالحة");
   }
 
   await db.insert(ingredientPurchasePaymentsTable).values({
@@ -266,7 +291,7 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
   });
 
   if (!supplier) {
-    throw new IngredientPurchaseValidationError("Supplier not found");
+    throw new IngredientPurchaseValidationError("المورد غير موجود");
   }
 
   const ingredientIds = [...new Set(input.lines.map((line) => line.ingredientId))];
@@ -276,7 +301,7 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
     .where(or(...ingredientIds.map((id) => eq(ingredientsTable.id, id))));
 
   if (ingredients.length !== ingredientIds.length) {
-    throw new IngredientPurchaseValidationError("One or more ingredients were not found");
+    throw new IngredientPurchaseValidationError("خامة واحدة أو أكثر غير موجودة");
   }
 
   const ingredientsById = new Map(ingredients.map((ingredient) => [ingredient.id, ingredient]));
@@ -285,7 +310,7 @@ async function validateIngredientPurchaseRelations(input: IngredientPurchaseInpu
     const ingredient = ingredientsById.get(line.ingredientId);
 
     if (!ingredient) {
-      throw new IngredientPurchaseValidationError("One or more ingredients were not found");
+      throw new IngredientPurchaseValidationError("خامة واحدة أو أكثر غير موجودة");
     }
 
     validateIngredientPurchaseLineUnit(ingredient.unitFamily, line.unit);

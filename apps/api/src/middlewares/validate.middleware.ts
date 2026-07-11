@@ -7,7 +7,7 @@ export function validateBody(schema: ZodType) {
 
     if (!result.success) {
       response.status(400).json({
-        message: "Validation failed",
+        message: "بيانات الإدخال غير صالحة",
         issues: result.error.issues,
       });
       return;

@@ -1,5 +1,6 @@
-import type { ProductionBatch, ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
-import { and, asc, eq, like, or } from "drizzle-orm";
+import type { ProductionBatchInput } from "@capella/shared/production-batches/production-batch.types";
+import { and, asc, eq, inArray, like, or } from "drizzle-orm";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import {
   ingredientsTable,
@@ -18,6 +19,7 @@ import {
   buildProductionBatchOutputLayer,
 } from "./production-batches.allocation.js";
 import {
+  assembleProductionBatches,
   compareProductionBatchListOrder,
   mapProductionBatchRowToProductionBatch,
   normalizeProductionBatchSearchQuery,
@@ -37,19 +39,25 @@ export async function listProductionBatches(query?: string) {
       and(
         normalizedQuery
           ? or(
-            like(productionBatchesTable.batchCode, `%${normalizedQuery}%`),
-            like(productionBatchesTable.notes, `%${normalizedQuery}%`),
+            like(productionBatchesTable.batchCode, `%${escapeLike(normalizedQuery)}%`),
+            like(productionBatchesTable.notes, `%${escapeLike(normalizedQuery)}%`),
           )
           : undefined,
       ),
     )
     .orderBy(asc(productionBatchesTable.occurredAt), asc(productionBatchesTable.id));
 
-  const batches = (await Promise.all(
-    rows.map((row) => getProductionBatchById(row.id)),
-  )) as ProductionBatch[];
+  if (rows.length === 0) {
+    return [];
+  }
 
-  return batches.sort(compareProductionBatchListOrder);
+  const lines = await db
+    .select()
+    .from(productionBatchLinesTable)
+    .where(inArray(productionBatchLinesTable.batchId, rows.map((row) => row.id)))
+    .orderBy(asc(productionBatchLinesTable.batchId), asc(productionBatchLinesTable.id));
+
+  return assembleProductionBatches(rows, lines).sort(compareProductionBatchListOrder);
 }
 
 export async function getProductionBatchById(id: number) {
@@ -76,7 +84,7 @@ export async function createProductionBatch(input: ProductionBatchInput) {
     const ingredient = relationState.ingredientsById.get(line.ingredientId);
 
     if (!ingredient) {
-      throw new ProductionBatchValidationError("One or more ingredients were not found");
+      throw new ProductionBatchValidationError("خامة واحدة أو أكثر غير موجودة");
     }
 
     validateProductionBatchLineUnit(ingredient.unitFamily, line.unit);
@@ -104,7 +112,7 @@ export async function createProductionBatch(input: ProductionBatchInput) {
   );
 
   if (input.producedQuantity <= 0) {
-    throw new ProductionBatchValidationError("producedQuantity must be > 0");
+    throw new ProductionBatchValidationError("كمية الإنتاج يجب أن تكون أكبر من صفر");
   }
 
   const insertedId = await createProductionBatchTransaction(input, preparedLines);
@@ -112,7 +120,7 @@ export async function createProductionBatch(input: ProductionBatchInput) {
   const batch = await getProductionBatchById(insertedId);
 
   if (!batch) {
-    throw new Error(`Failed to load created production batch with id ${insertedId}`);
+    throw new Error(`تعذر تحميل المنتج الذي تم إنشاؤهion batch with id ${insertedId}`);
   }
 
   return batch;
@@ -147,7 +155,7 @@ async function createProductionBatchTransaction(
       const batchId = inserted[0]?.id;
 
       if (!batchId) {
-        throw new Error("Failed to create production batch");
+        throw new Error("تعذر إنشاء التشغيلة");
       }
 
       await tx
@@ -216,7 +224,7 @@ async function createProductionBatchTransaction(
           const layer = openLayers.find((candidate) => candidate.id === allocation.stockLayerId);
           if (!layer) {
             throw new Error(
-              `Allocation references unknown layer ${allocation.stockLayerId} for ingredient ${line.ingredientId}`,
+              `يشير التخصيص إلى طبقة مخزون غير معروفة ${allocation.stockLayerId} for ingredient ${line.ingredientId}`,
             );
           }
 
@@ -268,10 +276,10 @@ async function createProductionBatchTransaction(
     });
   } catch (error) {
     if (error instanceof StockLedgerConflictError) {
-      const conflicting = preparedLines.find((line) => line.ingredientId === error.ingredientId);
+      const conflicting = preparedLines.find((line) => line.ingredientId === error.itemId);
       const ingredientLabel = conflicting
         ? conflicting.ingredientName
-        : `#${error.ingredientId}`;
+        : `#${error.itemId}`;
       throw new ProductionBatchValidationError(
         `حفظ هذه التشغيلة سيجعل مخزون الخامة (${ingredientLabel}) بالسالب في سجل لاحق`,
       );
@@ -287,7 +295,7 @@ async function validateProductionBatchRelations(input: ProductionBatchInput) {
   });
 
   if (!product) {
-    throw new ProductionBatchValidationError("Product not found");
+    throw new ProductionBatchValidationError("المنتج غير موجود");
   }
 
   const ingredientIds = [...new Set(input.lines.map((line) => line.ingredientId))];
@@ -297,7 +305,7 @@ async function validateProductionBatchRelations(input: ProductionBatchInput) {
     .where(or(...ingredientIds.map((id) => eq(ingredientsTable.id, id))));
 
   if (ingredients.length !== ingredientIds.length) {
-    throw new ProductionBatchValidationError("One or more ingredients were not found");
+    throw new ProductionBatchValidationError("خامة واحدة أو أكثر غير موجودة");
   }
 
   return {

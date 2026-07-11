@@ -5,7 +5,7 @@ const requiredTrimmedString = z.string().trim().min(1, "Reason is required");
 
 export const purchaseCorrectionLineInputSchema = z.object({
   sourcePurchaseLineId: z.coerce.number().int().positive("Source purchase line is required"),
-  quantity: z.coerce.number().positive("Quantity must be greater than zero"),
+  quantity: z.coerce.number().positive("الكمية يجب أن تكون أكبر من صفر"),
 }).strict();
 
 export const purchaseCorrectionInputSchema = z.object({
@@ -20,7 +20,7 @@ export const purchaseCorrectionInputSchema = z.object({
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["lines", index, "sourcePurchaseLineId"],
-        message: "Source purchase line cannot appear more than once in the same correction",
+        message: "لا يمكن تكرار سطر فاتورة الشراء المصدر في نفس التصحيح",
       });
       return;
     }

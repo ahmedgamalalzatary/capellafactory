@@ -16,14 +16,14 @@ export async function getIngredientPurchaseHandler(request: Request, response: R
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient purchase id" });
+    response.status(400).json({ message: "معرّف فاتورة الشراء غير صالح" });
     return;
   }
 
   const purchase = await getIngredientPurchase(id);
 
   if (!purchase) {
-    response.status(404).json({ message: "Ingredient purchase not found" });
+    response.status(404).json({ message: "فاتورة الشراء غير موجودة" });
     return;
   }
 
@@ -48,7 +48,7 @@ export async function addIngredientPurchasePaymentHandler(request: Request, resp
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid ingredient purchase id" });
+    response.status(400).json({ message: "معرّف فاتورة الشراء غير صالح" });
     return;
   }
 
@@ -56,7 +56,7 @@ export async function addIngredientPurchasePaymentHandler(request: Request, resp
     const purchase = await recordIngredientPurchasePayment(id, request.body);
 
     if (!purchase) {
-      response.status(404).json({ message: "Ingredient purchase not found" });
+      response.status(404).json({ message: "فاتورة الشراء غير موجودة" });
       return;
     }
 

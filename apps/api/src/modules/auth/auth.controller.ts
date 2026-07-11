@@ -26,7 +26,7 @@ export async function meHandler(request: Request, response: Response) {
   const session = await service.getSession(getSessionToken(request));
 
   if (!session) {
-    response.status(401).json({ message: "Unauthorized" });
+    response.status(401).json({ message: "غير مصرح لك" });
     return;
   }
 

@@ -40,7 +40,7 @@ test("maps mysql duplicate key errors to DuplicateProductNameError", () => {
   const error = toProductDatabaseError(mysqlError);
 
   assert.ok(error instanceof DuplicateProductNameError);
-  assert.equal(error.message, "Product name must be unique");
+  assert.equal(error.message, "اسم المنتج مستخدم بالفعل");
 });
 
 test("normalizes product search query", () => {

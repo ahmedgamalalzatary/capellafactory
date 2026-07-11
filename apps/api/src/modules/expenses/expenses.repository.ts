@@ -4,6 +4,7 @@ import type { Expense, ExpenseInput } from "@capella/shared/expenses/expense.typ
 import { calculateDocumentTotals } from "@capella/shared/payments/document-payment.schema";
 import { additionalPaymentInputSchema, createPaymentSummary } from "@capella/shared/payments/payment.schema";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import { expensePaymentsTable, expensesTable } from "../../db/schema/expenses.js";
 import { ExpenseValidationError } from "./expenses.validators.js";
@@ -20,7 +21,7 @@ type ExpensePaymentRow = {
 
 export function mapExpenseRowToExpense(
   row: ExpenseRow,
-  paidAmount = Number(row.amount),
+  paidAmount = 0,
   payments: ExpensePaymentRow[] = [],
 ): Expense {
   const amount = Number(row.amount);
@@ -106,10 +107,10 @@ export async function listExpenses(query?: string) {
         normalizedQuery
           ? or(
               ...matchingTypes.map((type) => eq(expensesTable.type, type)),
-              like(expensesTable.type, `%${normalizedQuery}%`),
-              like(expensesTable.notes, `%${normalizedQuery}%`),
-              like(expensesTable.employeeName, `%${normalizedQuery}%`),
-              like(expensesTable.otherLabel, `%${normalizedQuery}%`),
+              like(expensesTable.type, `%${escapeLike(normalizedQuery)}%`),
+              like(expensesTable.notes, `%${escapeLike(normalizedQuery)}%`),
+              like(expensesTable.employeeName, `%${escapeLike(normalizedQuery)}%`),
+              like(expensesTable.otherLabel, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
       ),
@@ -119,7 +120,7 @@ export async function listExpenses(query?: string) {
   const paymentTotals = await getExpensePaymentTotals(expenses.map((expense) => expense.id));
 
   return expenses.map((expense) =>
-    mapExpenseRowToExpense(expense, paymentTotals.get(expense.id) ?? Number(expense.finalTotal)),
+    mapExpenseRowToExpense(expense, paymentTotals.get(expense.id) ?? 0),
   );
 }
 
@@ -137,7 +138,7 @@ export async function getExpenseById(id: number) {
 
   return mapExpenseRowToExpense(
     expense,
-    paymentTotals.get(expense.id) ?? Number(expense.finalTotal),
+    paymentTotals.get(expense.id) ?? 0,
     payments,
   );
 }
@@ -163,13 +164,13 @@ export async function createExpense(input: ExpenseInput) {
   const id = inserted[0]?.id;
 
   if (!id) {
-    throw new Error(`Insert did not return a valid id; got: ${JSON.stringify(inserted)}`);
+    throw new Error(`لم تُرجع عملية الحفظ معرّفًا صالحًا`);
   }
 
   const expense = await getExpenseById(id);
 
   if (!expense) {
-    throw new Error(`Failed to load created expense with id ${id}`);
+    throw new Error(`تعذر تحميل المصروف الذي تم إنشاؤه برقم ${id}`);
   }
 
   return expense;
@@ -188,7 +189,7 @@ export async function addExpensePayment(id: number, input: AdditionalPaymentInpu
   });
 
   if (!result.success) {
-    throw new ExpenseValidationError(result.error.issues[0]?.message ?? "Invalid payment");
+    throw new ExpenseValidationError(result.error.issues[0]?.message ?? "بيانات الدفعة غير صالحة");
   }
 
   await db.insert(expensePaymentsTable).values({

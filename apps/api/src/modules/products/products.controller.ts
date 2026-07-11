@@ -25,14 +25,14 @@ export async function getProductHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid product id" });
+    response.status(400).json({ message: "معرّف المنتج غير صالح" });
     return;
   }
 
   const product = await getProduct(id);
 
   if (!product) {
-    response.status(404).json({ message: "Product not found" });
+    response.status(404).json({ message: "المنتج غير موجود" });
     return;
   }
 
@@ -57,7 +57,7 @@ export async function updateProductHandler(request: Request, response: Response)
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid product id" });
+    response.status(400).json({ message: "معرّف المنتج غير صالح" });
     return;
   }
 
@@ -65,7 +65,7 @@ export async function updateProductHandler(request: Request, response: Response)
     const product = await editProduct(id, request.body);
 
     if (!product) {
-      response.status(404).json({ message: "Product not found" });
+      response.status(404).json({ message: "المنتج غير موجود" });
       return;
     }
 
@@ -84,7 +84,7 @@ export async function archiveProductHandler(request: Request, response: Response
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid product id" });
+    response.status(400).json({ message: "معرّف المنتج غير صالح" });
     return;
   }
 
@@ -92,7 +92,7 @@ export async function archiveProductHandler(request: Request, response: Response
     const product = await archiveProductRecord(id);
 
     if (!product) {
-      response.status(404).json({ message: "Product not found" });
+      response.status(404).json({ message: "المنتج غير موجود" });
       return;
     }
 
@@ -111,14 +111,14 @@ export async function reactivateProductHandler(request: Request, response: Respo
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid product id" });
+    response.status(400).json({ message: "معرّف المنتج غير صالح" });
     return;
   }
 
   const product = await reactivateProductRecord(id);
 
   if (!product) {
-    response.status(404).json({ message: "Product not found" });
+    response.status(404).json({ message: "المنتج غير موجود" });
     return;
   }
 
@@ -129,7 +129,7 @@ export async function deleteProductHandler(request: Request, response: Response)
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid product id" });
+    response.status(400).json({ message: "معرّف المنتج غير صالح" });
     return;
   }
 
@@ -137,7 +137,7 @@ export async function deleteProductHandler(request: Request, response: Response)
     const deleted = await removeProduct(id);
 
     if (!deleted) {
-      response.status(404).json({ message: "Product not found" });
+      response.status(404).json({ message: "المنتج غير موجود" });
       return;
     }
 

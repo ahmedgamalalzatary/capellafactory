@@ -6,7 +6,10 @@ import {
   getSuppliers,
   removeSupplier,
 } from "./suppliers.service.js";
-import { DuplicateSupplierPhoneError } from "./suppliers.repository.js";
+import {
+  DuplicateSupplierPhoneError,
+  SupplierHasPurchaseHistoryError,
+} from "./suppliers.repository.js";
 
 export async function listSuppliersHandler(request: Request, response: Response) {
   const query =
@@ -16,10 +19,17 @@ export async function listSuppliersHandler(request: Request, response: Response)
 }
 
 export async function getSupplierHandler(request: Request, response: Response) {
-  const supplier = await getSupplier(Number(request.params.id));
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "معرّف المورد غير صالح" });
+    return;
+  }
+
+  const supplier = await getSupplier(id);
 
   if (!supplier) {
-    response.status(404).json({ message: "Supplier not found" });
+    response.status(404).json({ message: "المورد غير موجود" });
     return;
   }
 
@@ -41,11 +51,18 @@ export async function createSupplierHandler(request: Request, response: Response
 }
 
 export async function updateSupplierHandler(request: Request, response: Response) {
+  const id = Number(request.params.id);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "معرّف المورد غير صالح" });
+    return;
+  }
+
   try {
-    const supplier = await editSupplier(Number(request.params.id), request.body);
+    const supplier = await editSupplier(id, request.body);
 
     if (!supplier) {
-      response.status(404).json({ message: "Supplier not found" });
+      response.status(404).json({ message: "المورد غير موجود" });
       return;
     }
 
@@ -61,12 +78,28 @@ export async function updateSupplierHandler(request: Request, response: Response
 }
 
 export async function deleteSupplierHandler(request: Request, response: Response) {
-  const deleted = await removeSupplier(Number(request.params.id));
+  const id = Number(request.params.id);
 
-  if (!deleted) {
-    response.status(404).json({ message: "Supplier not found" });
+  if (!Number.isInteger(id) || id <= 0) {
+    response.status(400).json({ message: "معرّف المورد غير صالح" });
     return;
   }
 
-  response.status(204).send();
+  try {
+    const deleted = await removeSupplier(id);
+
+    if (!deleted) {
+      response.status(404).json({ message: "المورد غير موجود" });
+      return;
+    }
+
+    response.status(204).send();
+  } catch (error) {
+    if (error instanceof SupplierHasPurchaseHistoryError) {
+      response.status(409).json({ message: error.message });
+      return;
+    }
+
+    throw error;
+  }
 }

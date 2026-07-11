@@ -18,7 +18,7 @@ export function resolveIngredientPurchaseLineCost(
   line: Pick<IngredientPurchaseLineInput, "quantity" | "lineTotal">,
 ) {
   if (line.quantity <= 0) {
-    throw new Error("Purchase line quantity must be greater than zero");
+    throw new Error("كمية سطر الشراء يجب أن تكون أكبر من صفر");
   }
   return {
     unitPrice: line.lineTotal / line.quantity,
@@ -36,7 +36,7 @@ export function buildIngredientPurchaseStockLayer(input: {
 }) {
   if (input.normalizedQuantity <= 0) {
     throw new IngredientPurchaseValidationError(
-      "Ingredient purchase line quantity must be greater than zero",
+      "كمية سطر شراء الخامة يجب أن تكون أكبر من صفر",
     );
   }
 

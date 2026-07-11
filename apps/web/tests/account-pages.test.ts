@@ -5,11 +5,11 @@ import { describe, expect, test } from "vitest";
 describe("supplier and buyer account pages", () => {
   test("defines dedicated supplier and buyer account routes", () => {
     const supplierPage = readFileSync(
-      resolve(process.cwd(), "src/app/(app)/supplier/[id]/page.tsx"),
+      resolve(process.cwd(), "src/app/(app)/suppliers/[id]/page.tsx"),
       "utf8",
     );
     const buyerPage = readFileSync(
-      resolve(process.cwd(), "src/app/(app)/buyer/[id]/page.tsx"),
+      resolve(process.cwd(), "src/app/(app)/buyers/[id]/page.tsx"),
       "utf8",
     );
 

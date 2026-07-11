@@ -1,5 +1,6 @@
 import { asc, eq, like } from "drizzle-orm";
 import type { Buyer } from "@capella/shared/buyers/buyer.types";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import { buyersTable } from "../../db/schema/buyers.js";
 import { buyerHasSalesInvoiceHistory } from "../sales-invoices/sales-invoices.repository.js";
@@ -9,13 +10,13 @@ type BuyerInsert = typeof buyersTable.$inferInsert;
 
 export class DuplicateBuyerPhoneError extends Error {
   constructor() {
-    super("Buyer phone must be unique");
+    super("رقم هاتف العميل مستخدم بالفعل");
   }
 }
 
 export class BuyerLockedError extends Error {
   constructor() {
-    super("Buyer cannot be modified or deleted after it has sales invoice history");
+    super("لا يمكن تعديل أو حذف العميل لوجود سجل فواتير بيع مرتبط به");
   }
 }
 
@@ -55,7 +56,7 @@ export async function listBuyers(query?: string) {
     .select()
     .from(buyersTable)
     .where(
-      normalizedQuery ? like(buyersTable.name, `%${normalizedQuery}%`) : undefined,
+      normalizedQuery ? like(buyersTable.name, `%${escapeLike(normalizedQuery)}%`) : undefined,
     )
     .orderBy(asc(buyersTable.id));
 
@@ -78,7 +79,7 @@ export async function createBuyer(
     const buyer = await getBuyerById(inserted[0]?.id ?? 0);
 
     if (!buyer) {
-      throw new Error("Failed to load created buyer");
+      throw new Error("تعذر تحميل العميل الذي تم إنشاؤه");
     }
 
     return buyer;

@@ -47,7 +47,7 @@ test("fifo replay blocks a backdated event that drives a later record's stock ne
   assert.throws(
     () => replayFifoStockEvents(events),
     (error: unknown) =>
-      error instanceof StockLedgerConflictError && error.ingredientId === 7,
+      error instanceof StockLedgerConflictError && error.itemId === 7,
   );
 });
 
@@ -198,7 +198,7 @@ test("fifo replay rejects ingredient purchase events with zero quantity", () => 
     () => replayFifoStockEvents(events),
     (error: unknown) =>
       error instanceof Error &&
-      error.message === "FIFO inbound quantity must be greater than zero for ingredient-purchase",
+      error.message === "كمية الإدخال في مخزون FIFO يجب أن تكون أكبر من صفر لنوع شراء الخامات",
   );
 });
 
@@ -220,7 +220,7 @@ test("fifo replay rejects production output events with zero quantity", () => {
     () => replayFifoStockEvents(events),
     (error: unknown) =>
       error instanceof Error &&
-      error.message === "FIFO inbound quantity must be greater than zero for production-output",
+      error.message === "كمية الإدخال في مخزون FIFO يجب أن تكون أكبر من صفر لنوع إنتاج المنتجات",
   );
 });
 

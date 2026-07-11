@@ -41,7 +41,7 @@ export function buildProductionBatchOutputLayer(input: {
   occurredAt: Date;
 }) {
   if (input.producedQuantity <= 0) {
-    throw new Error("Produced quantity must be greater than zero");
+    throw new Error("كمية الإنتاج يجب أن تكون أكبر من صفر");
   }
   return {
     domain: "product" as const,

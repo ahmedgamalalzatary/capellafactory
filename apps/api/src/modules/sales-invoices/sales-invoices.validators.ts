@@ -56,6 +56,6 @@ export function validateSalesInvoiceNotBackdated(occurredAt: string | Date, now 
 
   // Allow a small client/server clock-skew and submission-delay window for "now" invoices.
   if (occurred.getTime() < now.getTime() - 60_000) {
-    throw new SalesInvoiceValidationError("Sales invoices cannot be backdated");
+    throw new SalesInvoiceValidationError("لا يمكن إدخال فاتورة بيع بتاريخ سابق");
   }
 }

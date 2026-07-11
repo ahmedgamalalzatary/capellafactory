@@ -7,6 +7,7 @@ import {
   calculateProductionBatchLineCostFromAllocations,
 } from "../src/modules/production-batches/production-batches.allocation.js";
 import {
+  assembleProductionBatches,
   compareProductionBatchListOrder,
   mapProductionBatchLineRow,
   mapProductionBatchRowToProductionBatch,
@@ -16,6 +17,68 @@ import {
   ProductionBatchValidationError,
   validateProductionBatchStock,
 } from "../src/modules/production-batches/production-batches.validators.js";
+
+test("assembles production batches from headers and batched lines grouped by batch id", () => {
+  const batches = assembleProductionBatches(
+    [
+      {
+        id: 1,
+        batchCode: "PRD-20260101-0001",
+        occurredAt: new Date("2026-01-01T10:00:00.000Z"),
+        productId: 7,
+        producedQuantity: "10.000",
+        totalCost: "100.000",
+        unitCost: "10.000000",
+        notes: null,
+        createdAt: new Date("2026-01-01T10:05:00.000Z"),
+      },
+      {
+        id: 2,
+        batchCode: "PRD-20260102-0002",
+        occurredAt: new Date("2026-01-02T10:00:00.000Z"),
+        productId: 8,
+        producedQuantity: "5.000",
+        totalCost: "50.000",
+        unitCost: "10.000000",
+        notes: "second",
+        createdAt: new Date("2026-01-02T10:05:00.000Z"),
+      },
+    ],
+    [
+      {
+        batchId: 2,
+        id: 21,
+        ingredientId: 4,
+        quantity: "1.000",
+        unit: "kg",
+        normalizedQuantity: "1000.000",
+        unitCost: "0.050000",
+        lineCost: "50.000",
+      },
+      {
+        batchId: 1,
+        id: 11,
+        ingredientId: 3,
+        quantity: "2.000",
+        unit: "kg",
+        normalizedQuantity: "2000.000",
+        unitCost: "0.050000",
+        lineCost: "100.000",
+      },
+    ],
+  );
+
+  assert.deepEqual(
+    batches.map((batch) => ({
+      id: batch.id,
+      lineIds: batch.lines.map((line) => line.id),
+    })),
+    [
+      { id: 1, lineIds: [11] },
+      { id: 2, lineIds: [21] },
+    ],
+  );
+});
 
 test("maps production batch lines into shared line shape", () => {
   const line = mapProductionBatchLineRow({

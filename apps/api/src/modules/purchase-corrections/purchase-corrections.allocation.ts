@@ -1,4 +1,28 @@
+import {
+  STOCK_EPSILON,
+  StockLedgerConflictError,
+  roundStockQuantity,
+} from "../../utils/stock-ledger.js";
 import { PurchaseCorrectionValidationError } from "./purchase-corrections.validators.js";
+
+export function applyPurchaseCorrectionToLayer(input: {
+  ingredientId: number;
+  layerRemainingQuantity: number;
+  correctionQuantity: number;
+}) {
+  if (input.correctionQuantity > input.layerRemainingQuantity + STOCK_EPSILON) {
+    throw new StockLedgerConflictError(
+      input.ingredientId,
+      `Insufficient remaining layer stock for ingredient ${input.ingredientId}`,
+    );
+  }
+
+  return {
+    nextRemainingQuantity: roundStockQuantity(
+      input.layerRemainingQuantity - input.correctionQuantity,
+    ),
+  };
+}
 
 export function resolvePurchaseCorrectionLineAmounts(input: {
   sourceQuantity: number;
@@ -7,7 +31,7 @@ export function resolvePurchaseCorrectionLineAmounts(input: {
 }) {
   if (input.sourceQuantity === 0) {
     throw new PurchaseCorrectionValidationError(
-      "Source purchase line quantity must be greater than zero",
+      "كمية سطر فاتورة الشراء المصدر يجب أن تكون أكبر من صفر",
     );
   }
 
@@ -16,26 +40,6 @@ export function resolvePurchaseCorrectionLineAmounts(input: {
   return {
     unitPrice,
     lineTotal: unitPrice * input.correctionQuantity,
-  };
-}
-
-export function buildPurchaseCorrectionAllocationRequest(input: {
-  ingredientId: number;
-  correctionId: number;
-  correctionLineId: number;
-  sourcePurchaseLineId: number;
-  normalizedQuantity: number;
-  occurredAt: Date;
-}) {
-  return {
-    domain: "ingredient" as const,
-    itemId: input.ingredientId,
-    outboundDocumentType: "purchase-correction",
-    outboundDocumentId: input.correctionId,
-    outboundLineId: input.correctionLineId,
-    sourceLineId: input.sourcePurchaseLineId,
-    quantity: input.normalizedQuantity,
-    occurredAt: input.occurredAt,
   };
 }
 
@@ -50,7 +54,7 @@ export function buildPurchaseCorrectionAllocationRow(input: {
 }) {
   if (input.normalizedQuantity <= 0) {
     throw new PurchaseCorrectionValidationError(
-      "Purchase correction line quantity must be greater than zero",
+      "كمية سطر تصحيح الشراء يجب أن تكون أكبر من صفر",
     );
   }
 

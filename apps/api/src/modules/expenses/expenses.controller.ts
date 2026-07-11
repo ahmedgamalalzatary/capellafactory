@@ -16,14 +16,14 @@ export async function getExpenseHandler(request: Request, response: Response) {
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid expense id" });
+    response.status(400).json({ message: "معرّف المصروف غير صالح" });
     return;
   }
 
   const expense = await getExpense(id);
 
   if (!expense) {
-    response.status(404).json({ message: "Expense not found" });
+    response.status(404).json({ message: "المصروف غير موجود" });
     return;
   }
 
@@ -39,7 +39,7 @@ export async function addExpensePaymentHandler(request: Request, response: Respo
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid expense id" });
+    response.status(400).json({ message: "معرّف المصروف غير صالح" });
     return;
   }
 
@@ -47,7 +47,7 @@ export async function addExpensePaymentHandler(request: Request, response: Respo
     const expense = await recordExpensePayment(id, request.body);
 
     if (!expense) {
-      response.status(404).json({ message: "Expense not found" });
+      response.status(404).json({ message: "المصروف غير موجود" });
       return;
     }
 

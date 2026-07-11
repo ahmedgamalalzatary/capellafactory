@@ -1,8 +1,9 @@
-import type { SalesInvoice, SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
+import type { SalesInvoiceInput } from "@capella/shared/sales-invoices/sales-invoice.types";
 import { calculateDocumentTotals } from "@capella/shared/payments/document-payment.schema";
 import { additionalPaymentInputSchema } from "@capella/shared/payments/payment.schema";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 import { and, asc, eq, inArray, like, or, sql } from "drizzle-orm";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import {
   buyersTable,
@@ -64,9 +65,9 @@ export async function listSalesInvoices(query?: string) {
       and(
         normalizedQuery
           ? or(
-              like(salesInvoicesTable.invoiceCode, `%${normalizedQuery}%`),
-              like(buyersTable.name, `%${normalizedQuery}%`),
-              like(salesInvoicesTable.notes, `%${normalizedQuery}%`),
+              like(salesInvoicesTable.invoiceCode, `%${escapeLike(normalizedQuery)}%`),
+              like(buyersTable.name, `%${escapeLike(normalizedQuery)}%`),
+              like(salesInvoicesTable.notes, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
       ),
@@ -108,7 +109,7 @@ export async function getSalesInvoiceById(id: number) {
   return mapSalesInvoiceRowToSalesInvoice(
     row,
     lines,
-    paymentTotals.get(id) ?? Number(row.finalTotal),
+    paymentTotals.get(id) ?? 0,
   );
 }
 
@@ -119,7 +120,7 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
     const product = relationState.productsById.get(line.productId);
 
     if (!product) {
-      throw new SalesInvoiceValidationError("One or more products were not found");
+      throw new SalesInvoiceValidationError("منتج واحد أو أكثر غير موجود");
     }
 
     const revenue = resolveSalesInvoiceLineRevenue(line);
@@ -181,7 +182,7 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
       const invoiceId = inserted[0]?.id;
 
       if (!invoiceId) {
-        throw new Error("Failed to create sales invoice");
+        throw new Error("تعذر إنشاء فاتورة البيع");
       }
 
       await tx
@@ -251,7 +252,7 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
         for (const allocation of allocationResult.allocations) {
           const layer = openLayers.find((candidate) => candidate.id === allocation.stockLayerId);
           if (!layer) {
-            throw new Error(`Allocation references unknown layer ${allocation.stockLayerId}`);
+            throw new Error(`يشير التخصيص إلى طبقة مخزون غير معروفة ${allocation.stockLayerId}`);
           }
 
           const nextRemaining = Number(layer.remainingQuantity) - Number(allocation.allocatedQuantity);
@@ -313,14 +314,14 @@ export async function createSalesInvoice(input: SalesInvoiceInput) {
     const invoice = await getSalesInvoiceById(insertedId);
 
     if (!invoice) {
-      throw new Error(`Failed to load created sales invoice with id ${insertedId}`);
+      throw new Error(`تعذر تحميل فاتورة البيع التي تم إنشاؤها برقم ${insertedId}`);
     }
 
     return invoice;
   } catch (error) {
     if (error instanceof StockLedgerConflictError) {
-      const conflicting = preparedLines.find((line) => line.productId === error.ingredientId);
-      const productLabel = conflicting ? conflicting.productName : `#${error.ingredientId}`;
+      const conflicting = preparedLines.find((line) => line.productId === error.itemId);
+      const productLabel = conflicting ? conflicting.productName : `#${error.itemId}`;
       throw new SalesInvoiceValidationError(
         `Saving this invoice would make product stock negative for ${productLabel}`,
       );
@@ -343,7 +344,7 @@ export async function addSalesInvoicePayment(id: number, input: AdditionalPaymen
   });
 
   if (!result.success) {
-    throw new SalesInvoiceValidationError(result.error.issues[0]?.message ?? "Invalid payment");
+    throw new SalesInvoiceValidationError(result.error.issues[0]?.message ?? "بيانات الدفعة غير صالحة");
   }
 
   await db.insert(salesInvoicePaymentsTable).values({
@@ -387,7 +388,7 @@ async function validateSalesInvoiceRelations(input: SalesInvoiceInput) {
   });
 
   if (!buyer) {
-    throw new SalesInvoiceValidationError("Buyer not found");
+    throw new SalesInvoiceValidationError("العميل غير موجود");
   }
 
   const productIds = [...new Set(input.lines.map((line) => line.productId))];
@@ -397,12 +398,12 @@ async function validateSalesInvoiceRelations(input: SalesInvoiceInput) {
     .where(or(...productIds.map((id) => eq(productsTable.id, id))));
 
   if (products.length !== productIds.length) {
-    throw new SalesInvoiceValidationError("One or more products were not found");
+    throw new SalesInvoiceValidationError("منتج واحد أو أكثر غير موجود");
   }
 
   for (const product of products) {
     if (product.isArchived) {
-      throw new SalesInvoiceValidationError(`Product ${product.name} is archived`);
+      throw new SalesInvoiceValidationError(`المنتج ${product.name} مؤرشف ولا يمكن استخدامه`);
     }
   }
 

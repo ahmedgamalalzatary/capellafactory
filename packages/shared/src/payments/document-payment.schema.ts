@@ -12,10 +12,10 @@ export const adjustmentTypeSchema = z.enum(adjustmentTypes);
 
 const percentageValueSchema = z
   .number()
-  .min(0, "Percentage must be at least zero")
-  .max(100, "Percentage cannot exceed 100");
+  .min(0, "النسبة يجب ألا تقل عن صفر")
+  .max(100, "النسبة يجب ألا تتجاوز 100");
 
-const amountValueSchema = z.number().min(0, "Amount must be at least zero");
+const amountValueSchema = z.number().min(0, "المبلغ يجب ألا يقل عن صفر");
 
 export const documentPaymentsInputSchema = z.array(paymentInputSchema);
 
@@ -85,7 +85,7 @@ function validateAdjustment(
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       path: [`${kind}Value`],
-      message: result.error.issues[0]?.message ?? `Invalid ${kind} value`,
+      message: result.error.issues[0]?.message ?? `قيمة ${kind === "tax" ? "الضريبة" : "الخصم"} غير صالحة`,
     });
   }
 }

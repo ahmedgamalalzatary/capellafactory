@@ -3,11 +3,13 @@ import { db } from "../db/index.js";
 import {
   ingredientsTable,
   productsTable,
+  stockLayerAllocationsTable,
   stockLayersTable,
 } from "../db/schema/index.js";
 import {
   buildFifoStatesFromLayers,
   getFifoStockSnapshot,
+  validateChronologicalStockHistory,
 } from "../utils/stock-ledger.js";
 
 type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -39,6 +41,39 @@ export async function recalculateStockBalances(executor?: StockExecutor) {
       occurredAt: stockLayersTable.occurredAt,
     })
     .from(stockLayersTable);
+
+  const allAllocations = await tx
+    .select({
+      id: stockLayerAllocationsTable.id,
+      domain: stockLayerAllocationsTable.domain,
+      itemId: stockLayerAllocationsTable.itemId,
+      outboundDocumentType: stockLayerAllocationsTable.outboundDocumentType,
+      allocatedQuantity: stockLayerAllocationsTable.allocatedQuantity,
+      occurredAt: stockLayerAllocationsTable.occurredAt,
+    })
+    .from(stockLayerAllocationsTable);
+
+  // Reject the whole transaction when the recorded history is chronologically
+  // impossible (e.g. a backdated document consuming stock that had not arrived
+  // yet at that date). Callers translate the conflict into a domain error.
+  validateChronologicalStockHistory(
+    allLayers.map((layer) => ({
+      id: layer.id,
+      domain: layer.domain,
+      itemId: layer.itemId,
+      sourceDocumentType: layer.sourceDocumentType,
+      originalQuantity: Number(layer.originalQuantity),
+      occurredAt: layer.occurredAt,
+    })),
+    allAllocations.map((allocation) => ({
+      id: allocation.id,
+      domain: allocation.domain,
+      itemId: allocation.itemId,
+      outboundDocumentType: allocation.outboundDocumentType,
+      allocatedQuantity: Number(allocation.allocatedQuantity),
+      occurredAt: allocation.occurredAt,
+    })),
+  );
 
   const ingredientStates = buildFifoStatesFromLayers(
     allLayers

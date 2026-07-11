@@ -86,7 +86,7 @@ export function mapIngredientPurchaseLineRow(row: IngredientPurchaseLineRow): In
 export function mapIngredientPurchaseRowToIngredientPurchase(
   row: IngredientPurchaseRow,
   lines: IngredientPurchaseLineRow[],
-  paidAmount = Number(row.totalAmount),
+  paidAmount = 0,
   payments: IngredientPurchasePaymentRow[] = [],
 ): IngredientPurchase {
   const totalAmount = Number(row.totalAmount);
@@ -119,6 +119,45 @@ export function mapIngredientPurchaseRowToIngredientPurchase(
     payments: payments.map(mapIngredientPurchasePaymentRow),
     lines: lines.map(mapIngredientPurchaseLineRow),
   };
+}
+
+export type ListedIngredientPurchaseLineRow = IngredientPurchaseLineRow & {
+  purchaseId: number;
+};
+
+export type ListedIngredientPurchasePaymentRow = IngredientPurchasePaymentRow & {
+  purchaseId: number;
+};
+
+export function assembleIngredientPurchases(
+  rows: IngredientPurchaseRow[],
+  lines: ListedIngredientPurchaseLineRow[],
+  paymentTotals = new Map<number, number>(),
+  payments: ListedIngredientPurchasePaymentRow[] = [],
+): IngredientPurchase[] {
+  const linesByPurchaseId = new Map<number, IngredientPurchaseLineRow[]>();
+  const paymentsByPurchaseId = new Map<number, IngredientPurchasePaymentRow[]>();
+
+  for (const line of lines) {
+    const groupedLines = linesByPurchaseId.get(line.purchaseId) ?? [];
+    groupedLines.push(line);
+    linesByPurchaseId.set(line.purchaseId, groupedLines);
+  }
+
+  for (const payment of payments) {
+    const groupedPayments = paymentsByPurchaseId.get(payment.purchaseId) ?? [];
+    groupedPayments.push(payment);
+    paymentsByPurchaseId.set(payment.purchaseId, groupedPayments);
+  }
+
+  return rows.map((row) =>
+    mapIngredientPurchaseRowToIngredientPurchase(
+      row,
+      linesByPurchaseId.get(row.id) ?? [],
+      paymentTotals.get(row.id) ?? 0,
+      paymentsByPurchaseId.get(row.id) ?? [],
+    ),
+  );
 }
 
 export function normalizeIngredientPurchaseSearchQuery(query?: string) {

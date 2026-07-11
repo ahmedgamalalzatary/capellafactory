@@ -9,13 +9,19 @@ const unitFamilyMap: Record<IngredientUnitFamily, readonly IngredientPurchaseUni
   count: ["piece"],
 };
 
+const unitFamilyLabels: Record<IngredientUnitFamily, string> = {
+  weight: "الوزن",
+  volume: "الحجم",
+  count: "العدد",
+};
+
 export function normalizeIngredientQuantity(
   unitFamily: IngredientUnitFamily,
   quantity: number,
   unit: IngredientPurchaseUnit,
 ) {
   if (!unitFamilyMap[unitFamily].includes(unit)) {
-    throw new Error(`Unit ${unit} is not valid for ingredient family ${unitFamily}`);
+    throw new Error(`الوحدة ${unit} غير صالحة لفئة الخامة ${unitFamilyLabels[unitFamily]}`);
   }
 
   if (unit === "kg" || unit === "L") {

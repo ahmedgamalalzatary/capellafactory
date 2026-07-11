@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const buyerInputSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phone: z.string().min(1, "Phone is required"),
+  name: z.string().min(1, "الاسم مطلوب"),
+  phone: z.string().min(1, "رقم الهاتف مطلوب"),
   where: z.string().optional(),
-  notes: z.string().min(1, "Notes cannot be empty").optional(),
+  notes: z.string().min(1, "الملاحظات لا يمكن أن تكون فارغة").optional(),
 });

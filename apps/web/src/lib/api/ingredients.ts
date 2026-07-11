@@ -69,13 +69,7 @@ export async function deleteIngredient(id: number) {
     method: "DELETE",
   }));
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Failed to delete ingredient");
-  }
+  await handleApiResponse(response, "Failed to delete ingredient");
 }
 
 export function mergeJsonHeaders(initHeaders?: HeadersInit) {
@@ -89,20 +83,15 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
 }
 
 async function mutateIngredient(url: string, init: RequestInit) {
-  const response = await fetch(url, {
-    ...withApiCredentials({
-      headers: mergeJsonHeaders(init.headers),
+  const response = await fetch(
+    url,
+    withApiCredentials({
       ...init,
+      headers: mergeJsonHeaders(init.headers),
     }),
-  });
+  );
 
-  if (!response.ok) {
-    const payload = (await response.json().catch(() => null)) as
-      | { message?: string }
-      | null;
-
-    throw new Error(payload?.message ?? "Ingredient request failed");
-  }
+  await handleApiResponse(response, "Ingredient request failed");
 
   return (await response.json()) as Ingredient;
 }

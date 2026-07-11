@@ -86,7 +86,8 @@ export type FifoStockReplayEvent =
 
 function validatePositiveFifoInboundQuantity(kind: "ingredient-purchase" | "production-output", quantity: number) {
   if (quantity <= 0) {
-    throw new Error(`FIFO inbound quantity must be greater than zero for ${kind}`);
+    const kindLabel = kind === "ingredient-purchase" ? "شراء الخامات" : "إنتاج المنتجات";
+    throw new Error(`كمية الإدخال في مخزون FIFO يجب أن تكون أكبر من صفر لنوع ${kindLabel}`);
   }
 }
 

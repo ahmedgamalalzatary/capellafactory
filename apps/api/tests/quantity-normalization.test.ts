@@ -25,6 +25,6 @@ test("normalizes count units as pieces", () => {
 test("rejects incompatible unit families", () => {
   assert.throws(
     () => normalizeIngredientQuantity("weight", 1, "piece"),
-    /Unit piece is not valid for ingredient family weight/,
+    /الوحدة piece غير صالحة لفئة الخامة الوزن/,
   );
 });

@@ -7,5 +7,5 @@ export function errorMiddleware(
   _next: NextFunction,
 ) {
   console.error(error);
-  response.status(500).json({ message: "Internal server error" });
+  response.status(500).json({ message: "حدث خطأ داخلي في الخادم" });
 }

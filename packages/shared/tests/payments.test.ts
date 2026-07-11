@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   additionalPaymentInputSchema,
   createPaymentSummary,
-  initialPaymentInputSchema,
   paymentMethodSchema,
 } from "../src/payments/payment.schema.js";
 
@@ -13,35 +12,6 @@ test("payment method accepts only the four approved choices", () => {
   assert.equal(paymentMethodSchema.safeParse("cod").success, true);
   assert.equal(paymentMethodSchema.safeParse("instapay").success, true);
   assert.equal(paymentMethodSchema.safeParse("cash").success, false);
-});
-
-test("initial payment allows zero amount without method or date", () => {
-  const result = initialPaymentInputSchema.safeParse({
-    paidAmount: 0,
-    totalAmount: 40000,
-  });
-
-  assert.equal(result.success, true);
-});
-
-test("initial payment requires method and date for positive amount", () => {
-  const result = initialPaymentInputSchema.safeParse({
-    paidAmount: 37000,
-    totalAmount: 40000,
-  });
-
-  assert.equal(result.success, false);
-});
-
-test("initial payment rejects amount greater than total", () => {
-  const result = initialPaymentInputSchema.safeParse({
-    paidAmount: 41000,
-    totalAmount: 40000,
-    paymentMethod: "instapay",
-    paidAt: "2026-06-20T10:00:00.000Z",
-  });
-
-  assert.equal(result.success, false);
 });
 
 test("payment summary derives paid partial and remaining amounts", () => {

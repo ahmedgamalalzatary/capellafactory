@@ -7,12 +7,12 @@ export const STOCK_EPSILON = 1e-6;
 // meaning a (often backdated) stock-affecting record would leave a later record
 // without enough stock. Callers translate this into a domain validation error.
 export class StockLedgerConflictError extends Error {
-  readonly ingredientId: number;
+  readonly itemId: number;
 
-  constructor(ingredientId: number, message: string) {
+  constructor(itemId: number, message: string) {
     super(message);
     this.name = "StockLedgerConflictError";
-    this.ingredientId = ingredientId;
+    this.itemId = itemId;
   }
 }
 

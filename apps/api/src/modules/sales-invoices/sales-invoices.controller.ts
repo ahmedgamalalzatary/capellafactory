@@ -16,14 +16,14 @@ export async function getSalesInvoiceHandler(request: Request, response: Respons
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid sales invoice id" });
+    response.status(400).json({ message: "معرّف فاتورة البيع غير صالح" });
     return;
   }
 
   const invoice = await getSalesInvoice(id);
 
   if (!invoice) {
-    response.status(404).json({ message: "Sales invoice not found" });
+    response.status(404).json({ message: "فاتورة البيع غير موجودة" });
     return;
   }
 
@@ -48,7 +48,7 @@ export async function addSalesInvoicePaymentHandler(request: Request, response: 
   const id = Number(request.params.id);
 
   if (!Number.isInteger(id) || id <= 0) {
-    response.status(400).json({ message: "Invalid sales invoice id" });
+    response.status(400).json({ message: "معرّف فاتورة البيع غير صالح" });
     return;
   }
 
@@ -56,7 +56,7 @@ export async function addSalesInvoicePaymentHandler(request: Request, response: 
     const invoice = await recordSalesInvoicePayment(id, request.body);
 
     if (!invoice) {
-      response.status(404).json({ message: "Sales invoice not found" });
+      response.status(404).json({ message: "فاتورة البيع غير موجودة" });
       return;
     }
 

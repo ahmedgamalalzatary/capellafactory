@@ -2,10 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { Request, Response } from "express";
 import {
-  deleteBuyerHandler,
-  getBuyerHandler,
-  updateBuyerHandler,
-} from "../src/modules/buyers/buyers.controller.js";
+  deleteSupplierHandler,
+  getSupplierHandler,
+  updateSupplierHandler,
+} from "../src/modules/suppliers/suppliers.controller.js";
 
 function createResponseDouble() {
   let statusCode = 200;
@@ -36,32 +36,32 @@ function createResponseDouble() {
   };
 }
 
-test("getBuyerHandler rejects non-numeric ids", async () => {
+test("getSupplierHandler rejects non-numeric ids", async () => {
   const result = createResponseDouble();
   const request = { params: { id: "abc" } } as Partial<Request>;
 
-  await getBuyerHandler(request as Request, result.response);
+  await getSupplierHandler(request as Request, result.response);
 
   assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.jsonBody, { message: "معرّف العميل غير صالح" });
+  assert.deepEqual(result.jsonBody, { message: "معرّف المورد غير صالح" });
 });
 
-test("updateBuyerHandler rejects non-positive ids", async () => {
+test("updateSupplierHandler rejects non-positive ids", async () => {
   const result = createResponseDouble();
   const request = { params: { id: "0" }, body: {} } as Partial<Request>;
 
-  await updateBuyerHandler(request as Request, result.response);
+  await updateSupplierHandler(request as Request, result.response);
 
   assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.jsonBody, { message: "معرّف العميل غير صالح" });
+  assert.deepEqual(result.jsonBody, { message: "معرّف المورد غير صالح" });
 });
 
-test("deleteBuyerHandler rejects non-integer ids", async () => {
+test("deleteSupplierHandler rejects non-integer ids", async () => {
   const result = createResponseDouble();
   const request = { params: { id: "1.5" } } as Partial<Request>;
 
-  await deleteBuyerHandler(request as Request, result.response);
+  await deleteSupplierHandler(request as Request, result.response);
 
   assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.jsonBody, { message: "معرّف العميل غير صالح" });
+  assert.deepEqual(result.jsonBody, { message: "معرّف المورد غير صالح" });
 });

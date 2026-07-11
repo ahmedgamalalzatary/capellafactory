@@ -55,7 +55,7 @@ test("protected resource routes reject requests without session cookie", async (
     const response = await fetch(`${baseUrl}/suppliers`);
 
     assert.equal(response.status, 401);
-    assert.deepEqual(await response.json(), { message: "Unauthorized" });
+    assert.deepEqual(await response.json(), { message: "غير مصرح لك" });
   });
 });
 
@@ -83,7 +83,7 @@ test("protected resource routes reject missing session before reading auth env",
     const response = await fetch(`http://127.0.0.1:${address.port}/suppliers`);
 
     assert.equal(response.status, 401);
-    assert.deepEqual(await response.json(), { message: "Unauthorized" });
+    assert.deepEqual(await response.json(), { message: "غير مصرح لك" });
   } finally {
     server.close();
     await once(server, "close");

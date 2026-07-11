@@ -19,7 +19,7 @@ const optionalTrimmedString = z
 export const expenseInputSchema = z
   .object({
     type: z.enum(expenseTypes),
-    amount: z.coerce.number().positive("Amount must be greater than zero"),
+    amount: z.coerce.number().positive("المبلغ يجب أن يكون أكبر من صفر"),
     taxState: adjustmentStateSchema,
     taxType: adjustmentTypeSchema.optional(),
     taxValue: z.coerce.number(),
@@ -29,7 +29,7 @@ export const expenseInputSchema = z
     payments: documentPaymentsInputSchema,
     occurredAt: z
       .string()
-      .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
+      .datetime({ offset: true, message: "تاريخ المستند يجب أن يكون تاريخًا ووقتًا صالحين" }),
     notes: optionalTrimmedString,
     employeeName: optionalTrimmedString,
     otherLabel: optionalTrimmedString,
@@ -50,7 +50,7 @@ export const expenseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["payments"],
-        message: "Paid amount cannot exceed total amount",
+        message: "المبلغ المدفوع لا يمكن أن يتجاوز الإجمالي",
       });
     }
 
@@ -58,7 +58,7 @@ export const expenseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["employeeName"],
-        message: "Employee name is required for salary expenses",
+        message: "اسم الموظف مطلوب لمصروفات الرواتب",
       });
     }
 
@@ -66,7 +66,7 @@ export const expenseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["otherLabel"],
-        message: "Custom label is required for other expenses",
+        message: "الوصف مطلوب للمصروفات الأخرى",
       });
     }
 
@@ -74,7 +74,7 @@ export const expenseInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["discountValue"],
-        message: "Final total cannot be negative",
+        message: "الإجمالي النهائي لا يمكن أن يكون سالبًا",
       });
     }
   })

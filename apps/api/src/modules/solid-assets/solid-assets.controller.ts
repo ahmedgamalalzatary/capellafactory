@@ -22,14 +22,14 @@ export async function getSolidAssetHandler(request: Request, response: Response)
   const id = parseId(rawId);
 
   if (!id) {
-    response.status(400).json({ message: "Invalid solid asset id" });
+    response.status(400).json({ message: "معرّف الأصل الثابت غير صالح" });
     return;
   }
 
   const asset = await getSolidAsset(id);
 
   if (!asset) {
-    response.status(404).json({ message: "Solid asset not found" });
+    response.status(404).json({ message: "الأصل الثابت غير موجود" });
     return;
   }
 
@@ -46,14 +46,14 @@ export async function updateSolidAssetHandler(request: Request, response: Respon
   const id = parseId(rawId);
 
   if (!id) {
-    response.status(400).json({ message: "Invalid solid asset id" });
+    response.status(400).json({ message: "معرّف الأصل الثابت غير صالح" });
     return;
   }
 
   const asset = await editSolidAsset(id, request.body);
 
   if (!asset) {
-    response.status(404).json({ message: "Solid asset not found" });
+    response.status(404).json({ message: "الأصل الثابت غير موجود" });
     return;
   }
 
@@ -65,14 +65,14 @@ export async function deleteSolidAssetHandler(request: Request, response: Respon
   const id = parseId(rawId);
 
   if (!id) {
-    response.status(400).json({ message: "Invalid solid asset id" });
+    response.status(400).json({ message: "معرّف الأصل الثابت غير صالح" });
     return;
   }
 
   const deleted = await removeSolidAsset(id);
 
   if (!deleted) {
-    response.status(404).json({ message: "Solid asset not found" });
+    response.status(404).json({ message: "الأصل الثابت غير موجود" });
     return;
   }
 

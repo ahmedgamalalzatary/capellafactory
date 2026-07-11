@@ -6,7 +6,7 @@ export function getAuthEnvironment(): AuthEnvironment {
   const secret = process.env.AUTH_SECRET;
 
   if (!username || !password || !secret) {
-    throw new Error("AUTH_USERNAME, AUTH_PASSWORD, and AUTH_SECRET must be set");
+    throw new Error("يجب ضبط إعدادات تسجيل الدخول");
   }
 
   return { username, password, secret };

@@ -16,17 +16,17 @@ const optionalTrimmedString = z
   .or(z.literal("").transform(() => undefined));
 
 export const salesInvoiceLineInputSchema = z.object({
-  productId: z.coerce.number().int().positive("Product is required"),
-  quantity: z.coerce.number().int("Quantity must be a whole number").positive("Quantity must be greater than zero"),
-  sellingUnitPrice: z.coerce.number().positive("Selling unit price must be greater than zero"),
+  productId: z.coerce.number().int().positive("المنتج مطلوب"),
+  quantity: z.coerce.number().int("الكمية يجب أن تكون عددًا صحيحًا").positive("الكمية يجب أن تكون أكبر من صفر"),
+  sellingUnitPrice: z.coerce.number().positive("سعر بيع الوحدة يجب أن يكون أكبر من صفر"),
 });
 
 export const salesInvoiceInputSchema = z
   .object({
     occurredAt: z
       .string()
-      .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
-    buyerId: z.coerce.number().int().positive("Buyer is required"),
+      .datetime({ offset: true, message: "تاريخ المستند يجب أن يكون تاريخًا ووقتًا صالحين" }),
+    buyerId: z.coerce.number().int().positive("العميل مطلوب"),
     taxState: adjustmentStateSchema,
     taxType: adjustmentTypeSchema.optional(),
     taxValue: z.coerce.number(),
@@ -35,7 +35,7 @@ export const salesInvoiceInputSchema = z
     discountValue: z.coerce.number(),
     payments: documentPaymentsInputSchema,
     notes: optionalTrimmedString,
-    lines: z.array(salesInvoiceLineInputSchema).min(1, "At least one product line is required"),
+    lines: z.array(salesInvoiceLineInputSchema).min(1, "يجب إدخال سطر منتج واحد على الأقل"),
   })
   .strict()
   .transform((value) => ({
@@ -56,7 +56,7 @@ export const salesInvoiceInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["payments"],
-        message: "Paid amount cannot exceed total amount",
+        message: "المبلغ المدفوع لا يمكن أن يتجاوز الإجمالي",
       });
     }
 
@@ -67,7 +67,7 @@ export const salesInvoiceInputSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["lines", index, "productId"],
-          message: "Product cannot appear more than once in the same invoice",
+          message: "لا يمكن تكرار المنتج في نفس الفاتورة",
         });
         return;
       }
@@ -79,7 +79,7 @@ export const salesInvoiceInputSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["discountValue"],
-        message: "Final total cannot be negative",
+        message: "الإجمالي النهائي لا يمكن أن يكون سالبًا",
       });
     }
   })

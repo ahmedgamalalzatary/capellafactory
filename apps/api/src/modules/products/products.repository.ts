@@ -1,5 +1,6 @@
 import { and, asc, eq, like } from "drizzle-orm";
 import type { Product, ProductInput } from "@capella/shared/products/product.types";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import { productsTable } from "../../db/schema/products.js";
 
@@ -8,25 +9,25 @@ type ProductInsert = typeof productsTable.$inferInsert;
 
 export class DuplicateProductNameError extends Error {
   constructor() {
-    super("Product name must be unique");
+    super("اسم المنتج مستخدم بالفعل");
   }
 }
 
 export class ProductLockedError extends Error {
   constructor() {
-    super("Product cannot be edited after it has history");
+    super("لا يمكن تعديل المنتج لوجود سجل حركات مرتبط به");
   }
 }
 
 export class ProductArchiveConflictError extends Error {
   constructor() {
-    super("Product can only be archived when stock is zero");
+    super("لا يمكن أرشفة المنتج إلا عندما يكون رصيده صفرًا");
   }
 }
 
 export class ProductDeleteConflictError extends Error {
   constructor() {
-    super("Product can only be deleted when stock is zero and there is no history");
+    super("لا يمكن حذف المنتج إلا عندما يكون رصيده صفرًا ولا توجد له حركات");
   }
 }
 
@@ -69,7 +70,7 @@ export async function listProducts(query?: string, includeArchived = false) {
     .where(
       and(
         includeArchived ? undefined : eq(productsTable.isArchived, false),
-        normalizedQuery ? like(productsTable.name, `%${normalizedQuery}%`) : undefined,
+        normalizedQuery ? like(productsTable.name, `%${escapeLike(normalizedQuery)}%`) : undefined,
       ),
     )
     .orderBy(asc(productsTable.id));
@@ -91,7 +92,7 @@ export async function createProduct(input: ProductInput) {
     const product = await getProductById(inserted[0]?.id ?? 0);
 
     if (!product) {
-      throw new Error("Failed to load created product");
+      throw new Error("تعذر تحميل المنتج الذي تم إنشاؤه");
     }
 
     return product;

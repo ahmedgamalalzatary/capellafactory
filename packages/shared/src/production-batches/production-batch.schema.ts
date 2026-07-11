@@ -9,8 +9,8 @@ const optionalTrimmedString = z
   .or(z.literal("").transform(() => undefined));
 
 export const productionBatchLineInputSchema = z.object({
-  ingredientId: z.coerce.number().int().positive("Ingredient is required"),
-  quantity: z.coerce.number().positive("Quantity must be greater than zero"),
+  ingredientId: z.coerce.number().int().positive("الخامة مطلوبة"),
+  quantity: z.coerce.number().positive("الكمية يجب أن تكون أكبر من صفر"),
   unit: ingredientPurchaseUnitSchema,
 });
 
@@ -18,13 +18,13 @@ export const productionBatchInputSchema = z
   .object({
     occurredAt: z
       .string()
-      .datetime({ offset: true, message: "Occurred at must be a valid datetime" }),
-    productId: z.coerce.number().int().positive("Product is required"),
-    producedQuantity: z.coerce.number().positive("Produced quantity must be greater than zero"),
+      .datetime({ offset: true, message: "تاريخ المستند يجب أن يكون تاريخًا ووقتًا صالحين" }),
+    productId: z.coerce.number().int().positive("المنتج مطلوب"),
+    producedQuantity: z.coerce.number().positive("كمية الإنتاج يجب أن تكون أكبر من صفر"),
     notes: optionalTrimmedString,
     lines: z
       .array(productionBatchLineInputSchema)
-      .min(1, "At least one ingredient line is required"),
+      .min(1, "يجب إدخال سطر خامة واحد على الأقل"),
   })
   .transform((value) => ({
     ...value,
@@ -38,7 +38,7 @@ export const productionBatchInputSchema = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["lines", index, "ingredientId"],
-          message: "Ingredient cannot appear more than once in the same batch",
+          message: "لا يمكن تكرار الخامة في نفس التشغيلة",
         });
         return;
       }

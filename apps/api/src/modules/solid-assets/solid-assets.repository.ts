@@ -4,6 +4,7 @@ import type {
   SolidAssetInput,
   SolidAssetWithTotalPrice,
 } from "@capella/shared/solid-assets/solid-asset.types";
+import { escapeLike } from "../../utils/search.js";
 import { db } from "../../db/index.js";
 import { solidAssetsTable } from "../../db/schema/solid-assets.js";
 
@@ -35,7 +36,7 @@ export async function listSolidAssets(query?: string) {
   const rows = await db
     .select()
     .from(solidAssetsTable)
-    .where(normalizedQuery ? like(solidAssetsTable.name, `%${normalizedQuery}%`) : undefined)
+    .where(normalizedQuery ? like(solidAssetsTable.name, `%${escapeLike(normalizedQuery)}%`) : undefined)
     .orderBy(asc(solidAssetsTable.id));
 
   return rows.map(mapSolidAssetRowToSolidAsset);
@@ -54,7 +55,7 @@ export async function createSolidAsset(input: SolidAssetInput) {
   const asset = await getSolidAssetById(inserted[0]?.id ?? 0);
 
   if (!asset) {
-    throw new Error("Failed to load created solid asset");
+    throw new Error("تعذر تحميل الأصل الثابت الذي تم إنشاؤه");
   }
 
   return asset;
