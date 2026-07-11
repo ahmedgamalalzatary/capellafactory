@@ -11,12 +11,16 @@ import {
   withApiCredentials,
 } from "./request";
 
-export function buildSalesInvoicesUrl(baseUrl: string, query?: string) {
+export function buildSalesInvoicesUrl(baseUrl: string, query?: string, buyerId?: number) {
   const url = new URL("/sales-invoices", baseUrl);
   const normalizedQuery = query?.trim();
 
   if (normalizedQuery) {
     url.searchParams.set("q", normalizedQuery);
+  }
+
+  if (buyerId) {
+    url.searchParams.set("buyerId", String(buyerId));
   }
 
   return url.toString();
@@ -36,9 +40,12 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
   return headers;
 }
 
-export async function getSalesInvoices(query?: string, options?: { cookieHeader?: string }) {
+export async function getSalesInvoices(
+  query?: string,
+  options?: { cookieHeader?: string; buyerId?: number },
+) {
   const response = await fetch(
-    buildSalesInvoicesUrl(API_URL, query),
+    buildSalesInvoicesUrl(API_URL, query, options?.buyerId),
     withApiCredentials(
       {
         cache: "no-store",

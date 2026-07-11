@@ -21,6 +21,10 @@ export function buildSuppliersUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
+export function buildSupplierDetailUrl(baseUrl: string, id: number) {
+  return new URL(`/suppliers/${id}`, baseUrl).toString();
+}
+
 export async function getSuppliers(
   query?: string,
   options?: { cookieHeader?: string },
@@ -38,6 +42,21 @@ export async function getSuppliers(
   await handleApiResponse(response, "Failed to fetch suppliers");
 
   return (await response.json()) as Supplier[];
+}
+
+export async function getSupplier(id: number, options?: { cookieHeader?: string }): Promise<Supplier | null> {
+  const response = await fetch(
+    buildSupplierDetailUrl(API_URL, id),
+    withApiCredentials({ cache: "no-store" }, options?.cookieHeader),
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  await handleApiResponse(response, "Failed to fetch supplier");
+
+  return (await response.json()) as Supplier;
 }
 
 export async function createSupplier(input: SupplierInput) {

@@ -141,9 +141,37 @@ test("counts same-instant arrivals before same-instant consumption", () => {
   );
 });
 
-test("keeps ingredient and product balances independent per item", () => {
+test("counts same-instant positive events before negative events regardless of kind", () => {
   assert.doesNotThrow(() =>
     validateChronologicalStockHistory(
+      [
+        {
+          id: 9,
+          domain: "ingredient",
+          itemId: 3,
+          sourceDocumentType: "production-output",
+          originalQuantity: 20,
+          occurredAt: "2026-01-01T10:00:00.000Z",
+        },
+      ],
+      [
+        {
+          id: 1,
+          domain: "ingredient",
+          itemId: 3,
+          outboundDocumentType: "purchase-correction",
+          allocatedQuantity: 20,
+          occurredAt: "2026-01-01T10:00:00.000Z",
+        },
+      ],
+    ),
+  );
+});
+
+test("keeps ingredient and product balances independent per item", () => {
+  assert.throws(
+    () =>
+      validateChronologicalStockHistory(
       [
         purchaseLayer({ id: 1, itemId: 3, quantity: 100, occurredAt: "2026-01-01T10:00:00.000Z" }),
         {
@@ -161,10 +189,11 @@ test("keeps ingredient and product balances independent per item", () => {
           domain: "product",
           itemId: 3,
           outboundDocumentType: "sales-invoice",
-          allocatedQuantity: 5,
+          allocatedQuantity: 6,
           occurredAt: "2026-01-03T10:00:00.000Z",
         },
       ],
-    ),
+      ),
+    (error: unknown) => error instanceof StockLedgerConflictError,
   );
 });

@@ -34,7 +34,7 @@ import {
   validateSalesInvoiceStock,
 } from "./sales-invoices.validators.js";
 
-export async function listSalesInvoices(query?: string) {
+export async function listSalesInvoices(query?: string, buyerId?: number) {
   const normalizedQuery = normalizeSalesInvoiceSearchQuery(query);
   const rows = await db
     .select({
@@ -70,6 +70,7 @@ export async function listSalesInvoices(query?: string) {
               like(salesInvoicesTable.notes, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
+        buyerId ? eq(salesInvoicesTable.buyerId, buyerId) : undefined,
       ),
     )
     .orderBy(asc(salesInvoicesTable.occurredAt), asc(salesInvoicesTable.id));

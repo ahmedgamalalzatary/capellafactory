@@ -17,8 +17,8 @@ export class StockLedgerConflictError extends Error {
 }
 
 export function compareChronologicalStockEvents(
-  left: { id: number; occurredAt: Date | string; kind: string },
-  right: { id: number; occurredAt: Date | string; kind: string },
+  left: { id: number; occurredAt: Date | string; kind: string; delta?: number },
+  right: { id: number; occurredAt: Date | string; kind: string; delta?: number },
 ) {
   const leftTime = new Date(left.occurredAt).getTime();
   const rightTime = new Date(right.occurredAt).getTime();
@@ -27,10 +27,14 @@ export function compareChronologicalStockEvents(
     return leftTime - rightTime;
   }
 
+  const deltaWeight = stockDeltaWeight(left.delta) - stockDeltaWeight(right.delta);
+
+  if (deltaWeight !== 0) {
+    return deltaWeight;
+  }
+
   // Purchase and consumption/output ids come from independent sequences
-  // (purchaseId vs batchId), so break ties by event kind first to keep the
-  // replay deterministic: stock must arrive (purchase) before it is consumed,
-  // and consumption before the produced output is added.
+  // (purchaseId vs batchId), so use event kind before ids as a stable tie-breaker.
   const kindWeight = stockEventKindWeight(left.kind) - stockEventKindWeight(right.kind);
 
   if (kindWeight !== 0) {
@@ -38,6 +42,14 @@ export function compareChronologicalStockEvents(
   }
 
   return left.id - right.id;
+}
+
+function stockDeltaWeight(delta: number | undefined) {
+  if (typeof delta !== "number") {
+    return 1;
+  }
+
+  return delta > 0 ? 0 : delta < 0 ? 2 : 1;
 }
 
 function stockEventKindWeight(kind: string) {

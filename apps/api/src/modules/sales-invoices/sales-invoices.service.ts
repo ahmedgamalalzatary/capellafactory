@@ -7,8 +7,8 @@ import {
   listSalesInvoices,
 } from "./sales-invoices.repository.js";
 
-export async function getSalesInvoices(query?: string) {
-  return listSalesInvoices(query);
+export async function getSalesInvoices(query?: string, buyerId?: number) {
+  return listSalesInvoices(query, buyerId);
 }
 
 export async function getSalesInvoice(id: number) {

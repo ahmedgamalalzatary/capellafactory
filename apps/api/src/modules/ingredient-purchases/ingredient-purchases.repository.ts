@@ -35,7 +35,7 @@ import {
   validateIngredientPurchaseLineUnit,
 } from "./ingredient-purchases.validators.js";
 
-export async function listIngredientPurchases(query?: string) {
+export async function listIngredientPurchases(query?: string, supplierId?: number) {
   const normalizedQuery = normalizeIngredientPurchaseSearchQuery(query);
   const rows = await db
     .select()
@@ -49,6 +49,7 @@ export async function listIngredientPurchases(query?: string) {
               like(ingredientPurchasesTable.notes, `%${escapeLike(normalizedQuery)}%`),
             )
           : undefined,
+        supplierId ? eq(ingredientPurchasesTable.supplierId, supplierId) : undefined,
       ),
     )
     .orderBy(asc(ingredientPurchasesTable.occurredAt), asc(ingredientPurchasesTable.id));

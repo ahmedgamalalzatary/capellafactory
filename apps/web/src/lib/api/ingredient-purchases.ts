@@ -10,12 +10,16 @@ import type {
 } from "@capella/shared/ingredient-purchases/ingredient-purchase.types";
 import type { AdditionalPaymentInput } from "@capella/shared/payments/payment.types";
 
-export function buildIngredientPurchasesUrl(baseUrl: string, query?: string) {
+export function buildIngredientPurchasesUrl(baseUrl: string, query?: string, supplierId?: number) {
   const url = new URL("/ingredient-purchases", baseUrl);
   const normalizedQuery = query?.trim();
 
   if (normalizedQuery) {
     url.searchParams.set("q", normalizedQuery);
+  }
+
+  if (supplierId) {
+    url.searchParams.set("supplierId", String(supplierId));
   }
 
   return url.toString();
@@ -37,10 +41,10 @@ export function mergeJsonHeaders(initHeaders?: HeadersInit) {
 
 export async function getIngredientPurchases(
   query?: string,
-  options?: { cookieHeader?: string },
+  options?: { cookieHeader?: string; supplierId?: number },
 ) {
   const response = await fetch(
-    buildIngredientPurchasesUrl(API_URL, query),
+    buildIngredientPurchasesUrl(API_URL, query, options?.supplierId),
     withApiCredentials(
       {
         cache: "no-store",

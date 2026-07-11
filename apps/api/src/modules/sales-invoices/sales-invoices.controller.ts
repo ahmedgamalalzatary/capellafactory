@@ -9,7 +9,17 @@ import { SalesInvoiceValidationError } from "./sales-invoices.validators.js";
 
 export async function listSalesInvoicesHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;
-  response.json(await getSalesInvoices(query));
+  const buyerId = parsePositiveIntegerQuery(request.query.buyerId);
+  response.json(await getSalesInvoices(query, buyerId));
+}
+
+function parsePositiveIntegerQuery(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
 export async function getSalesInvoiceHandler(request: Request, response: Response) {

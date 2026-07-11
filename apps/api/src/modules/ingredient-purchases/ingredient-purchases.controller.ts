@@ -9,7 +9,17 @@ import { IngredientPurchaseValidationError } from "./ingredient-purchases.valida
 
 export async function listIngredientPurchasesHandler(request: Request, response: Response) {
   const query = typeof request.query.q === "string" ? request.query.q : undefined;
-  response.json(await getIngredientPurchases(query));
+  const supplierId = parsePositiveIntegerQuery(request.query.supplierId);
+  response.json(await getIngredientPurchases(query, supplierId));
+}
+
+function parsePositiveIntegerQuery(value: unknown) {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const id = Number(value);
+  return Number.isInteger(id) && id > 0 ? id : undefined;
 }
 
 export async function getIngredientPurchaseHandler(request: Request, response: Response) {

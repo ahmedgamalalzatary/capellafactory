@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { AccountInvoicesTable } from "@/components/accounts/account-invoices-table";
-import { getBuyers } from "@/lib/api/buyers";
+import { getBuyer } from "@/lib/api/buyers";
 import { getSalesInvoices } from "@/lib/api/sales-invoices";
 import { getServerCookieHeader } from "@/lib/server-cookies";
 
@@ -16,11 +16,10 @@ export default async function BuyerAccountPage({ params }: BuyerAccountPageProps
   }
 
   const cookieHeader = await getServerCookieHeader();
-  const [buyers, invoices] = await Promise.all([
-    getBuyers(undefined, { cookieHeader }),
-    getSalesInvoices(undefined, { cookieHeader }),
+  const [buyer, invoices] = await Promise.all([
+    getBuyer(buyerId, { cookieHeader }),
+    getSalesInvoices(undefined, { cookieHeader, buyerId }),
   ]);
-  const buyer = buyers.find((row) => row.id === buyerId);
 
   if (!buyer) {
     notFound();
@@ -30,13 +29,11 @@ export default async function BuyerAccountPage({ params }: BuyerAccountPageProps
     <AccountInvoicesTable
       title={buyer.name}
       summaryLabel="إجمالي المستحق من المشتري"
-      invoices={invoices
-        .filter((invoice) => invoice.buyerId === buyerId)
-        .map((invoice) => ({
+      invoices={invoices.map((invoice) => ({
           id: invoice.id,
           invoiceCode: invoice.invoiceCode,
           occurredAt: invoice.occurredAt,
-          totalAmount: invoice.subtotal,
+          totalAmount: invoice.finalTotal,
           paidAmount: invoice.paidAmount,
           remainingAmount: invoice.remainingAmount,
           paymentStatus: invoice.paymentStatus,

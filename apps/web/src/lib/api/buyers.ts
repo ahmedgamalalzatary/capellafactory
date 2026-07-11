@@ -17,6 +17,10 @@ export function buildBuyersUrl(baseUrl: string, query?: string) {
   return url.toString();
 }
 
+export function buildBuyerDetailUrl(baseUrl: string, id: number) {
+  return new URL(`/buyers/${id}`, baseUrl).toString();
+}
+
 export async function getBuyers(
   query?: string,
   options?: { cookieHeader?: string },
@@ -34,6 +38,21 @@ export async function getBuyers(
   await handleApiResponse(response, "Failed to fetch buyers");
 
   return (await response.json()) as Buyer[];
+}
+
+export async function getBuyer(id: number, options?: { cookieHeader?: string }): Promise<Buyer | null> {
+  const response = await fetch(
+    buildBuyerDetailUrl(API_URL, id),
+    withApiCredentials({ cache: "no-store" }, options?.cookieHeader),
+  );
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  await handleApiResponse(response, "Failed to fetch buyer");
+
+  return (await response.json()) as Buyer;
 }
 
 export async function createBuyer(input: BuyerInput) {

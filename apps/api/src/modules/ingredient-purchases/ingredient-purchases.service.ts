@@ -7,8 +7,8 @@ import {
   listIngredientPurchases,
 } from "./ingredient-purchases.repository.js";
 
-export async function getIngredientPurchases(query?: string) {
-  return listIngredientPurchases(query);
+export async function getIngredientPurchases(query?: string, supplierId?: number) {
+  return listIngredientPurchases(query, supplierId);
 }
 
 export async function getIngredientPurchase(id: number) {

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { AccountInvoicesTable } from "@/components/accounts/account-invoices-table";
 import { getIngredientPurchases } from "@/lib/api/ingredient-purchases";
 import { getServerCookieHeader } from "@/lib/server-cookies";
-import { getSuppliers } from "@/lib/api/suppliers";
+import { getSupplier } from "@/lib/api/suppliers";
 
 type SupplierAccountPageProps = {
   params: Promise<{ id: string }>;
@@ -16,11 +16,10 @@ export default async function SupplierAccountPage({ params }: SupplierAccountPag
   }
 
   const cookieHeader = await getServerCookieHeader();
-  const [suppliers, purchases] = await Promise.all([
-    getSuppliers(undefined, { cookieHeader }),
-    getIngredientPurchases(undefined, { cookieHeader }),
+  const [supplier, purchases] = await Promise.all([
+    getSupplier(supplierId, { cookieHeader }),
+    getIngredientPurchases(undefined, { cookieHeader, supplierId }),
   ]);
-  const supplier = suppliers.find((row) => row.id === supplierId);
 
   if (!supplier) {
     notFound();
@@ -30,13 +29,11 @@ export default async function SupplierAccountPage({ params }: SupplierAccountPag
     <AccountInvoicesTable
       title={supplier.name}
       summaryLabel="إجمالي المستحق للمورد"
-      invoices={purchases
-        .filter((purchase) => purchase.supplierId === supplierId)
-        .map((purchase) => ({
+      invoices={purchases.map((purchase) => ({
           id: purchase.id,
           invoiceCode: purchase.invoiceCode,
           occurredAt: purchase.occurredAt,
-          totalAmount: purchase.totalAmount,
+          totalAmount: purchase.finalTotal,
           paidAmount: purchase.paidAmount,
           remainingAmount: purchase.remainingAmount,
           paymentStatus: purchase.paymentStatus,
