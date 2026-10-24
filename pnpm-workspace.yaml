@@ -1,3 +1,9 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# Same as pnpm 10: these install scripts were skipped and the builds work without them.
+allowBuilds:
+  esbuild: false
+  sharp: false
+  unrs-resolver: false
